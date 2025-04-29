@@ -1,0 +1,42 @@
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background-color: #1a1a1a;
+    color: white;
+    font-family: Arial, sans-serif;
+    height: 40px; 
+  }
+  
+  .menu-icon, .user-notifications {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .header-links h1 {
+    font-size: 1.5rem;
+  }
+  
+  .notification-bell, .user-profile {
+    font-size: 1.5rem; 
+    cursor: pointer;  
+    transition: transform 0.3s ease, color 0.3s ease; 
+  }
+  
+  .notification-bell:hover, .user-profile:hover {
+    transform: scale(1.1);  
+    color: #1861e7;  
+  }
+  
+  .menu-icon {
+    font-size: 1.5rem;  
+    cursor: pointer; 
+  }
+  
+  .menu-icon:hover {
+    transform: scale(1.1); 
+    color: #1861e7;  
+  }
+  
