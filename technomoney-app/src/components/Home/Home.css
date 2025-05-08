@@ -57,6 +57,8 @@
   display: flex;
   justify-content: space-between;
   margin-top: 50px;
+  font-family: Arial, sans-serif;
+  text-align: justify;
 }
 
 .info-cards {
@@ -69,7 +71,6 @@
   background-color: #fff;
   color: #333;
   padding: 40px;
-  text-align: center;
   margin-left: 16px;
   margin-right: 16px;
   justify-content: center;
@@ -79,6 +80,11 @@
   border-radius: 20px;
   box-shadow: 1px 8px 12px rgba(24, 97, 230, 0.1);
   transition: all 0.4s ease;
+}
+
+.card h1 {
+  text-align: center;
+
 }
 
 .card:hover {
