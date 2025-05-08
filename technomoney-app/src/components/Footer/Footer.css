@@ -1,15 +1,15 @@
 .footer {
-    background-color: #000;
-    color: white;
-    text-align: center;
-    padding: 10px 0;
-    position: fixed;
-    bottom: 0;
-    width: 100%;
-    font-family: Arial, sans-serif;
-  }
-  
-  .footer h1 {
-    margin: 0;
-    font-size: 14px;
-  }
+  background-color: #050b11;
+  color: white;
+  text-align: center;
+  padding: 10px 0;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  font-family: Arial, sans-serif;
+}
+
+.footer h1 {
+  margin: 0;
+  font-size: 14px;
+}
