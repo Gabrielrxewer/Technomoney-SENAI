@@ -1,19 +1,20 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import Header from '../Header/Header';
-import Footer from '../Footer/Footer';
-import './Auth.css';
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import Header from "../Header/Header";
+import Footer from "../Footer/Footer";
+import axios from "axios";
+import "./Auth.css";
 
 const Login: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
 
     const data = {
       email,
@@ -21,23 +22,20 @@ const Login: React.FC = () => {
     };
 
     try {
-      const response = await fetch('https://jsonplaceholder.typicode.com/posts', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
+      const response = await axios.post(
+        "https://jsonplaceholder.typicode.com/posts",
+        data,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-      if (!response.ok) {
-        throw new Error('Falha ao enviar os dados');
-      }
-
-      const result = await response.json();
-      console.log('Resposta do Backend:', result);
-
+      console.log("Resposta do Backend:", response.data);
     } catch (error) {
-      setError('Erro ao enviar os dados.');
+      setError("Erro ao enviar os dados.");
+      console.error("Erro ao enviar os dados:", error);
     } finally {
       setLoading(false);
     }
@@ -73,12 +71,14 @@ const Login: React.FC = () => {
               />
             </div>
             <button type="submit" className="auth-button" disabled={loading}>
-              {loading ? 'Enviando...' : 'Entrar'}
+              {loading ? "Enviando..." : "Entrar"}
             </button>
-            {error && <p style={{ color: 'red' }}>{error}</p>}
+            {error && <p style={{ color: "red" }}>{error}</p>}
           </form>
           <div className="auth-footer">
-            <p>Não tem uma conta? <Link to="/register">Registre-se</Link></p>
+            <p>
+              Não tem uma conta? <Link to="/register">Registre-se</Link>
+            </p>
           </div>
         </div>
       </div>
