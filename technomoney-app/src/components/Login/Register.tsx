@@ -1,23 +1,24 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import Header from '../Header/Header';
-import Footer from '../Footer/Footer';
-import './Auth.css';
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import Header from "../Header/Header";
+import Footer from "../Footer/Footer";
+import axios from "axios";
+import "./Auth.css";
 
 const Register: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
 
     if (password !== confirmPassword) {
-      setError('As senhas não coincidem.');
+      setError("As senhas não coincidem.");
       setLoading(false);
       return;
     }
@@ -28,23 +29,20 @@ const Register: React.FC = () => {
     };
 
     try {
-      const response = await fetch('https://jsonplaceholder.typicode.com/posts', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
+      const response = await axios.post(
+        "https://jsonplaceholder.typicode.com/posts",
+        data,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-      if (!response.ok) {
-        throw new Error('Falha ao enviar os dados');
-      }
-
-      const result = await response.json();
-      console.log('Resposta do Backend:', result);
-
+      console.log("Resposta do Backend:", response.data);
     } catch (error) {
-      setError('Erro ao enviar os dados.');
+      setError("Erro ao enviar os dados.");
+      console.error("Erro ao enviar os dados:", error);
     } finally {
       setLoading(false);
     }
@@ -91,12 +89,14 @@ const Register: React.FC = () => {
               />
             </div>
             <button type="submit" className="auth-button" disabled={loading}>
-              {loading ? 'Enviando...' : 'Registrar'}
+              {loading ? "Enviando..." : "Registrar"}
             </button>
-            {error && <p style={{ color: 'red' }}>{error}</p>}
+            {error && <p style={{ color: "red" }}>{error}</p>}
           </form>
           <div className="auth-footer">
-            <p>Já tem uma conta? <Link to="/login">Faça login</Link></p>
+            <p>
+              Já tem uma conta? <Link to="/login">Faça login</Link>
+            </p>
           </div>
         </div>
       </div>
