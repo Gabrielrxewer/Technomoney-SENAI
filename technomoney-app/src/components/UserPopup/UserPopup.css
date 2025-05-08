@@ -1,0 +1,51 @@
+.user-popup {
+    position: absolute;
+    top: 60px;
+    right: 30px;  
+    background-color: #1a1a1a;
+    color: #fff;
+    padding: 20px;
+    width: 200px; 
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    gap: 15px; 
+    z-index: 10;  
+  }
+  
+  .popup-content {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .popup-content ul {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  .popup-content ul li {
+    padding: 10px;
+    font-size: 16px;
+  }
+  
+  .popup-content ul li a {
+    text-decoration: none;
+    color: #00b3b3;
+  }
+  
+  .popup-content ul li a:hover {
+    text-decoration: underline;
+  }
+  
+  .close-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: #fff;
+    cursor: pointer;
+    position: absolute;
+    top: 5px;
+    right: 5px;
+  }
+  
