@@ -14,32 +14,33 @@ const Home: React.FC = () => {
       {/* Seção dos Cartões de Informação */}
       <section className="info-cards">
         <div className="card">
-          <h1>Informações Technomoney</h1>
+          <h1>Personalização</h1>
           <p>
-            Lorem ipsum dolor sit amet consectetur, adipisicing elit. Quos
-            corrupti soluta veritatis blanditiis, ex vel quaerat, sed quas
-            beatae rerum illum quam deserunt optio atque ea libero velit sunt
-            itaque.
+            Os usuários podem personalizar a visualização das suas carteiras e
+            das informações das ações, ajustando colunas, filtros e até mesmo os
+            indicadores que desejam visualizar, criando uma experiência mais
+            adaptada às suas necessidades.
           </p>
         </div>
         <div className="card">
           {" "}
-          <h1>Informações Technomoney</h1>
+          <h1>Interação em tempo real</h1>
           <p>
-            Lorem ipsum dolor sit amet consectetur, adipisicing elit. Quos
-            corrupti soluta veritatis blanditiis, ex vel quaerat, sed quas
-            beatae rerum illum quam deserunt optio atque ea libero velit sunt
-            itaque.
+            A plataforma oferece atualizações dinâmicas em tempo real das ações
+            no mercado, permitindo que os usuários acompanhem as flutuações de
+            preços e volúmenes de negociação de forma contínua, sem necessidade
+            de recarregar a página.
           </p>
         </div>
         <div className="card">
           {" "}
-          <h1>Informações Technomoney</h1>
+          <h1>Simulações</h1>
           <p>
-            Lorem ipsum dolor sit amet consectetur, adipisicing elit. Quos
-            corrupti soluta veritatis blanditiis, ex vel quaerat, sed quas
-            beatae rerum illum quam deserunt optio atque ea libero velit sunt
-            itaque.
+            A plataforma permite que os usuários criem simulações de
+            investimentos, testando diferentes cenários antes de aplicar
+            dinheiro real. É possível vincular simulações a
+            carteiras específicas e acompanhar o comportamento de seus ativos ao
+            longo do tempo.
           </p>
         </div>
       </section>
