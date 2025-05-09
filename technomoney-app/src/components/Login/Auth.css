@@ -1,5 +1,5 @@
 .auth-container {
-  background-color: #111;
+  background-color: #09141f;
   color: #fff;
   display: flex;
   flex-direction: column;
@@ -16,7 +16,7 @@
 }
 
 .auth-card {
-  background-color: #1a1a1a;
+  background-color: #0d243d;
   padding: 40px;
   border-radius: 8px;
   width: 400px;
@@ -42,7 +42,7 @@
   width: 100%;
   padding: 10px;
   margin-top: 5px;
-  background-color: #333;
+  background-color: #09141f;
   border: none;
   border-radius: 5px;
   color: #fff;
@@ -52,7 +52,7 @@
 .auth-button {
   width: 100%;
   padding: 12px;
-  background-color: #00b3b3;
+  background-color: #076161;
   color: #fff;
   border: none;
   border-radius: 5px;
