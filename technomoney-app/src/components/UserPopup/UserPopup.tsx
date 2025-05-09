@@ -13,7 +13,7 @@ const UserPopup: React.FC<UserPopupProps> = ({ onClose }) => {
         <button onClick={onClose} className="close-btn">X</button>
         <ul>
           <li>
-            <Link to="/login" onClick={onClose}>Login</Link>
+            <Link to="/login" onClick={onClose}>Fazer Login</Link>
           </li>
           <li>
             <Link to="/register" onClick={onClose}>Registrar-se</Link>

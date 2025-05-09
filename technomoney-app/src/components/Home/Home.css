@@ -36,7 +36,7 @@
 
 .saiba-mais {
   margin-top: 40px;
-  background-color: #1861e7;
+  background-color: #076161;
   color: white;
   border: none;
   width: 200px;
@@ -50,7 +50,7 @@
 
 .saiba-mais:hover {
   background-color: white;
-  color: #1861e6;
+  color: #076161;
 }
 
 .info-cards {
