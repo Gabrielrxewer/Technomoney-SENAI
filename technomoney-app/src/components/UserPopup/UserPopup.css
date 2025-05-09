@@ -1,7 +1,7 @@
 .user-popup {
     position: absolute;
     top: 60px;
-    right: 30px;  
+    right: 4px;  
     background-color: #1a1a1a;
     color: #fff;
     padding: 20px;
@@ -31,11 +31,14 @@
   
   .popup-content ul li a {
     text-decoration: none;
-    color: #00b3b3;
+    color: #ffffff;
+
   }
   
   .popup-content ul li a:hover {
     text-decoration: underline;
+    color: #076161;
+
   }
   
   .close-btn {
@@ -49,3 +52,6 @@
     right: 5px;
   }
   
+  .close-btn:hover {
+    color: #d40e00;
+  }

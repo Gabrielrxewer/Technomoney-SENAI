@@ -77,7 +77,7 @@ const Login: React.FC = () => {
           </form>
           <div className="auth-footer">
             <p>
-              Não tem uma conta? <Link to="/register">Registre-se</Link>
+              Não tem uma conta? <Link to="/register"><strong>Registre-se</strong></Link>
             </p>
           </div>
         </div>

@@ -95,7 +95,7 @@ const Register: React.FC = () => {
           </form>
           <div className="auth-footer">
             <p>
-              Já tem uma conta? <Link to="/login">Faça login</Link>
+              Já tem uma conta? <Link to="/login"><strong>Faça login</strong></Link>
             </p>
           </div>
         </div>
