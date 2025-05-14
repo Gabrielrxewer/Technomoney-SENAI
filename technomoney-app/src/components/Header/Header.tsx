@@ -11,7 +11,7 @@ const Header: React.FC = () => {
     setIsPopupOpen(!isPopupOpen);
   };
 
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -20,9 +20,6 @@ const Header: React.FC = () => {
   return (
     <header className="header">
       <div className="menu-icon" onClick={toggleMenu}>
-  return (
-    <header className="header">
-      <div className="menu-icon">
         {/* Ícone de Menu */}
         <FaBars />
       </div>
