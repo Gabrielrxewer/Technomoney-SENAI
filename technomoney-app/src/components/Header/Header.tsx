@@ -20,6 +20,9 @@ const Header: React.FC = () => {
   return (
     <header className="header">
       <div className="menu-icon" onClick={toggleMenu}>
+  return (
+    <header className="header">
+      <div className="menu-icon">
         {/* Ícone de Menu */}
         <FaBars />
       </div>
@@ -37,6 +40,7 @@ const Header: React.FC = () => {
         </div>
       </div>
       {isMenuOpen && <Menu onClose={toggleMenu} />}
+
       {isPopupOpen && <UserPopup onClose={togglePopup} />}
     </header>
   );
