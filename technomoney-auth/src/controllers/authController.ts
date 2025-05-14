@@ -14,8 +14,6 @@ export const register = async (req: any, res: any): Promise<any> => {
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-    console.log("REG PASSWORD", password);
-    console.log("REG hashed.PASSWORD", hashedPassword);
 
     const newUser = await registerUser(email, hashedPassword);
 
@@ -37,8 +35,6 @@ export const login = async (req: any, res: any): Promise<any> => {
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
-    console.log("PASSWORD", password),
-    console.log("USER.PASSWORD", user.password);
 
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });

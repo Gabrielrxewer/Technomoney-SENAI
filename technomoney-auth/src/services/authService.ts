@@ -4,15 +4,18 @@ interface User {
   password: string;
 }
 
-const users: User[] = []; 
+const users: User[] = [];
 
-export const registerUser = async (email: string, password: string): Promise<User> => {
-  const id = (users.length + 1).toString(); 
+export const registerUser = async (
+  email: string,
+  password: string
+): Promise<User> => {
+  const id = (users.length + 1).toString();
   const newUser = { id, email, password };
-  users.push(newUser); 
+  users.push(newUser);
   return newUser;
 };
 
 export const loginUser = async (email: string): Promise<User | null> => {
-  return users.find(user => user.email === email) || null;
+  return users.find((user) => user.email === email) || null;
 };
