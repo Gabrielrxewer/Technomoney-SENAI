@@ -2,6 +2,7 @@ import { FaBars, FaBell, FaUserCircle } from "react-icons/fa";
 import React, { useState } from "react";
 import UserPopup from "../UserPopup/UserPopup";
 import "./Header.css";
+import Menu from "../Menu/Menu";
 
 const Header: React.FC = () => {
   const [isPopupOpen, setIsPopupOpen] = useState(false);
@@ -10,9 +11,15 @@ const Header: React.FC = () => {
     setIsPopupOpen(!isPopupOpen);
   };
 
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
   return (
     <header className="header">
-      <div className="menu-icon">
+      <div className="menu-icon" onClick={toggleMenu}>
         {/* Ícone de Menu */}
         <FaBars />
       </div>
@@ -29,7 +36,7 @@ const Header: React.FC = () => {
           <FaUserCircle />
         </div>
       </div>
-
+      {isMenuOpen && <Menu onClose={toggleMenu} />}
       {isPopupOpen && <UserPopup onClose={togglePopup} />}
     </header>
   );
