@@ -1,48 +1,48 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
 import axios from "axios";
 import "./Auth.css";
 
 const Register: React.FC = () => {
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError("");
+    if (loading) return;
 
     if (password !== confirmPassword) {
       setError("As senhas não coincidem.");
-      setLoading(false);
       return;
     }
 
-    const data = {
-      email,
-      password,
-    };
+    setLoading(true);
+    setError("");
 
     try {
-      const response = await axios.post(
-        "https://jsonplaceholder.typicode.com/posts",
-        data,
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
+      const { data } = await axios.post(
+        `${import.meta.env.VITE_API_URL}/api/auth/register`,
+        { email, password, username },
+        { headers: { "Content-Type": "application/json" } }
       );
 
-      console.log("Resposta do Backend:", response.data);
-    } catch (error) {
-      setError("Erro ao enviar os dados.");
-      console.error("Erro ao enviar os dados:", error);
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("username", JSON.stringify(data.username));
+
+      navigate("/dashboard");
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        "O servidor não responde. Tente novamente";
+      setError(message);
+      console.error("Erro ao registrar:", err);
     } finally {
       setLoading(false);
     }
@@ -56,6 +56,17 @@ const Register: React.FC = () => {
           <h2>Registrar-se</h2>
           <form onSubmit={handleSubmit}>
             <div className="form-group">
+              <label htmlFor="username">Nome de usuário</label>
+              <input
+                type="username"
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                placeholder="Digite seu username"
+              />
+            </div>
+            <div className="form-group">
               <label htmlFor="email">E-mail</label>
               <input
                 type="email"
@@ -66,6 +77,7 @@ const Register: React.FC = () => {
                 placeholder="Digite seu e-mail"
               />
             </div>
+
             <div className="form-group">
               <label htmlFor="password">Senha</label>
               <input
@@ -77,8 +89,9 @@ const Register: React.FC = () => {
                 placeholder="Digite sua senha"
               />
             </div>
+
             <div className="form-group">
-              <label htmlFor="confirmPassword">Confirmar Senha</label>
+              <label htmlFor="confirmPassword">Confirmar senha</label>
               <input
                 type="password"
                 id="confirmPassword"
@@ -88,14 +101,20 @@ const Register: React.FC = () => {
                 placeholder="Confirme sua senha"
               />
             </div>
+
             <button type="submit" className="auth-button" disabled={loading}>
-              {loading ? "Enviando..." : "Registrar"}
+              {loading ? "Enviando…" : "Registrar"}
             </button>
-            {error && <p style={{ color: "red" }}>{error}</p>}
+
+            {error && <p className="error-msg">{error}</p>}
           </form>
+
           <div className="auth-footer">
             <p>
-              Já tem uma conta? <Link to="/login"><strong>Faça login</strong></Link>
+              Já tem uma conta?{" "}
+              <Link to="/login">
+                <strong>Faça login</strong>
+              </Link>
             </p>
           </div>
         </div>

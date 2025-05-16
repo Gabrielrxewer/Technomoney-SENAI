@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
 import axios from "axios";
@@ -10,32 +10,31 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     setLoading(true);
     setError("");
 
-    const data = {
-      email,
-      password,
-    };
-
     try {
-      const response = await axios.post(
-        "https://jsonplaceholder.typicode.com/posts",
-        data,
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
+      const { data } = await axios.post(
+        `${import.meta.env.VITE_API_URL}/api/auth/login`,
+        { email, password },
+        { headers: { "Content-Type": "application/json" } }
       );
 
-      console.log("Resposta do Backend:", response.data);
-    } catch (error) {
-      setError("Erro ao enviar os dados.");
-      console.error("Erro ao enviar os dados:", error);
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("username", JSON.stringify(data.username));
+
+      navigate("/dashboard");
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        "O servidor não responde. Tente novamente.";
+      setError(message);
+      console.error("Erro ao autenticar:", err);
     } finally {
       setLoading(false);
     }
@@ -70,14 +69,20 @@ const Login: React.FC = () => {
                 placeholder="Digite sua senha"
               />
             </div>
+
             <button type="submit" className="auth-button" disabled={loading}>
-              {loading ? "Enviando..." : "Entrar"}
+              {loading ? "Enviando…" : "Entrar"}
             </button>
-            {error && <p style={{ color: "red" }}>{error}</p>}
+
+            {error && <p className="error-msg">{error}</p>}
           </form>
+
           <div className="auth-footer">
             <p>
-              Não tem uma conta? <Link to="/register"><strong>Registre-se</strong></Link>
+              Não tem uma conta?{" "}
+              <Link to="/register">
+                <strong>Registre-se</strong>
+              </Link>
             </p>
           </div>
         </div>
