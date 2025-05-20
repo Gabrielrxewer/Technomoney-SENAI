@@ -37,7 +37,7 @@ const UserPopup: React.FC<UserPopupProps> = ({ onClose }) => {
             </li>
           </ul>
         ) : (
-          <h1>Bem vindo/a {username}</h1>
+          <p>Bem vindo/a {username}</p>
         )}
       </div>
     </div>

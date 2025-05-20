@@ -1,11 +1,12 @@
 .auth-container {
-  background-color: #09141f;
-  color: #fff;
+  background-color: var(--menu-bg-color);
+  color: var(--menu-text-color);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .auth-content {
@@ -16,17 +17,18 @@
 }
 
 .auth-card {
-  background-color: #0d243d;
-  padding: 40px;
-  border-radius: 8px;
+  background-color: #0d243d; /* Pode manter um tom diferenciado para o card */
+  padding: var(--menu-padding);
+  border-radius: var(--border-radius);
   width: 400px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--box-shadow);
 }
 
 .auth-card h2 {
-  color: #fff;
+  color: var(--menu-text-color);
   text-align: center;
   margin-bottom: 20px;
+  font-family: inherit;
 }
 
 .form-group {
@@ -36,32 +38,36 @@
 .form-group label {
   font-size: 14px;
   color: #aaa;
+  font-family: inherit;
 }
 
 .form-group input {
   width: 95%;
   padding: 10px;
   margin-top: 5px;
-  background-color: #09141f;
+  background-color: var(--menu-bg-color);
   border: none;
   border-radius: 5px;
-  color: #fff;
+  color: var(--menu-text-color);
   font-size: 14px;
+  font-family: inherit;
 }
 
 .auth-button {
   width: 100%;
   padding: 12px;
-  background-color: #076161;
-  color: #fff;
+  background-color: var(--menu-hover-color);
+  color: var(--menu-text-color);
   border: none;
   border-radius: 5px;
   font-size: 16px;
   cursor: pointer;
+  font-family: inherit;
+  transition: background-color 0.3s ease;
 }
 
 .auth-button:hover {
-  background-color: #008c8c;
+  background-color: #008c8c; /* Pode ajustar conforme desejar */
 }
 
 .auth-footer {
@@ -72,11 +78,13 @@
 .auth-footer p {
   font-size: 14px;
   color: #bbb;
+  font-family: inherit;
 }
 
 .auth-footer a {
   color: #00b3b3;
   text-decoration: none;
+  font-family: inherit;
 }
 
 .auth-footer a:hover {
