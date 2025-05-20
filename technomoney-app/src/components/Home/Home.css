@@ -1,5 +1,5 @@
 .home-container {
-  font-family: Arial, sans-serif;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
   background-color: #09141f;
 }
 
@@ -57,39 +57,40 @@
   display: flex;
   justify-content: space-between;
   margin-top: 50px;
-  font-family: Arial, sans-serif;
   text-align: justify;
-}
-
-.info-cards {
   justify-content: center;
   align-items: center;
 }
 
 .card {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   margin-top: 40px;
   background-color: #fff;
   color: #333;
   padding: 40px;
   margin-left: 16px;
   margin-right: 16px;
-  justify-content: center;
-  align-items: center;
   width: 18%;
   height: 160px;
   border-radius: 20px;
   box-shadow: 1px 8px 12px rgba(24, 97, 230, 0.1);
   transition: all 0.4s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: center; 
+  align-items: stretch;    
+  text-align: justify;    
 }
 
 .card h1 {
   text-align: center;
-
+  margin: 0;
 }
 
 .card:hover {
   transform: translateY(-10px);
   cursor: pointer;
+  box-shadow: 0 8px 20px rgba(7, 230, 230, 0.4); 
 }
 
 section {

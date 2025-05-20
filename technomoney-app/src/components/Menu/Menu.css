@@ -1,17 +1,30 @@
+:root {
+  --menu-bg-color: #1a1a1a;
+  --menu-text-color: #fff;
+  --menu-hover-color: #076161;
+  --close-btn-hover-color: #d40e00;
+  --menu-padding: 20px;
+  --menu-width: 250px;
+  --border-radius: 8px;
+  --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
 .menu {
   position: absolute;
   top: 60px;
-  right: 1610px;
-  background-color: #1a1a1a;
-  color: #fff;
-  padding: 20px;
-  width: 250px; 
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  right: 1610px; 
+  background-color: var(--menu-bg-color);
+  color: var(--menu-text-color);
+  padding: var(--menu-padding);
+  width: var(--menu-width);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
   display: flex;
   flex-direction: column;
   gap: 15px;
-  z-index: 10;
+  z-index: 1000;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
 .menu-content {
@@ -20,54 +33,77 @@
 }
 
 .menu-content ul {
-  list-style-type: none;
+  list-style: none;
   padding: 0;
   margin: 0;
 }
 
 .menu-content ul li {
-  padding: 10px;
+  padding: 12px 10px;
   font-size: 16px;
-  transition: background-color 0.3s ease; 
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.menu-content ul li:hover,
+.menu-content ul li:focus-within {
+  background-color: rgba(7, 97, 97, 0.2);
+  outline: none;
 }
 
 .menu-content ul li a {
   text-decoration: none;
-  color: #ffffff;
-  display: block; 
+  color: var(--menu-text-color);
+  display: block;
   width: 100%;
+  transition: color 0.3s ease, text-decoration 0.3s ease;
 }
 
-.menu-content ul li a:hover {
+.menu-content ul li a:hover,
+.menu-content ul li a:focus {
   text-decoration: underline;
-  color: #076161;
+  color: var(--menu-hover-color);
+  outline: none;
 }
 
 .close-btn {
-  background: none;
+  background: transparent;
   border: none;
-  font-size: 20px;
-  color: #fff;
+  font-size: 24px;
+  color: var(--menu-text-color);
   cursor: pointer;
   position: absolute;
-  top: 5px;
-  right: 5px;
+  top: 8px;
+  right: 8px;
+  padding: 4px;
+  transition: color 0.3s ease;
 }
 
-.close-btn:hover {
-  color: #d40e00;
+.close-btn:hover,
+.close-btn:focus {
+  color: var(--close-btn-hover-color);
+  outline: none;
 }
 
 @media (max-width: 768px) {
   .menu {
-    width: 100%; 
+    position: fixed;
+    width: 100%;
     left: 0;
     right: 0;
     top: 50px;
-    padding: 10px;
+    padding: 15px 10px;
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   }
 
   .menu-content ul li {
-    font-size: 14px; 
+    font-size: 14px;
+    padding: 10px 8px;
+  }
+
+  .close-btn {
+    top: 12px;
+    right: 12px;
   }
 }
