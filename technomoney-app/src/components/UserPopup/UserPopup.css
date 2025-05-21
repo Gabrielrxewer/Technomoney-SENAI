@@ -1,3 +1,14 @@
+:root {
+  --menu-bg-color: #1a1a1a;
+  --menu-text-color: #fff;
+  --menu-hover-color: #076161;
+  --close-btn-hover-color: #d40e00;
+  --menu-padding: 20px;
+  --menu-width: 250px;
+  --border-radius: 8px;
+  --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
 .user-popup {
   position: absolute;
   top: 60px;
@@ -5,15 +16,30 @@
   background-color: var(--menu-bg-color);
   color: var(--menu-text-color);
   padding: var(--menu-padding);
-  width: 200px; 
+  width: 190px;
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow);
   display: flex;
   flex-direction: column;
   gap: 15px;
-  z-index: 1000; 
+  z-index: 1000;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.greeting {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--menu-text-color);
+  padding: 0px 10px;
+  border-radius: 4px;
+  background-color: rgba(7, 97, 97, 0.1);
+  margin-bottom: 12px;
+  user-select: none;
+  text-shadow:
+    0 0 5px var(--menu-hover-color),
+    0 0 10px var(--menu-hover-color),
+    0 0 15px var(--menu-hover-color);
 }
 
 .popup-content {
@@ -71,6 +97,29 @@
 .close-btn:hover,
 .close-btn:focus {
   color: var(--close-btn-hover-color);
+  outline: none;
+}
+
+.logout-btn {
+  background: transparent;
+  border: none;
+  color: var(--menu-text-color);
+  font-size: 16px;
+  cursor: pointer;
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 12px 10px;
+  border-radius: 4px;
+  text-decoration: none;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.logout-btn:hover,
+.logout-btn:focus {
+  background-color: rgba(7, 97, 97, 0.2);
+  color: var(--menu-hover-color);
   outline: none;
 }
 

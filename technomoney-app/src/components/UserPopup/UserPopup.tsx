@@ -1,5 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faUser,
+  faCog,
+  faQuestionCircle,
+  faSignOutAlt,
+} from "@fortawesome/free-solid-svg-icons";
 import "./UserPopup.css";
 
 interface UserPopupProps {
@@ -7,14 +15,7 @@ interface UserPopupProps {
 }
 
 const UserPopup: React.FC<UserPopupProps> = ({ onClose }) => {
-  const [username, setUsername] = useState<string | null>(null);
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem("username");
-    if (storedUser) {
-      setUsername(JSON.parse(storedUser));
-    }
-  }, []);
+  const { username, logout, isAuthenticated } = useAuth();
 
   return (
     <div className="user-popup">
@@ -23,7 +24,7 @@ const UserPopup: React.FC<UserPopupProps> = ({ onClose }) => {
           X
         </button>
 
-        {!username ? (
+        {!isAuthenticated ? (
           <ul>
             <li>
               <Link to="/login" onClick={onClose}>
@@ -37,8 +38,37 @@ const UserPopup: React.FC<UserPopupProps> = ({ onClose }) => {
             </li>
           </ul>
         ) : (
-          <p>Bem vindo/a {username}</p>
+          <>
+            <p className="greeting">Olá {username}</p>
+            <ul className="user-menu">
+              <li>
+                <Link to="/profile" onClick={onClose}>
+                  <FontAwesomeIcon icon={faUser} /> Minha Conta
+                </Link>
+              </li>
+              <li>
+                <Link to="/settings" onClick={onClose}>
+                  <FontAwesomeIcon icon={faCog} /> Configurações
+                </Link>
+              </li>
+              <li>
+                <Link to="/help" onClick={onClose}>
+                  <FontAwesomeIcon icon={faQuestionCircle} /> Ajuda
+                </Link>
+              </li>
+            </ul>
+            <button
+              onClick={() => {
+                logout();
+                onClose();
+              }}
+              className="logout-btn"
+            >
+              <FontAwesomeIcon icon={faSignOutAlt} /> Sair
+            </button>
+          </>
         )}
+        
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
 import axios from "axios";
 import "./Auth.css";
+import { useAuth } from "../../context/AuthContext"; 
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -11,6 +12,8 @@ const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+
+  const { login } = useAuth(); 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,14 +28,12 @@ const Login: React.FC = () => {
         { headers: { "Content-Type": "application/json" } }
       );
 
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("username", JSON.stringify(data.username));
+      login(data.token, data.username);
 
       navigate("/dashboard");
     } catch (err: any) {
       const message =
-        err?.response?.data?.message ||
-        "O servidor não responde. Tente novamente.";
+        err?.response?.data?.message || "O servidor não responde. Tente novamente.";
       setError(message);
       console.error("Erro ao autenticar:", err);
     } finally {

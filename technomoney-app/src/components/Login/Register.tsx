@@ -4,6 +4,7 @@ import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
 import axios from "axios";
 import "./Auth.css";
+import { useAuth } from "../../context/AuthContext"; 
 
 const Register: React.FC = () => {
   const [username, setUsername] = useState("");
@@ -13,6 +14,8 @@ const Register: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+
+  const { login } = useAuth(); 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,13 +31,12 @@ const Register: React.FC = () => {
 
     try {
       const { data } = await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/auth/register`,
+       ` ${import.meta.env.VITE_API_URL}/api/auth/register`,
         { email, password, username },
         { headers: { "Content-Type": "application/json" } }
       );
 
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("username", JSON.stringify(data.username));
+      login(data.token, data.username);
 
       navigate("/dashboard");
     } catch (err: any) {
@@ -58,7 +60,7 @@ const Register: React.FC = () => {
             <div className="form-group">
               <label htmlFor="username">Nome de usuário</label>
               <input
-                type="username"
+                type="text"
                 id="username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
