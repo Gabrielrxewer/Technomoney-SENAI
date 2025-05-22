@@ -9,9 +9,11 @@ export const authenticate = (req: any, res: any, next: any) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
+    console.log("testeeeeeeeeeeeee", decoded);
     req.user = decoded;
     next();
   } catch (error) {
+    console.log("testeeeeeeeeeeeee invalidoooooooo");
     res.status(400).json({ message: "Invalid token" });
   }
 };
