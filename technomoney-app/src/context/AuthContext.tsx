@@ -70,14 +70,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     const init = async () => {
       const storedToken = localStorage.getItem("token");
-      if (storedToken) {
+      const storedUsername = localStorage.getItem("username");
+      if (storedToken && storedUsername) {
         const user = await validateTokenBackend(storedToken);
         if (user) {
           setToken(storedToken);
-          setUsername(user.username);
+          setUsername(JSON.parse(storedUsername));
         } else {
           logout();
         }
+      } else {
+        logout();
       }
       setLoading(false);
     };
