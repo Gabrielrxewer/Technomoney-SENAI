@@ -11,7 +11,7 @@
 
 .user-popup {
   position: absolute;
-  top: 60px;
+  top: 45px;
   right: 4px;
   background-color: var(--menu-bg-color);
   color: var(--menu-text-color);
@@ -33,7 +33,7 @@
   color: var(--menu-text-color);
   padding: 0px 10px;
   border-radius: 4px;
-  background-color: rgba(7, 97, 97, 0.1);
+  background-color: rgba(0, 0, 0, 0.1);
   margin-bottom: 12px;
   user-select: none;
   text-shadow:

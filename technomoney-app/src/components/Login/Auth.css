@@ -1,5 +1,5 @@
 .auth-container {
-  background-color: var(--menu-bg-color);
+  background-color: rgb(13, 24, 33); 
   color: var(--menu-text-color);
   display: flex;
   flex-direction: column;
@@ -17,7 +17,7 @@
 }
 
 .auth-card {
-  background-color: #0d243d; /* Pode manter um tom diferenciado para o card */
+  background-color: rgb(4, 12, 19); 
   padding: var(--menu-padding);
   border-radius: var(--border-radius);
   width: 400px;
@@ -45,7 +45,7 @@
   width: 95%;
   padding: 10px;
   margin-top: 5px;
-  background-color: var(--menu-bg-color);
+  background-color: rgb(13, 24, 33); 
   border: none;
   border-radius: 5px;
   color: var(--menu-text-color);
@@ -67,7 +67,7 @@
 }
 
 .auth-button:hover {
-  background-color: #008c8c; /* Pode ajustar conforme desejar */
+  background-color: #008c8c;
 }
 
 .auth-footer {

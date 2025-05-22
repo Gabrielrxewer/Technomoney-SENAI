@@ -11,8 +11,8 @@
 
 .menu {
   position: absolute;
-  top: 60px;
-  right: 1610px; 
+  top: 45px;
+  right: 1665px; 
   background-color: var(--menu-bg-color);
   color: var(--menu-text-color);
   padding: var(--menu-padding);
