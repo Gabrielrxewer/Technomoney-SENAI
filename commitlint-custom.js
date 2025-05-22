@@ -50,7 +50,7 @@ async function run() {
     if (hasSubjectCaseError) {
       console.error('\n🚫 ERRO: A descrição do commit deve estar em letras minúsculas.');
       console.error('Por favor, escreva a mensagem após o prefixo usando letras minúsculas.');
-      console.error('Exemplo correto: "FEAT: adiciona suporte a login via google"\n');
+      console.error('Exemplo correto: "FEAT: adiciona suporte a login via google"\n')
     }
 
     for (const e of report.errors) {
