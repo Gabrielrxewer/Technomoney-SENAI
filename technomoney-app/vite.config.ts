@@ -3,9 +3,11 @@ import react from "@vitejs/plugin-react-swc";
 
 export default defineConfig({
   plugins: [react()],
-
+  optimizeDeps: {
+    include: ["jwt-decode"],
+  },
   server: {
-    port: 3000,      
-    strictPort: true 
-  }
+    port: 3000,
+    strictPort: true,
+  },
 });

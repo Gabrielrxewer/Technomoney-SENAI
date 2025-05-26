@@ -1,7 +1,24 @@
 import { Request, Response } from "express";
-import { generateToken } from "../utils/generateToken";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+} from "../utils/generateToken";
 import bcrypt from "bcryptjs";
 import { registerUser, loginUser } from "../services/authService";
+import jwt from "jsonwebtoken";
+import {
+  addRefreshToken,
+  removeRefreshToken,
+  isRefreshTokenValid,
+} from "../services/tokenService";
+
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "strict",
+  path: "/api/auth/refresh",
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+};
 
 export const register = async (req: any, res: any): Promise<any> => {
   const { email, password, username } = req.body;
@@ -17,9 +34,14 @@ export const register = async (req: any, res: any): Promise<any> => {
 
     const newUser = await registerUser(email, hashedPassword, username);
 
-    const token = generateToken(newUser.id);
+    const accessToken = generateAccessToken(newUser.id);
+    const refreshToken = generateRefreshToken(newUser.id);
+    addRefreshToken(refreshToken);
 
-    return res.status(201).json({ token, username });
+    res
+      .cookie("refreshToken", refreshToken, COOKIE_OPTIONS)
+      .status(201)
+      .json({ token: accessToken, username });
   } catch (error) {
     return res.status(500).json({ message: "Erro interno no servidor" });
   }
@@ -39,10 +61,69 @@ export const login = async (req: any, res: any): Promise<any> => {
     if (!isMatch) {
       return res.status(400).json({ message: "Senha inválida" });
     }
-    const token = generateToken(user.id);
+
+    const accessToken = generateAccessToken(user.id);
+    const refreshToken = generateRefreshToken(user.id);
+    addRefreshToken(refreshToken);
     const username = user.username;
-    return res.status(200).json({ token, username });
+
+    res
+      .cookie("refreshToken", refreshToken, COOKIE_OPTIONS)
+      .status(200)
+      .json({ token: accessToken, username });
   } catch (error) {
     return res.status(500).json({ message: "Erro interno no servidor" });
   }
+};
+
+export const refreshToken = (req: any, res: any) => {
+  const token = req.cookies.refreshToken;
+
+  if (!token) {
+    return res.status(401).json({ message: "Refresh token ausente" });
+  }
+
+  if (!isRefreshTokenValid(token)) {
+    return res.status(403).json({ message: "Refresh token revogado" });
+  }
+
+  try {
+    const payload = jwt.verify(
+      token,
+      process.env.JWT_REFRESH_SECRET as string
+    ) as { id: string };
+    const accessToken = generateAccessToken(payload.id);
+    res.json({ token: accessToken });
+  } catch (err) {
+    return res.status(403).json({ message: "Refresh token inválido" });
+  }
+};
+
+export const getMe = (req: any, res: any) => {
+  const user = req.user;
+  if (!user) {
+    return res.status(401).json({ message: "Não autenticado" });
+  }
+  return res.json({
+    id: user.id,
+    username: user.username,
+    exp: user.exp,
+  });
+};
+
+export const logout = (req: any, res: any) => {
+  const token = req.cookies.refreshToken;
+
+  if (token) {
+    removeRefreshToken(token);
+  }
+
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/api/auth/refresh",
+  });
+
+  return res.status(200).json({ message: "Logout realizado com sucesso" });
 };

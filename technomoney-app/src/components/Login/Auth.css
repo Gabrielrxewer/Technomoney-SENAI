@@ -1,6 +1,28 @@
-.auth-container {
-  background-color: var(--menu-bg-color);
-  color: var(--menu-text-color);
+:root {
+  --color-primary: #0cb3a8;
+  --color-primary-dark: #08a295;
+  --color-bg: rgb(13, 24, 33);
+  --color-card-bg: #112933;
+  --color-input-bg: rgb(13, 24, 33);
+  --color-text-main: #f0f0f0;
+  --color-text-secondary: #cde6e1;
+  --color-accent: #0cb3a8;
+
+  --shadow-primary: 0 4px 8px rgba(0, 0, 0, 0.3);
+  --shadow-hover: 0 6px 12px rgba(0, 0, 0, 0.4);
+
+  --border-radius: 8px;
+  --padding: 24px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.auth-container { 
+  background-color: var(--color-bg); 
+  color: var(--color-text-main);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -14,60 +36,74 @@
   justify-content: center;
   align-items: center;
   width: 100%;
+  padding: 20px;
 }
 
 .auth-card {
-  background-color: #0d243d; /* Pode manter um tom diferenciado para o card */
-  padding: var(--menu-padding);
+  background-color: var(--color-card-bg);
+  padding: var(--padding);
   border-radius: var(--border-radius);
   width: 400px;
-  box-shadow: var(--box-shadow);
+  box-shadow: var(--shadow-primary);
+  animation: fadeIn 0.6s ease forwards;
 }
 
 .auth-card h2 {
-  color: var(--menu-text-color);
+  color: var(--color-text-main);
   text-align: center;
-  margin-bottom: 20px;
-  font-family: inherit;
+  margin-bottom: 24px;
+  font-size: 24px;
+  font-weight: 600;
+  text-shadow: 0 0 8px rgba(12, 179, 168, 0.7);
 }
 
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .form-group label {
   font-size: 14px;
-  color: #aaa;
-  font-family: inherit;
+  color: var(--color-text-secondary);
 }
 
 .form-group input {
-  width: 95%;
-  padding: 10px;
-  margin-top: 5px;
-  background-color: var(--menu-bg-color);
-  border: none;
-  border-radius: 5px;
-  color: var(--menu-text-color);
+  width: 100%;
+  padding: 12px;
+  margin-top: 8px;
+  background-color: var(--color-input-bg);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: var(--color-text-main);
   font-size: 14px;
-  font-family: inherit;
+  box-shadow: inset 0 1px 4px rgba(0,0,0,0.3); 
+  transition: border 0.3s ease;
+}
+
+.form-group input:focus {
+  border: 1px solid var(--color-accent);
+  outline: none;
+  box-shadow: 0 0 8px var(--color-accent); 
 }
 
 .auth-button {
   width: 100%;
   padding: 12px;
-  background-color: var(--menu-hover-color);
-  color: var(--menu-text-color);
+  background-color: var(--color-primary);
+  color: var(--color-text-main);
   border: none;
-  border-radius: 5px;
+  border-radius: 6px;
   font-size: 16px;
   cursor: pointer;
-  font-family: inherit;
-  transition: background-color 0.3s ease;
+  transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
 }
 
 .auth-button:hover {
-  background-color: #008c8c; /* Pode ajustar conforme desejar */
+  background-color: var(--color-primary-dark);
+  box-shadow: 0 4px 10px var(--shadow-hover);
+}
+
+.auth-button:active {
+  transform: scale(1.05);
 }
 
 .auth-footer {
@@ -77,16 +113,20 @@
 
 .auth-footer p {
   font-size: 14px;
-  color: #bbb;
-  font-family: inherit;
+  color: var(--color-text-secondary);
 }
 
 .auth-footer a {
-  color: #00b3b3;
+  color: var(--color-accent);
   text-decoration: none;
-  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: text-decoration 0.2s ease;
 }
 
-.auth-footer a:hover {
+.auth-footer a:hover,
+.auth-footer a:focus {
   text-decoration: underline;
+  outline: none;
 }
+

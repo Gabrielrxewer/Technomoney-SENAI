@@ -7,3 +7,7 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+declare module "jwt-decode" {
+  const jwtDecode: (token: string) => any;
+  export default jwtDecode;
+}
