@@ -91,7 +91,7 @@
 .popup-content ul li a:hover,
 .popup-content ul li a:focus {
   text-decoration: underline;
-  color: var(--menu-hover-color);
+  color: white;
   outline: none;
 }
 

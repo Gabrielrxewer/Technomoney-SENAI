@@ -78,6 +78,7 @@
   text-decoration: underline;
   color: var(--menu-hover-color);
   outline: none;
+  color: white;
 }
 
 .close-btn {

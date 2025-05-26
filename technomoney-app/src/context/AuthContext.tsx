@@ -94,7 +94,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     localStorage.setItem("username", JSON.stringify(newUsername));
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await api.post("/api/auth/logout");
+    } catch (error) {
+      console.error("Erro no logout", error);
+    }
     setToken(null);
     setUsername(null);
     localStorage.removeItem("token");

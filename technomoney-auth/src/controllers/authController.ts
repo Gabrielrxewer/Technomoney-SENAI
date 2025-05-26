@@ -6,6 +6,11 @@ import {
 import bcrypt from "bcryptjs";
 import { registerUser, loginUser } from "../services/authService";
 import jwt from "jsonwebtoken";
+import {
+  addRefreshToken,
+  removeRefreshToken,
+  isRefreshTokenValid,
+} from "../services/tokenService";
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
@@ -31,6 +36,7 @@ export const register = async (req: any, res: any): Promise<any> => {
 
     const accessToken = generateAccessToken(newUser.id);
     const refreshToken = generateRefreshToken(newUser.id);
+    addRefreshToken(refreshToken);
 
     res
       .cookie("refreshToken", refreshToken, COOKIE_OPTIONS)
@@ -58,6 +64,7 @@ export const login = async (req: any, res: any): Promise<any> => {
 
     const accessToken = generateAccessToken(user.id);
     const refreshToken = generateRefreshToken(user.id);
+    addRefreshToken(refreshToken);
     const username = user.username;
 
     res
@@ -76,13 +83,16 @@ export const refreshToken = (req: any, res: any) => {
     return res.status(401).json({ message: "Refresh token ausente" });
   }
 
+  if (!isRefreshTokenValid(token)) {
+    return res.status(403).json({ message: "Refresh token revogado" });
+  }
+
   try {
     const payload = jwt.verify(
       token,
       process.env.JWT_REFRESH_SECRET as string
     ) as { id: string };
     const accessToken = generateAccessToken(payload.id);
-
     res.json({ token: accessToken });
   } catch (err) {
     return res.status(403).json({ message: "Refresh token inválido" });
@@ -99,4 +109,21 @@ export const getMe = (req: any, res: any) => {
     username: user.username,
     exp: user.exp,
   });
+};
+
+export const logout = (req: any, res: any) => {
+  const token = req.cookies.refreshToken;
+
+  if (token) {
+    removeRefreshToken(token);
+  }
+
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/api/auth/refresh",
+  });
+
+  return res.status(200).json({ message: "Logout realizado com sucesso" });
 };
