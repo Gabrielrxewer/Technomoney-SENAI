@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
-import axios from "axios";
 import "./Auth.css";
-import { useAuth } from "../../context/AuthContext"; 
+import { useAuth } from "../../context/AuthContext";
+import api from "../../api";
 
 const Register: React.FC = () => {
   const [username, setUsername] = useState("");
@@ -15,7 +15,7 @@ const Register: React.FC = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const { login } = useAuth(); 
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,19 +30,17 @@ const Register: React.FC = () => {
     setError("");
 
     try {
-      const { data } = await axios.post(
-       ` ${import.meta.env.VITE_API_URL}/api/auth/register`,
+      const { data } = await api.post(
+        "/api/auth/register",
         { email, password, username },
         { headers: { "Content-Type": "application/json" } }
       );
 
       login(data.token, data.username);
-
       navigate("/dashboard");
     } catch (err: any) {
       const message =
-        err?.response?.data?.message ||
-        "O servidor não responde. Tente novamente";
+        err?.response?.data?.message || "O servidor não responde. Tente novamente";
       setError(message);
       console.error("Erro ao registrar:", err);
     } finally {

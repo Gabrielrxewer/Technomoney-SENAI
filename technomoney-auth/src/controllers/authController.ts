@@ -1,11 +1,13 @@
 import { Request, Response } from "express";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import {
   generateAccessToken,
   generateRefreshToken,
 } from "../utils/generateToken";
-import bcrypt from "bcryptjs";
+
 import { registerUser, loginUser } from "../services/authService";
-import jwt from "jsonwebtoken";
+
 import {
   addRefreshToken,
   removeRefreshToken,
@@ -15,12 +17,12 @@ import {
 const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
-  sameSite: "strict",
-  path: "/api/auth/refresh",
+  sameSite: "lax",
+  path: "/api/auth",
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
-export const register = async (req: any, res: any): Promise<any> => {
+export const register = async (req: Request, res: any): Promise<any> => {
   const { email, password, username } = req.body;
 
   try {
@@ -36,18 +38,19 @@ export const register = async (req: any, res: any): Promise<any> => {
 
     const accessToken = generateAccessToken(newUser.id);
     const refreshToken = generateRefreshToken(newUser.id);
-    addRefreshToken(refreshToken);
+    await addRefreshToken(refreshToken, newUser.id);
 
     res
       .cookie("refreshToken", refreshToken, COOKIE_OPTIONS)
       .status(201)
-      .json({ token: accessToken, username });
+      .json({ token: accessToken, username: newUser.username });
   } catch (error) {
+    console.error("Register error:", error);
     return res.status(500).json({ message: "Erro interno no servidor" });
   }
 };
 
-export const login = async (req: any, res: any): Promise<any> => {
+export const login = async (req: Request, res: any): Promise<any> => {
   const { email, password } = req.body;
 
   try {
@@ -57,34 +60,36 @@ export const login = async (req: any, res: any): Promise<any> => {
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
-
     if (!isMatch) {
       return res.status(400).json({ message: "Senha inválida" });
     }
 
     const accessToken = generateAccessToken(user.id);
     const refreshToken = generateRefreshToken(user.id);
-    addRefreshToken(refreshToken);
-    const username = user.username;
+    await addRefreshToken(refreshToken, user.id);
 
     res
       .cookie("refreshToken", refreshToken, COOKIE_OPTIONS)
       .status(200)
-      .json({ token: accessToken, username });
+      .json({ token: accessToken, username: user.username });
   } catch (error) {
+    console.error("Login error:", error);
     return res.status(500).json({ message: "Erro interno no servidor" });
   }
 };
 
-export const refreshToken = (req: any, res: any) => {
+export const refreshToken = async (req: Request, res: any) => {
   const token = req.cookies.refreshToken;
 
   if (!token) {
     return res.status(401).json({ message: "Refresh token ausente" });
   }
 
-  if (!isRefreshTokenValid(token)) {
-    return res.status(403).json({ message: "Refresh token revogado" });
+  const valid = await isRefreshTokenValid(token);
+  if (!valid) {
+    return res
+      .status(403)
+      .json({ message: "Refresh token revogado ou inválido" });
   }
 
   try {
@@ -95,6 +100,7 @@ export const refreshToken = (req: any, res: any) => {
     const accessToken = generateAccessToken(payload.id);
     res.json({ token: accessToken });
   } catch (err) {
+    console.error("Refresh token inválido:", err);
     return res.status(403).json({ message: "Refresh token inválido" });
   }
 };
@@ -111,19 +117,14 @@ export const getMe = (req: any, res: any) => {
   });
 };
 
-export const logout = (req: any, res: any) => {
+export const logout = async (req: Request, res: any) => {
   const token = req.cookies.refreshToken;
 
   if (token) {
-    removeRefreshToken(token);
+    await removeRefreshToken(token);
   }
 
-  res.clearCookie("refreshToken", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    path: "/api/auth/refresh",
-  });
+  res.clearCookie("refreshToken", COOKIE_OPTIONS);
 
   return res.status(200).json({ message: "Logout realizado com sucesso" });
 };
