@@ -5,7 +5,8 @@ import React, {
   useEffect,
   useCallback,
 } from "react";
-import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
+import { AxiosRequestConfig, AxiosResponse } from "axios";
+import api from "../api";
 
 interface UserPayload {
   id: string;
@@ -17,7 +18,7 @@ interface AuthContextType {
   token: string | null;
   username: string | null;
   login: (token: string, username: string) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
   isAuthenticated: boolean;
   loading: boolean;
   fetchWithAuth: (
@@ -35,10 +36,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [username, setUsername] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL,
-    withCredentials: true,
-  });
+  const logout = useCallback(async () => {
+    try {
+      await api.post("/api/auth/logout");
+    } catch (error) {
+      console.error("Erro no logout", error);
+    }
+    setToken(null);
+    setUsername(null);
+    localStorage.removeItem("token");
+    localStorage.removeItem("username");
+  }, []);
 
   const validateTokenBackend = useCallback(
     async (token: string): Promise<UserPayload | null> => {
@@ -51,7 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         return null;
       }
     },
-    [api]
+    []
   );
 
   const refreshAccessToken = useCallback(async (): Promise<string | null> => {
@@ -62,10 +70,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setToken(newToken);
       return newToken;
     } catch {
-      logout();
+      await logout();
       return null;
     }
-  }, [api]);
+  }, [logout]);
 
   useEffect(() => {
     const init = async () => {
@@ -77,33 +85,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           setToken(storedToken);
           setUsername(JSON.parse(storedUsername));
         } else {
-          logout();
+          await logout();
         }
       } else {
-        logout();
+        await logout();
       }
       setLoading(false);
     };
     init();
-  }, [validateTokenBackend]);
+  }, [validateTokenBackend, logout]);
 
   const login = (newToken: string, newUsername: string) => {
     setToken(newToken);
     setUsername(newUsername);
     localStorage.setItem("token", newToken);
     localStorage.setItem("username", JSON.stringify(newUsername));
-  };
-
-  const logout = async () => {
-    try {
-      await api.post("/api/auth/logout");
-    } catch (error) {
-      console.error("Erro no logout", error);
-    }
-    setToken(null);
-    setUsername(null);
-    localStorage.removeItem("token");
-    localStorage.removeItem("username");
   };
 
   const fetchWithAuth = useCallback(
@@ -134,7 +130,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             return await api.request({ url, ...config });
           } catch (err: any) {
             if (err.response?.status === 401) {
-              logout();
+              await logout();
               throw new Error("Sessão expirada");
             }
             throw err;
@@ -143,7 +139,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         throw error;
       }
     },
-    [api, token, refreshAccessToken]
+    [token, refreshAccessToken, logout]
   );
 
   const isAuthenticated = !!token && !!username;

@@ -17,7 +17,7 @@
   height: 100vh;
   background-color: rgba(0, 0, 0, 0.5);
   z-index: 999;
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(1px);
 }
 
 .user-popup {

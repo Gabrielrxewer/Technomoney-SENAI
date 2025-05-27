@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
-import axios from "axios";
 import "./Auth.css";
-import { useAuth } from "../../context/AuthContext"; 
+import { useAuth } from "../../context/AuthContext";
+import api from "../../api";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -13,7 +13,7 @@ const Login: React.FC = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const { login } = useAuth(); 
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,14 +22,13 @@ const Login: React.FC = () => {
     setError("");
 
     try {
-      const { data } = await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/auth/login`,
+      const { data } = await api.post(
+        "/api/auth/login",
         { email, password },
         { headers: { "Content-Type": "application/json" } }
       );
 
       login(data.token, data.username);
-
       navigate("/dashboard");
     } catch (err: any) {
       const message =
