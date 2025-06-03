@@ -1,67 +1,72 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
+import RealTimeActions from "./RealTimeActions/RealTimeActions";
+import ActionsTable from "./ActionsTable/ActionsTable";
+import ActionsAnalysis from "./ActionsAnalysis/ActionsAnalysis";
+import ErrorMessage from "./ErrorMessage/ErrorMessage";
+
+import "./Dashboard.css";
+
+interface Acao {
+  id: number;
+  nome: string;
+  preco: number;
+  variacao: number;
+  volume: number;
+}
+
+interface DadosAnalise {
+  totalAcoes: number;
+  maiorPreco: Acao;
+  menorPreco: Acao;
+}
 
 const Dashboard: React.FC = () => {
-  const [message, setMessage] = useState<string>("");
   const [error, setError] = useState<string>("");
+  const [acoes, setAcoes] = useState<Acao[]>([]);
+  const [dadosAnalise, setDadosAnalise] = useState<DadosAnalise | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const fetchProtectedData = async () => {
     setError("");
-    setMessage("");
+    setLoading(true);
 
     try {
       const token = localStorage.getItem("token");
-
       if (!token) {
         setError("Token não encontrado. Faça login.");
+        setLoading(false);
         return;
       }
 
       const response = await axios.get(
         `${import.meta.env.VITE_API_URL}/api/auth/dashboard`,
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
 
-      setMessage(response.data.message);
+      setAcoes(response.data.acoesTempoReal || []);
+      setDadosAnalise(response.data.dadosAnalise || null);
     } catch (err: any) {
       setError(
         err.response?.data?.message || "Erro ao acessar o conteúdo protegido."
       );
+    } finally {
+      setLoading(false);
     }
   };
 
-  return (
-    <div
-      style={{
-        height: "100vh",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        flexDirection: "column",
-        gap: "1rem",
-      }}
-    >
-      <button
-        onClick={fetchProtectedData}
-        style={{
-          padding: "1rem 2rem",
-          fontSize: "1.2rem",
-          cursor: "pointer",
-          borderRadius: "8px",
-          border: "none",
-          backgroundColor: "#007bff",
-          color: "white",
-        }}
-      >
-        Buscar conteúdo protegido
-      </button>
+  useEffect(() => {
+    fetchProtectedData();
+  }, []);
 
-      {message && <p style={{ color: "green" }}>{message}</p>}
-      {error && <p style={{ color: "red" }}>{error}</p>}
+  return (
+    <div className="dashboard-container">
+      {error && <ErrorMessage message={error} />}
+      <RealTimeActions acoes={acoes} loading={loading} />
+      <ActionsTable acoes={acoes} loading={loading} />
+      <ActionsAnalysis dadosAnalise={dadosAnalise} loading={loading} />
     </div>
   );
 };

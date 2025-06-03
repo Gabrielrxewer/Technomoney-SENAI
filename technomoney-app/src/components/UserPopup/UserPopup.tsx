@@ -28,7 +28,11 @@ const UserPopup: React.FC<UserPopupProps> = ({ onClose }) => {
       <div className="user-popup-overlay" onClick={handleOverlayClick}></div>
       <div className="user-popup">
         <div className="popup-content">
-          <button onClick={onClose} className="close-btn" aria-label="Fechar popup">
+          <button
+            onClick={onClose}
+            className="close-btn"
+            aria-label="Fechar popup"
+          >
             ×
           </button>
 
@@ -51,17 +55,23 @@ const UserPopup: React.FC<UserPopupProps> = ({ onClose }) => {
               <ul className="user-menu">
                 <li>
                   <Link to="/profile" onClick={onClose}>
-                    <FontAwesomeIcon icon={faUser} style={{ marginRight: 8 }} /> Minha Conta
+                    <FontAwesomeIcon icon={faUser} style={{ marginRight: 8 }} />{" "}
+                    Minha Conta
                   </Link>
                 </li>
                 <li>
                   <Link to="/settings" onClick={onClose}>
-                    <FontAwesomeIcon icon={faCog} style={{ marginRight: 8 }} /> Configurações
+                    <FontAwesomeIcon icon={faCog} style={{ marginRight: 8 }} />{" "}
+                    Configurações
                   </Link>
                 </li>
                 <li>
                   <Link to="/help" onClick={onClose}>
-                    <FontAwesomeIcon icon={faQuestionCircle} style={{ marginRight: 8 }} /> Ajuda
+                    <FontAwesomeIcon
+                      icon={faQuestionCircle}
+                      style={{ marginRight: 8 }}
+                    />{" "}
+                    Ajuda
                   </Link>
                 </li>
               </ul>
@@ -72,7 +82,11 @@ const UserPopup: React.FC<UserPopupProps> = ({ onClose }) => {
                 }}
                 className="logout-btn"
               >
-                <FontAwesomeIcon icon={faSignOutAlt} style={{ marginRight: 8 }} /> Sair
+                <FontAwesomeIcon
+                  icon={faSignOutAlt}
+                  style={{ marginRight: 8 }}
+                />{" "}
+                Sair
               </button>
             </>
           )}
