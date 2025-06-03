@@ -29,7 +29,11 @@ const Menu: React.FC<MenuProps> = ({ onClose }) => {
       <div className="menu-overlay" onClick={handleOverlayClick}></div>
       <div className="menu">
         <div className="menu-content">
-          <button onClick={onClose} className="close-btn" aria-label="Fechar menu">
+          <button
+            onClick={onClose}
+            className="close-btn"
+            aria-label="Fechar menu"
+          >
             ×
           </button>
           <ul>
@@ -47,7 +51,10 @@ const Menu: React.FC<MenuProps> = ({ onClose }) => {
             </li>
             <li>
               <Link to="/login" onClick={onClose}>
-                <FontAwesomeIcon icon={faInfoCircle} style={{ marginRight: 8 }} />
+                <FontAwesomeIcon
+                  icon={faInfoCircle}
+                  style={{ marginRight: 8 }}
+                />
                 Sobre / Quem Somos
               </Link>
             </li>
@@ -71,7 +78,10 @@ const Menu: React.FC<MenuProps> = ({ onClose }) => {
             </li>
             <li>
               <Link to="/" onClick={onClose}>
-                <FontAwesomeIcon icon={faNewspaper} style={{ marginRight: 8 }} />
+                <FontAwesomeIcon
+                  icon={faNewspaper}
+                  style={{ marginRight: 8 }}
+                />
                 Blog / Notícias
               </Link>
             </li>

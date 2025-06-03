@@ -1,0 +1,96 @@
+import React, { useRef, useEffect } from "react";
+import "./RealTimeActions.css";
+
+interface Acao {
+  id: number;
+  nome: string;
+  preco: number;
+  variacao: number;
+  volume: number;
+}
+
+interface Props {
+  acoes: Acao[];
+  loading: boolean;
+}
+
+const RealTimeActions: React.FC<Props> = ({ acoes, loading }) => {
+  const sliderRef = useRef<HTMLDivElement>(null);
+  const animationFrameId = useRef<number | null>(null);
+  const isPaused = useRef(false);
+
+  const smoothScroll = () => {
+    if (!sliderRef.current) return;
+
+    if (!isPaused.current) {
+      sliderRef.current.scrollLeft += 0.5;
+
+      if (sliderRef.current.scrollLeft >= sliderRef.current.scrollWidth / 2) {
+        sliderRef.current.scrollLeft = 0;
+      }
+    }
+
+    animationFrameId.current = requestAnimationFrame(smoothScroll);
+  };
+
+  useEffect(() => {
+    if (!sliderRef.current || acoes.length === 0) return;
+
+    sliderRef.current.scrollLeft = 0;
+    animationFrameId.current = requestAnimationFrame(smoothScroll);
+
+    return () => {
+      if (animationFrameId.current)
+        cancelAnimationFrame(animationFrameId.current);
+    };
+  }, [acoes]);
+
+  const handleMouseEnter = () => {
+    isPaused.current = true;
+  };
+
+  const handleMouseLeave = () => {
+    isPaused.current = false;
+  };
+
+  const cardsDuplicados = [...acoes, ...acoes];
+
+  return (
+    <section className="acoes-tempo-real">
+      <div
+        className="slider-cards"
+        ref={sliderRef}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        {loading ? (
+          <p className="loading-text">Carregando...</p>
+        ) : acoes.length === 0 ? (
+          <p className="loading-text">Nenhuma ação disponível.</p>
+        ) : (
+          cardsDuplicados.map((acao, index) => (
+            <article key={`${acao.id}-${index}`} className="card">
+              <h3 className="card__title">{acao.nome}</h3>
+              <p className="card__description">
+                Preço: R${acao.preco.toFixed(2)}
+              </p>
+              <p
+                className={`card__description variacao ${
+                  acao.variacao > 0
+                    ? "text-success"
+                    : acao.variacao < 0
+                      ? "text-danger"
+                      : ""
+                }`}
+              >
+                Variação: {acao.variacao.toFixed(2)}%
+              </p>
+            </article>
+          ))
+        )}
+      </div>
+    </section>
+  );
+};
+
+export default RealTimeActions;

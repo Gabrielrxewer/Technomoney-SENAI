@@ -1,6 +1,5 @@
 import React from "react";
 import "./Home.css";
-import heroImage from "../../../public/1.jpeg";
 
 const cards = [
   {
@@ -22,31 +21,39 @@ const cards = [
 
 const Home: React.FC = () => {
   return (
-    <main className="home">
-      <header className="hero" role="banner">
+    <main className="home_home">
+      <header className="hero_home" role="banner">
         <div className="overlay" />
-        <h1 className="hero__title">Assessoria em Investimentos</h1>
-        <p className="hero__subtitle">Transforme seu futuro financeiro conosco.</p>
+        <h1 className="hero__title_home">Assessoria em Investimentos</h1>
+        <p className="hero__subtitle_home">
+          Transforme seu futuro financeiro conosco.
+        </p>
         <button
-          className="btn btn--primary"
+          className="btn_home btn--primary_home"
           aria-label="Saiba mais sobre a assessoria"
         >
           Saiba mais
         </button>
       </header>
 
-      <section className="info-cards" aria-label="Principais benefícios da plataforma">
+      <section
+        className="info-cards_home"
+        aria-label="Principais benefícios da plataforma"
+      >
         {cards.map(({ title, description }) => (
           <article
             key={title}
-            className="card"
+            className="card_home"
             tabIndex={0}
-            aria-labelledby={`${title.replace(/\s+/g, "-").toLowerCase()}-title`}
+            aria-labelledby={`${title.replace(/\s+/g, "-").toLowerCase()}-title-home`}
           >
-            <h2 id={`${title.replace(/\s+/g, "-").toLowerCase()}-title`} className="card__title">
+            <h2
+              id={`${title.replace(/\s+/g, "-").toLowerCase()}-title-home`}
+              className="card__title_home"
+            >
               {title}
             </h2>
-            <p className="card__description">{description}</p>
+            <p className="card__description_home">{description}</p>
           </article>
         ))}
       </section>

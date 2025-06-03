@@ -40,7 +40,8 @@ const Register: React.FC = () => {
       navigate("/dashboard");
     } catch (err: any) {
       const message =
-        err?.response?.data?.message || "O servidor não responde. Tente novamente";
+        err?.response?.data?.message ||
+        "O servidor não responde. Tente novamente";
       setError(message);
       console.error("Erro ao registrar:", err);
     } finally {

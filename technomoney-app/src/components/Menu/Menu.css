@@ -23,7 +23,7 @@
 .menu {
   position: fixed;
   top: 45px;
-  left: 20px; 
+  left: 20px;
   background-color: var(--menu-bg-color);
   color: var(--menu-text-color);
   padding: var(--menu-padding);
@@ -34,12 +34,14 @@
   flex-direction: column;
   gap: 20px;
   z-index: 1000;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  transition:
+    transform 0.3s ease,
+    opacity 0.3s ease;
 }
 
 .menu-content {
-  position: relative; 
+  position: relative;
   display: flex;
   flex-direction: column;
 }
@@ -69,7 +71,9 @@
   display: flex;
   align-items: center;
   width: 100%;
-  transition: color 0.3s ease, text-decoration 0.3s ease;
+  transition:
+    color 0.3s ease,
+    text-decoration 0.3s ease;
   font-weight: 600;
 }
 
@@ -88,8 +92,8 @@
   color: var(--menu-text-color);
   cursor: pointer;
   position: absolute;
-  top: 2px;  
-  right: 2px; 
+  top: 2px;
+  right: 2px;
   padding: 6px;
   transition: color 0.3s ease;
   z-index: 10;

@@ -41,7 +41,7 @@ body {
 .notification-bell:hover,
 .user-profile:hover {
   transform: scale(1.1);
-  color:  #076161;
+  color: #076161;
 }
 
 .menu-icon {
@@ -51,6 +51,5 @@ body {
 
 .menu-icon:hover {
   transform: scale(1.1);
-  color:  #076161;
-
+  color: #076161;
 }
