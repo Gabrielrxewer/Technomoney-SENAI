@@ -1,57 +1,89 @@
+/* ===============  ÁREA DE AÇÕES EM TEMPO REAL  =============== */
 .acoes-tempo-real {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
 }
 
+/* ---------------- Slider (faixa de rolagem) ----------------- */
 .slider-cards {
   display: flex;
   gap: 1.5rem;
+
+  /* rolagem apenas no eixo X; sombra liberada no eixo Y        */
   overflow-x: hidden;
-  overflow-y: hidden;
-  padding: 10px 0;
+  overflow-y: visible;
+
+  padding: 10px 0;          /* ⇠  MESMO ESPAÇAMENTO DE ANTES   */
+
   user-select: none;
   scroll-behavior: smooth;
   cursor: grab;
   min-width: 100%;
 }
 
-.slider-cards:active {
-  cursor: grabbing;
-}
+/* Oculta a barra de rolagem */
+.slider-cards::-webkit-scrollbar { height: 0; }
+.slider-cards { scrollbar-width: none; }
 
+/* cursor enquanto arrasta */
+.slider-cards:active { cursor: grabbing; }
+
+/* ---------------------- Cartão ---------------------- */
 .card {
+  position: relative;              /* base para o ::after */
   background: var(--color-card-bg);
-  margin-top: 50px;
   border-radius: 20px;
   padding: 25px 30px;
-  box-shadow: 0 8px 20px var(--shadow-primary);
+
   flex-shrink: 0;
   min-width: 320px;
   max-width: 320px;
+
+  margin-top: 50px;               /* ⇠  MESMO ESPAÇAMENTO DE ANTES */
+
   color: var(--color-text-main);
   display: flex;
   flex-direction: column;
   justify-content: center;
   text-align: center;
-  transition:
-    transform 0.3s ease,
-    box-shadow 0.3s ease;
-  cursor: default;
+
+  transition: transform 0.3s ease;
   user-select: none;
   word-break: break-word;
   white-space: normal;
+  cursor: default;
 }
 
-.card:focus,
-.card:hover {
+/* Sombra real em pseudo-elemento (não é cortada) */
+.card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+
+  box-shadow: 0 8px 20px var(--shadow-primary);
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+
+  z-index: -1;                     /* fica atrás do conteúdo */
+}
+
+/* Hover / Focus */
+.card:hover,
+.card:focus {
   outline: 2px solid var(--color-primary);
   outline-offset: 3px;
   transform: translateY(-6px);
-  box-shadow: 0 16px 40px var(--shadow-hover);
   cursor: pointer;
 }
 
+.card:hover::after,
+.card:focus::after {
+  box-shadow: 0 16px 40px var(--shadow-hover);
+  transform: translateY(-2px);
+}
+
+/* ---------------------- Conteúdo do Card ---------------------- */
 .card__title {
   font-size: 1.6rem;
   color: var(--color-primary);
@@ -69,6 +101,7 @@
   margin-bottom: 6px;
 }
 
+/* Variação (verde / vermelho) */
 .variacao.text-success {
   color: #3dcca6;
   font-weight: 700;
