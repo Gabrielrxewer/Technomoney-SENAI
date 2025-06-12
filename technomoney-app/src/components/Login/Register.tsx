@@ -3,46 +3,52 @@ import { Link, useNavigate } from "react-router-dom";
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
 import "./Auth.css";
-import { useAuth } from "../../context/AuthContext";
 import api from "../../api";
 
 const Register: React.FC = () => {
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [username, setUsername]   = useState("");
+  const [email, setEmail]         = useState("");
+  const [password, setPassword]   = useState("");
+  const [confirm, setConfirm]     = useState("");
+  const [loading, setLoading]     = useState(false);
+  const [error, setError]         = useState("");
+  const [emailTaken, setEmailTaken] = useState(false);   // NOVO
+
   const navigate = useNavigate();
 
-  const { login } = useAuth();
-
+  /* -------------------------------------------------------------- */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
 
-    if (password !== confirmPassword) {
+    const form = e.currentTarget as HTMLFormElement;
+    if (!form.checkValidity()) { form.reportValidity(); return; }
+
+    if (password !== confirm) {
       setError("As senhas não coincidem.");
       return;
     }
 
-    setLoading(true);
-    setError("");
+    setLoading(true); setError("");
 
     try {
-      const { data } = await api.post(
+      await api.post(
         "/api/auth/register",
-        { email, password, username },
+        { username, email, password },
         { headers: { "Content-Type": "application/json" } }
       );
-
-      login(data.token, data.username);
-      navigate("/dashboard");
+      navigate("/login");
     } catch (err: any) {
-      const message =
+      const msg =
         err?.response?.data?.message ||
-        "O servidor não responde. Tente novamente";
-      setError(message);
+        "O servidor não responde. Tente novamente.";
+
+      // se o backend sinalizou que o e-mail já existe
+      if (msg.toLowerCase().includes("e-mail já está em uso")) {
+        setEmailTaken(true);
+      }
+
+      setError(msg);
       console.error("Erro ao registrar:", err);
     } finally {
       setLoading(false);
@@ -52,58 +58,66 @@ const Register: React.FC = () => {
   return (
     <div className="auth-container">
       <Header />
+
       <div className="auth-content">
         <div className="auth-card">
-          <h2>Registrar-se</h2>
+          <h2>Registro</h2>
+
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label htmlFor="username">Nome de usuário</label>
+              <label htmlFor="reg-username">Usuário</label>
               <input
-                type="text"
-                id="username"
+                id="reg-username"
+                required
+                placeholder="Escolha um nome"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                required
-                placeholder="Digite seu username"
               />
             </div>
+
             <div className="form-group">
-              <label htmlFor="email">E-mail</label>
+              <label htmlFor="reg-email">E-mail</label>
               <input
+                id="reg-email"
                 type="email"
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
                 required
                 placeholder="Digite seu e-mail"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setEmailTaken(false);     // limpa o erro assim que o usuário digita
+                }}
+                className={emailTaken ? "input-error" : ""}   // NOVO
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="password">Senha</label>
+              <label htmlFor="reg-password">Senha</label>
               <input
+                id="reg-password"
                 type="password"
-                id="password"
+                required
+                minLength={6}
+                placeholder="Mínimo 6 caracteres"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                required
-                placeholder="Digite sua senha"
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="confirmPassword">Confirmar senha</label>
+              <label htmlFor="reg-confirm">Confirmar senha</label>
               <input
+                id="reg-confirm"
                 type="password"
-                id="confirmPassword"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                placeholder="Confirme sua senha"
+                minLength={6}
+                placeholder="Repita a senha"
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
               />
             </div>
 
-            <button type="submit" className="auth-button" disabled={loading}>
+            <button className="auth-button" disabled={loading}>
               {loading ? "Enviando…" : "Registrar"}
             </button>
 
@@ -112,14 +126,13 @@ const Register: React.FC = () => {
 
           <div className="auth-footer">
             <p>
-              Já tem uma conta?{" "}
-              <Link to="/login">
-                <strong>Faça login</strong>
-              </Link>
+              Já tem conta?{" "}
+              <Link to="/login"><strong>Entrar</strong></Link>
             </p>
           </div>
         </div>
       </div>
+
       <Footer />
     </div>
   );
