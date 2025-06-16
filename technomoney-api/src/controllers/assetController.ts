@@ -192,16 +192,23 @@ export async function fetchCurrentAssets(): Promise<
     const { asset_id, price, variation, volume } = r.get();
     recordMap.set(asset_id, { price, variation, volume });
   }
-  const missing = assets.filter((a) => !recordMap.has(a.id));
-  if (missing.length > 0) {
-    const { data: apiList } = await axios.get<
-      { nome: string; preco: number; volume: number }[]
-    >(FAKE_API_ALL);
-    for (const asset of missing) {
-      const apiItem = apiList.find(
-        (i) => i.nome === asset.tag || i.nome === asset.name
-      );
-      if (!apiItem || apiItem.preco == null || apiItem.volume == null) continue;
+  const { data: apiList } = await axios.get<
+    { nome: string; preco: number; volume: number }[]
+  >(FAKE_API_ALL);
+
+  for (const asset of assets) {
+    const apiItem = apiList.find(
+      (i) => i.nome === asset.tag || i.nome === asset.name
+    );
+    if (!apiItem || apiItem.preco == null || apiItem.volume == null) continue;
+
+    const dbRec = recordMap.get(asset.id);
+    const precisaAtualizar =
+      !dbRec ||
+      dbRec.price !== apiItem.preco ||
+      dbRec.volume !== apiItem.volume;
+
+    if (precisaAtualizar) {
       const precoBase = basePriceMap[apiItem.nome] ?? apiItem.preco;
       const variation = apiItem.preco - precoBase;
       await addAssetRecord(
