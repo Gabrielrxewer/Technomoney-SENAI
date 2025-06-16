@@ -13,7 +13,7 @@ const router = Router();
 router.post("/assets", createAsset);
 router.get("/assets", getAllAssets);
 router.get("/assets/:tag", getAssetByTag);
-router.get("/assets/sorted/volume", authenticate, getAssetsSortedByVolume);
-router.get("/assets/sorted/price", authenticate, getAssetsSortedByPrice);
+router.get("/assets/sorted/volume", getAssetsSortedByVolume);
+router.get("/assets/sorted/price", getAssetsSortedByPrice);
 
 export default router;
