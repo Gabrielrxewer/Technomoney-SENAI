@@ -268,20 +268,20 @@ export const getAllAssets = async (req: Request, res: Response) => {
 };
 /**
  * @openapi
- * /assets/{id}:
+ * /assets/{tag}:
  *   get:
- *     summary: Retorna um asset pelo ID
+ *     summary: Retorna um asset pelo TAG
  *     tags:
  *       - Assets
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: tag
  *         schema:
- *           type: integer
+ *           type: string
  *         required: true
- *         description: ID do asset
+ *         description: TAG do asset
  *     responses:
  *       '200':
  *         description: Asset encontrado
@@ -292,35 +292,42 @@ export const getAllAssets = async (req: Request, res: Response) => {
  *       '404':
  *         description: Asset não encontrado
  */
-export const getAssetsById = async (req: Request, res: any) => {
+export const getAssetByTag = async (req: Request, res: any) => {
   try {
-    const id = parseInt(req.params.id, 10);
-    const asset = await Asset.findByPk(id, {
+    const tag = req.params.tag.toUpperCase();
+    const asset = await Asset.findOne({
+      where: { tag },
       attributes: ["id", "tag", "name"],
     });
     if (!asset) return res.status(404).json({ error: "Asset not found" });
+    const { data } = await axios.post<
+      { nome: string; preco: number; volume: number }[]
+    >(FAKE_API_BY_NAME, { name: asset.tag });
+    const apiItem = Array.isArray(data) ? data[0] : data;
+    if (!apiItem)
+      throw new Error("No data returned for this asset from fake API");
+    const precoAtual = apiItem.preco;
+    const volumeAtual = apiItem.volume;
+    if (precoAtual == null || volumeAtual == null) {
+      throw new Error("No data returned for this asset from fake API");
+    }
     const { start, end } = getTodayRange();
     let rec = await AssetRecord.findOne({
-      where: { asset_id: id, date: { [Op.gte]: start, [Op.lt]: end } },
+      where: { asset_id: asset.id, date: { [Op.gte]: start, [Op.lt]: end } },
       order: [["date", "DESC"]],
     });
-    if (!rec) {
-      const { data: apiItem } = await axios.post<{
-        name: string;
-        price: number;
-        volume: number;
-      }>(FAKE_API_BY_NAME, { name: asset.name });
-      const prevClose = apiItem.price;
-      const variation = apiItem.price - prevClose;
-      rec = await AssetRecord.create({
-        asset_id: id,
-        price: apiItem.price,
+    if (!rec || rec.price !== precoAtual || rec.volume !== volumeAtual) {
+      const precoBase = basePriceMap[tag] ?? precoAtual;
+      const variation = precoAtual - precoBase;
+      rec = await addAssetRecord(
+        asset.id,
+        precoAtual,
         variation,
-        volume: apiItem.volume,
-        date: new Date(),
-      });
+        volumeAtual,
+        new Date()
+      );
     }
-    const { price, variation, volume } = rec.get();
+    const { price, variation, volume } = rec!.get();
     res.json({
       id: asset.id,
       tag: asset.tag,
@@ -333,6 +340,7 @@ export const getAssetsById = async (req: Request, res: any) => {
     res.status(500).json({ error: err.message });
   }
 };
+
 /**
  * @openapi
  * /assets/date/{date}:
