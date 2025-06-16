@@ -195,33 +195,31 @@ export async function fetchCurrentAssets(): Promise<
   const { data: apiList } = await axios.get<
     { nome: string; preco: number; volume: number }[]
   >(FAKE_API_ALL);
-
   for (const asset of assets) {
     const apiItem = apiList.find(
       (i) => i.nome === asset.tag || i.nome === asset.name
     );
-    if (!apiItem || apiItem.preco == null || apiItem.volume == null) continue;
-
+    if (!apiItem) continue;
+    const precoNum = Number(apiItem.preco);
+    const volumeNum = Number(apiItem.volume);
+    if (Number.isNaN(precoNum) || Number.isNaN(volumeNum)) continue;
+    const precoBase = Number(basePriceMap[apiItem.nome] ?? precoNum);
+    const variation = Number((precoNum - precoBase).toFixed(2));
     const dbRec = recordMap.get(asset.id);
     const precisaAtualizar =
-      !dbRec ||
-      dbRec.price !== apiItem.preco ||
-      dbRec.volume !== apiItem.volume;
-
+      !dbRec || dbRec.price !== precoNum || dbRec.volume !== volumeNum;
     if (precisaAtualizar) {
-      const precoBase = basePriceMap[apiItem.nome] ?? apiItem.preco;
-      const variation = apiItem.preco - precoBase;
       await addAssetRecord(
         asset.id,
-        apiItem.preco,
+        precoNum,
         variation,
-        apiItem.volume,
+        volumeNum,
         new Date()
       );
       recordMap.set(asset.id, {
-        price: apiItem.preco,
+        price: precoNum,
         variation,
-        volume: apiItem.volume,
+        volume: volumeNum,
       });
     }
   }
