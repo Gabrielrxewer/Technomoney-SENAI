@@ -343,64 +343,6 @@ export const getAssetByTag = async (req: Request, res: any) => {
 
 /**
  * @openapi
- * /assets/date/{date}:
- *   get:
- *     summary: Retrieves all assets recorded on a specific date
- *     tags:
- *       - Assets
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: date
- *         schema:
- *           type: string
- *           format: date
- *           example: 2025-06-12
- *         required: true
- *         description: Date to filter records (YYYY-MM-DD)
- *     responses:
- *       '200':
- *         description: Array of assets recorded on the given date
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Acao'
- *       '500':
- *         description: Internal server error
- */
-
-export const getAssetsByDate = async (req: Request, res: Response) => {
-  try {
-    const target = new Date(req.params.date);
-    const start = new Date(target.setHours(0, 0, 0, 0));
-    const end = new Date(start);
-    end.setDate(start.getDate() + 1);
-    const recs = await AssetRecord.findAll({
-      where: { date: { [Op.gte]: start, [Op.lt]: end } },
-      include: [{ model: Asset, attributes: ["id", "tag", "name"] }],
-    });
-    const result: Asset[] = recs.map((r) => {
-      const { id, tag, name } = r.Asset;
-      const { price, variation, volume } = r.get();
-      return {
-        id,
-        tag,
-        nome: name,
-        preco: price,
-        variacao: variation,
-        volume,
-      };
-    });
-    res.json(result);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-};
-/**
- * @openapi
  * /assets/sorted/volume:
  *   get:
  *     summary: Retrieves all current assets sorted by descending volume
