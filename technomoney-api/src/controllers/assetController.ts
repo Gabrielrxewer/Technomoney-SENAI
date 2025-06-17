@@ -325,7 +325,7 @@ export const getAssetByTag = async (req: Request, res: any) => {
         new Date()
       );
     }
-    const { price, variation, volume } = rec!.get();
+    const { price, variation, volume } = rec.get();
     res.json({
       id: asset.id,
       tag: asset.tag,
