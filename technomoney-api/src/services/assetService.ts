@@ -14,9 +14,7 @@ export interface AssetRecordInterface {
   date: Date;
 }
 
-export const createAsset = async (
-  name: string
-): Promise<AssetInterface> => {
+export const createAsset = async (name: string): Promise<AssetInterface> => {
   const asset = await Asset.create({ name });
   const { id, name: assetName } = asset.toJSON() as any;
   return { id, name: assetName };
@@ -24,7 +22,7 @@ export const createAsset = async (
 
 export const getAllAssets = async (): Promise<AssetInterface[]> => {
   const assets = await Asset.findAll();
-  return assets.map(a => {
+  return assets.map((a) => {
     const { id, name } = a.toJSON() as any;
     return { id, name };
   });
@@ -50,13 +48,10 @@ export const updateAsset = async (
   return { id, name };
 };
 
-export const deleteAsset = async (
-  id: number
-): Promise<boolean> => {
+export const deleteAsset = async (id: number): Promise<boolean> => {
   const deletedCount = await Asset.destroy({ where: { id } });
   return deletedCount > 0;
 };
-
 
 export const addAssetRecord = async (
   asset_id: number,
@@ -64,15 +59,14 @@ export const addAssetRecord = async (
   variation: number | string,
   volume: number,
   date: Date
-): Promise<AssetRecordInterface> => {
-  const record = await AssetRecord.create({
+): Promise<AssetRecord> => {
+  return AssetRecord.create({
     asset_id,
     price,
     variation,
     volume,
     date,
   });
-  return record.toJSON() as AssetRecordInterface;
 };
 
 export const getAssetRecordsByAssetId = async (
@@ -82,5 +76,5 @@ export const getAssetRecordsByAssetId = async (
     where: { asset_id },
     order: [["date", "ASC"]],
   });
-  return records.map(r => r.toJSON() as AssetRecordInterface);
+  return records.map((r) => r.toJSON() as AssetRecordInterface);
 };
