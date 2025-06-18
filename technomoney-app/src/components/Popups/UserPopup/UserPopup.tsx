@@ -1,20 +1,31 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../../context/AuthContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUser,
   faCog,
   faQuestionCircle,
   faSignOutAlt,
+  faSignInAlt,
+  faUserPlus,
 } from "@fortawesome/free-solid-svg-icons";
 import "./UserPopup.css";
+import "../CSSPopup/Popup.css";
 
 interface UserPopupProps {
   onClose: () => void;
+  openAccount: () => void;
+  openSettings: () => void;
+  openHelp: () => void;
 }
 
-const UserPopup: React.FC<UserPopupProps> = ({ onClose }) => {
+const UserPopup: React.FC<UserPopupProps> = ({
+  onClose,
+  openAccount,
+  openSettings,
+  openHelp,
+}) => {
   const { username, logout, isAuthenticated } = useAuth();
 
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -35,44 +46,39 @@ const UserPopup: React.FC<UserPopupProps> = ({ onClose }) => {
           >
             ×
           </button>
-
           {!isAuthenticated ? (
             <ul>
               <li>
                 <Link to="/login" onClick={onClose}>
+                  <FontAwesomeIcon icon={faSignInAlt} style={{ marginRight: 8 }} />
                   Fazer Login
                 </Link>
               </li>
               <li>
                 <Link to="/register" onClick={onClose}>
+                  <FontAwesomeIcon icon={faUserPlus} style={{ marginRight: 8 }} />
                   Registrar-se
                 </Link>
               </li>
             </ul>
           ) : (
             <>
-              <p className="greeting">Olá {username}</p>
+              <p className="greeting">Olá, {username}</p>
               <ul className="user-menu">
-                <li>
-                  <Link to="/profile" onClick={onClose}>
-                    <FontAwesomeIcon icon={faUser} style={{ marginRight: 8 }} />{" "}
-                    Minha Conta
-                  </Link>
+                <li onClick={openAccount}>
+                  <FontAwesomeIcon icon={faUser} style={{ marginRight: 8 }} />
+                  Minha Conta
                 </li>
-                <li>
-                  <Link to="/settings" onClick={onClose}>
-                    <FontAwesomeIcon icon={faCog} style={{ marginRight: 8 }} />{" "}
-                    Configurações
-                  </Link>
+                <li onClick={openSettings}>
+                  <FontAwesomeIcon icon={faCog} style={{ marginRight: 8 }} />
+                  Configurações
                 </li>
-                <li>
-                  <Link to="/help" onClick={onClose}>
-                    <FontAwesomeIcon
-                      icon={faQuestionCircle}
-                      style={{ marginRight: 8 }}
-                    />{" "}
-                    Ajuda
-                  </Link>
+                <li onClick={openHelp}>
+                  <FontAwesomeIcon
+                    icon={faQuestionCircle}
+                    style={{ marginRight: 8 }}
+                  />
+                  Ajuda
                 </li>
               </ul>
               <button
@@ -85,7 +91,7 @@ const UserPopup: React.FC<UserPopupProps> = ({ onClose }) => {
                 <FontAwesomeIcon
                   icon={faSignOutAlt}
                   style={{ marginRight: 8 }}
-                />{" "}
+                />
                 Sair
               </button>
             </>

@@ -1,0 +1,351 @@
+:root {
+  --color-primary: #00ffc8;
+  --color-secondary: #076161;
+  --color-background: #1a1a1a;
+  --color-overlay: rgba(0, 0, 0, 0.6);
+  --color-text: #f0f0f0;
+  --color-muted: #aaaaaa;
+  --color-accent: #d40e00;
+  --color-hover: rgba(0, 255, 200, 0.07);
+
+  --border-radius: 12px;
+  --shadow: 0 8px 30px rgba(0, 0, 0, 0.7);
+
+  --font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* 🔳 Overlay */
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: var(--color-overlay);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+  font-family: var(--font-family);
+}
+
+/* 🪟 Popup Container */
+.popup-container {
+  position: fixed;
+  top: 50px;
+  right: 20px;
+  background-color: var(--color-background);
+  color: var(--color-text);
+  padding: 32px;
+  width: 400px;
+  max-width: 95%;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  font-family: var(--font-family);
+}
+
+/* 📄 Popup Content */
+.popup-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ❌ Botão Fechar */
+.close-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  font-size: 28px;
+  color: var(--color-text);
+  cursor: pointer;
+  padding: 6px;
+  transition: color 0.3s ease, transform 0.3s ease;
+}
+
+.close-btn:hover,
+.close-btn:focus {
+  color: var(--color-accent);
+  transform: rotate(90deg);
+}
+
+/* 👤 Informações da Conta */
+.account-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  gap: 12px;
+}
+
+.account-info img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 50%;
+  box-shadow: 0 0 15px rgba(0, 255, 200, 0.3);
+}
+
+/* 🔥 Foto de Perfil Placeholder (texto centralizado) */
+.profile-photo {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 2px solid var(--color-primary);
+  box-shadow: 0 0 15px rgba(0, 255, 200, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-muted);
+  font-size: 13px;
+  text-align: center;
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* Nome e texto */
+.account-info p.name {
+  color: var(--color-text);
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.account-info p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 14px;
+}
+
+/* 🔘 Botões de Ação na Conta */
+.account-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.action-btn {
+  background-color: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-secondary);
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease, transform 0.3s ease;
+}
+
+.action-btn:hover {
+  background-color: var(--color-hover);
+  color: var(--color-secondary);
+  transform: translateY(-2px);
+}
+
+/* ⚙️ Configurações */
+.settings-options {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.settings-options label {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  font-size: 15px;
+  color: var(--color-text);
+}
+
+/* ✅ Checkbox Customizado */
+.settings-options input[type="checkbox"] {
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--color-secondary);
+  border-radius: 8px;
+  background-color: transparent;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.settings-options input[type="checkbox"]::before {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  top: 50%;
+  left: 50%;
+  background-color: var(--color-primary);
+  transform: translate(-50%, -50%) scale(0);
+  border-radius: 4px;
+  transition: transform 0.2s ease;
+}
+
+.settings-options input[type="checkbox"]:checked {
+  border-color: var(--color-primary);
+  background-color: rgba(0, 255, 200, 0.08);
+}
+
+.settings-options input[type="checkbox"]:checked::before {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* 🌐 Select de Idioma Refinado */
+.language-select {
+  position: relative;
+  width: 100%;
+  font-family: var(--font-family);
+}
+
+.language-select select {
+  width: 100%;
+  padding: 12px 16px;
+  background-color: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--border-radius);
+  color: var(--color-text);
+  appearance: none;
+  font-size: 15px;
+  cursor: pointer;
+  transition: border-color 0.3s ease, background-color 0.3s ease;
+  backdrop-filter: blur(3px);
+}
+
+.language-select select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.language-select select option {
+  background-color: var(--color-background);
+  color: var(--color-text);
+}
+
+.language-select::after {
+  content: "▼";
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-muted);
+  pointer-events: none;
+  font-size: 12px;
+  transition: color 0.3s ease;
+}
+
+.language-select:hover::after {
+  color: var(--color-primary);
+}
+
+/* 🔥 Divisor de Seções */
+.section-divider {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 14px 0;
+}
+
+/* 🔥 Seção Avançada */
+.advanced-settings h3 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  color: var(--color-primary);
+}
+
+.advanced-settings label {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  font-size: 15px;
+  color: var(--color-text);
+}
+
+.advanced-settings ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.advanced-settings ul li {
+  margin-bottom: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.advanced-settings ul li:hover {
+  color: var(--color-primary);
+}
+
+/* ❓ Ajuda */
+.help-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.help-content h3 {
+  margin: 0;
+  padding-bottom: 5px;
+  font-size: 17px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.help-content ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.help-content ul li {
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.help-content a {
+  color: var(--color-secondary);
+  text-decoration: underline;
+  transition: color 0.3s ease;
+}
+
+.help-content a:hover {
+  color: var(--color-primary);
+}
+
+/* 🔙 Botão Voltar */
+.back-btn {
+  background-color: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-secondary);
+  padding: 10px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: background-color 0.3s ease, color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.back-btn:hover {
+  background-color: var(--color-hover);
+  color: var(--color-secondary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 255, 200, 0.2);
+}
+
+/* 📱 Responsividade */
+@media (max-width: 600px) {
+  .popup-container {
+    width: 90%;
+    padding: 25px;
+    top: 60px;
+    right: 0;
+    left: 0;
+    margin: auto;
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+  }
+}
