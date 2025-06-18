@@ -4,7 +4,7 @@
   --menu-hover-color: #076161;
   --close-btn-hover-color: #d40e00;
   --menu-padding: 20px;
-  --menu-width: 250px;
+  --menu-width: 280px;
   --border-radius: 8px;
   --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
@@ -32,7 +32,7 @@
   box-shadow: var(--box-shadow);
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 20px;
   z-index: 1000;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   transition:
@@ -51,7 +51,7 @@
   font-weight: 500;
   color: var(--menu-text-color);
   padding: 0 10px;
-  border-radius: 4px;
+  border-radius: 6px;
   background-color: rgba(0, 0, 0, 0.1);
   margin-bottom: 12px;
   user-select: none;
@@ -68,15 +68,16 @@
 }
 
 .popup-content ul li {
-  padding: 12px 10px;
+  padding: 14px 12px;
   font-size: 16px;
-  border-radius: 4px;
+  border-radius: 6px;
   transition: background-color 0.3s ease;
+  cursor: pointer;
 }
 
 .popup-content ul li:hover,
 .popup-content ul li:focus-within {
-  background-color: rgba(7, 97, 97, 0.2);
+  background-color: rgba(7, 97, 97, 0.3);
   outline: none;
 }
 
@@ -102,13 +103,13 @@
 .close-btn {
   background: transparent;
   border: none;
-  font-size: 24px;
+  font-size: 28px;
   color: var(--menu-text-color);
   cursor: pointer;
   position: absolute;
   top: 2px;
   right: 2px;
-  padding: 4px;
+  padding: 6px;
   transition: color 0.3s ease;
   z-index: 10;
 }
@@ -128,9 +129,8 @@
   display: block;
   width: 100%;
   text-align: left;
-  padding: 12px 10px;
-  border-radius: 4px;
-  text-decoration: none;
+  padding: 14px 12px;
+  border-radius: 6px;
   transition:
     background-color 0.3s ease,
     color 0.3s ease;
@@ -139,7 +139,7 @@
 
 .logout-btn:hover,
 .logout-btn:focus {
-  background-color: rgba(7, 97, 97, 0.2);
+  background-color: rgba(7, 97, 97, 0.3);
   color: var(--menu-hover-color);
   outline: none;
 }
@@ -155,14 +155,14 @@
     left: 0;
     right: 0;
     top: 50px;
-    padding: 15px 10px;
+    padding: 20px 15px;
     border-radius: 0 0 8px 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   }
 
   .popup-content ul li {
     font-size: 14px;
-    padding: 10px 8px;
+    padding: 12px 10px;
   }
 
   .close-btn {
