@@ -12,6 +12,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import "./UserPopup.css";
 import "../CSSPopup/Popup.css";
+import { Button } from "../../ui/Button";
 
 interface UserPopupProps {
   onClose: () => void;
@@ -28,11 +29,8 @@ const UserPopup: React.FC<UserPopupProps> = ({
 }) => {
   const { username, logout, isAuthenticated } = useAuth();
 
-  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) =>
+    e.target === e.currentTarget && onClose();
 
   return (
     <>
@@ -46,17 +44,24 @@ const UserPopup: React.FC<UserPopupProps> = ({
           >
             ×
           </button>
+
           {!isAuthenticated ? (
             <ul>
               <li>
                 <Link to="/login" onClick={onClose}>
-                  <FontAwesomeIcon icon={faSignInAlt} style={{ marginRight: 8 }} />
+                  <FontAwesomeIcon
+                    icon={faSignInAlt}
+                    style={{ marginRight: 8 }}
+                  />
                   Fazer Login
                 </Link>
               </li>
               <li>
                 <Link to="/register" onClick={onClose}>
-                  <FontAwesomeIcon icon={faUserPlus} style={{ marginRight: 8 }} />
+                  <FontAwesomeIcon
+                    icon={faUserPlus}
+                    style={{ marginRight: 8 }}
+                  />
                   Registrar-se
                 </Link>
               </li>
@@ -81,19 +86,20 @@ const UserPopup: React.FC<UserPopupProps> = ({
                   Ajuda
                 </li>
               </ul>
-              <button
+
+              <Button
+                variant="danger"
                 onClick={() => {
                   logout();
                   onClose();
                 }}
-                className="logout-btn"
               >
                 <FontAwesomeIcon
                   icon={faSignOutAlt}
                   style={{ marginRight: 8 }}
                 />
                 Sair
-              </button>
+              </Button>
             </>
           )}
         </div>
