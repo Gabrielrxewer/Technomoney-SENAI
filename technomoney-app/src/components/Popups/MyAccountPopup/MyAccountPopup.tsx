@@ -1,5 +1,6 @@
 import React from "react";
 import "../CSSPopup/Popup.css";
+import { Button } from "../../ui/Button";
 
 interface MyAccountPopupProps {
   onClose: () => void;
@@ -10,43 +11,34 @@ const MyAccountPopup: React.FC<MyAccountPopupProps> = ({
   onClose,
   backToProfile,
 }) => {
-  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
-  const handleChangePhoto = () => {
-    alert("Funcionalidade para alterar foto de perfil.");
-  };
-
-  const handleChangePassword = () => {
-    alert("Funcionalidade para alterar senha.");
-  };
-
-  const handleEditInfo = () => {
-    alert("Funcionalidade para editar informações da conta.");
-  };
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) =>
+    e.target === e.currentTarget && onClose();
 
   return (
     <>
-      <div className="popup-overlay" onClick={handleOverlayClick}></div>
+      {/* Overlay */}
+      <div className="popup-overlay" onClick={handleOverlayClick} />
+
+      {/* Modal */}
       <div className="popup-container">
         <div className="popup-content">
-          <button onClick={onClose} className="close-btn">
+          <button className="close-btn" aria-label="Fechar" onClick={onClose}>
             ×
           </button>
 
           <h2>Minha Conta</h2>
 
+          {/* Info */}
           <div className="account-info">
-            <div className="profile-photo">
-              <span>Foto de Perfil</span>
-            </div>
+            <div className="profile-photo">Foto de Perfil</div>
 
-            <button className="action-btn" onClick={handleChangePhoto}>
-              Alterar Foto de Perfil
-            </button>
+            <Button
+              variant="outline"
+              onClick={() => alert("Alterar foto – implemente")}
+              className="custom-button"
+            >
+              Alterar Foto
+            </Button>
 
             <p className="name">
               <strong>Nome:</strong> Usuário Exemplo
@@ -56,18 +48,33 @@ const MyAccountPopup: React.FC<MyAccountPopupProps> = ({
             </p>
           </div>
 
+          {/* Ações */}
           <div className="account-actions">
-            <button className="action-btn" onClick={handleChangePassword}>
+            <Button
+              variant="primary"
+              onClick={() => alert("Alterar senha – implemente")}
+              className="custom-button"
+            >
               Alterar Senha
-            </button>
-            <button className="action-btn" onClick={handleEditInfo}>
-              Editar Informações da Conta
-            </button>
+            </Button>
+
+            <Button
+              variant="primary"
+              onClick={() => alert("Editar dados – implemente")}
+              className="custom-button"
+            >
+              Editar Informações
+            </Button>
           </div>
 
-          <button className="back-btn" onClick={backToProfile}>
-            ← Voltar para Perfil
-          </button>
+          {/* Voltar */}
+          <Button
+            variant="outline"
+            onClick={backToProfile}
+            className="custom-button"
+          >
+            ← Voltar
+          </Button>
         </div>
       </div>
     </>
