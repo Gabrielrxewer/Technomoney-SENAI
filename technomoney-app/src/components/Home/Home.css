@@ -1,36 +1,67 @@
+/* =====================================================
+   Variáveis de cor e sombras
+   ===================================================== */
 :root {
-  --color-primary: #0cb3a8;
-  --color-primary-dark: #08a295;
-  --color-bg: #0d1821;
-  --color-card-bg: #112933;
-  --color-text-main: #f0f0f0;
+  --color-primary:        #0cb3a8;
+  --color-primary-dark:   #08a295;
+  --color-bg:             #0d1821;
+  --color-card-bg:        #112933;
+  --color-text-main:      #f0f0f0;
   --color-text-secondary: #cde6e1;
-  --shadow-primary: rgba(12, 179, 168, 0.35);
-  --shadow-hover: rgba(12, 179, 168, 0.4);
+  --shadow-primary:       rgba(12, 179, 168, 0.35);
+  --shadow-hover:         rgba(12, 179, 168, 0.40);
 }
 
+/* =====================================================
+   Reset essencial
+   ===================================================== */
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
+/* Scroll suave e destravado */
+html {
+  scroll-behavior: smooth;
+}
+
+html, body, #root {
+  height: auto !important;        /* evita 100 vh travado */
+  overflow-x: hidden !important;  /* impede barra horizontal */
+  overflow-y: auto !important;    /* garante barra vertical */
+}
+
+/* (opcional) devolve a barra se alguém a escondeu */
+*::-webkit-scrollbar {
+  width: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--color-primary);
+  border-radius: 4px;
+}
+
+/* =====================================================
+   Estrutura base
+   ===================================================== */
 body {
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   background: var(--color-bg);
   color: var(--color-text-main);
   line-height: 1.6;
   min-height: 100vh;
-  justify-content: center;
+}
+
+/* Wrapper da página Home */
+.home_home {
+  width: 100%;
   padding: 0;
   margin: 0;
 }
 
-.home_home {
-  width: 100%;
-  padding: 0;
-  margin: 0 0px;
-}
+/* =====================================================
+   Hero (banner inicial)
+   ===================================================== */
 .hero_home {
   position: relative;
   background: url("/1.jpeg") center/cover no-repeat;
@@ -38,10 +69,8 @@ body {
   padding: 150px 50px;
   margin-bottom: 100px;
   text-align: center;
-  user-select: none;
   color: var(--color-text-main);
   overflow: hidden;
-  box-shadow: none;
 }
 
 .hero_home::before {
@@ -68,6 +97,7 @@ body {
   z-index: 2;
 }
 
+/* Tipografia do Hero */
 .hero__title_home {
   font-size: 3rem;
   font-weight: 700;
@@ -82,21 +112,25 @@ body {
   font-weight: 400;
   margin-bottom: 32px;
   color: var(--color-text-secondary);
-  line-height: 2.6;
-  max-width: center;
+  line-height: 1.8;
+  max-width: 60ch;
+  margin-inline: auto;
 }
 
+/* =====================================================
+   Botão primário
+   ===================================================== */
 .btn_home {
   font-weight: 600;
-  border-radius: 12px;
   border: none;
+  border-radius: 12px;
   cursor: pointer;
   padding: 15px 45px;
   font-size: 1.15rem;
   transition:
     background-color 0.3s ease,
-    color 0.3s ease,
-    transform 0.2s ease;
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
   box-shadow: 0 6px 15px var(--shadow-primary);
 }
 
@@ -110,33 +144,37 @@ body {
   background-color: var(--color-primary-dark);
   outline: 2px solid #fff;
   outline-offset: 3px;
-  box-shadow: 0 8px 20px var(--color-primary) aa;
+  box-shadow: 0 8px 20px var(--shadow-hover);
   transform: scale(1.05);
 }
 
+/* =====================================================
+   Grid de cards
+   ===================================================== */
 .info-cards_home {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 36px;
   padding: 0 160px;
-  margin-top: -80px;
+  margin-top: -80px; /* puxa contra o Hero */
 }
 
 .card_home {
+  margin-top: 50px;
   background: var(--color-card-bg);
   border-radius: 20px;
   padding: 30px 25px;
-  box-shadow: 0 8px 20px rgba(12, 179, 168, 0.35);
+  box-shadow: 0 8px 20px var(--shadow-primary);
   transition:
     transform 0.3s ease,
     box-shadow 0.3s ease;
+  display: flex;
   flex-direction: column;
-  justify-content: flex-start;
   cursor: default;
 }
 
-.card_home:focus,
-.card_home:hover {
+.card_home:hover,
+.card_home:focus {
   outline: 2px solid var(--color-primary);
   outline-offset: 3px;
   transform: translateY(-8px);
@@ -155,24 +193,18 @@ body {
 .card__description_home {
   font-size: 1rem;
   color: var(--color-text-secondary);
-  flex-grow: 1;
   line-height: 1.4;
   text-align: justify;
+  flex-grow: 1;
 }
 
+/* =====================================================
+   Responsividade
+   ===================================================== */
 @media (max-width: 600px) {
-  .hero__title_home {
-    font-size: 2.2rem;
-  }
-
-  .hero__subtitle_home {
-    font-size: 1rem;
-  }
-
-  .btn_home {
-    padding: 12px 35px;
-    font-size: 1rem;
-  }
+  .hero__title_home    { font-size: 2.2rem; }
+  .hero__subtitle_home { font-size: 1rem;   }
+  .btn_home            { padding: 12px 35px; font-size: 1rem; }
 
   .info-cards_home {
     padding: 0 8px;

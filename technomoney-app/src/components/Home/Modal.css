@@ -1,0 +1,81 @@
+/* Overlay que cobre a tela inteira */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  animation: fadeIn 0.25s ease forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Janela central do popup */
+.modal {
+  background: var(--color-card-bg);
+  border-radius: 20px;
+  max-width: 600px;
+  width: 90%;
+  padding: 40px 32px;
+  box-shadow: 0 16px 40px var(--shadow-hover);
+  position: relative;
+  animation: slideUp 0.25s ease forwards;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.modal__title {
+  color: var(--color-primary);
+  font-size: 1.8rem;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.modal__body {
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  text-align: justify;
+  font-size: 1.05rem;
+}
+
+/* Lista de tópicos extras */
+.modal__list {
+  margin-top: 18px;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: var(--color-text-secondary);
+}
+
+.modal__list li {
+  list-style: disc;
+  line-height: 1.5;
+}
+
+/* Botão de fechar (ícone ×) */
+.modal__close {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: var(--color-primary);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.modal__close:hover,
+.modal__close:focus {
+  transform: scale(1.15);
+  outline: none;
+}
