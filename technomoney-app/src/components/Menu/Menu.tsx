@@ -1,6 +1,4 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faHome,
   faDesktop,
@@ -11,6 +9,7 @@ import {
   faNewspaper,
   faQuestionCircle,
 } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import "./Menu.css";
 
 interface MenuProps {
@@ -19,15 +18,13 @@ interface MenuProps {
 
 const Menu: React.FC<MenuProps> = ({ onClose }) => {
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
+    if (e.target === e.currentTarget) onClose();
   };
 
   return (
     <>
       <div className="menu-overlay" onClick={handleOverlayClick}></div>
-      <div className="menu">
+      <nav className="menu" aria-label="Menu de Navegação">
         <div className="menu-content">
           <button
             onClick={onClose}
@@ -38,65 +35,56 @@ const Menu: React.FC<MenuProps> = ({ onClose }) => {
           </button>
           <ul>
             <li>
-              <Link to="/" onClick={onClose}>
+              <a href="/" onClick={onClose}>
                 <FontAwesomeIcon icon={faHome} style={{ marginRight: 8 }} />
                 Acessar Home
-              </Link>
+              </a>
             </li>
             <li>
-              <Link to="/regiter" onClick={onClose}>
+              <a href="/dashboard" onClick={onClose}>
                 <FontAwesomeIcon icon={faDesktop} style={{ marginRight: 8 }} />
                 Acessar a Plataforma
-              </Link>
+              </a>
             </li>
             <li>
-              <Link to="/login" onClick={onClose}>
-                <FontAwesomeIcon
-                  icon={faInfoCircle}
-                  style={{ marginRight: 8 }}
-                />
+              <a href="/#sobre" onClick={onClose}>
+                <FontAwesomeIcon icon={faInfoCircle} style={{ marginRight: 8 }} />
                 Sobre / Quem Somos
-              </Link>
+              </a>
             </li>
             <li>
-              <Link to="/" onClick={onClose}>
+              <a href="/#servicos" onClick={onClose}>
                 <FontAwesomeIcon icon={faTools} style={{ marginRight: 8 }} />
                 Serviços / Produtos
-              </Link>
+              </a>
             </li>
             <li>
-              <Link to="/" onClick={onClose}>
+              <a href="/#precos" onClick={onClose}>
                 <FontAwesomeIcon icon={faTag} style={{ marginRight: 8 }} />
                 Preços / Planos
-              </Link>
+              </a>
             </li>
             <li>
-              <Link to="/" onClick={onClose}>
+              <a href="/#contato" onClick={onClose}>
                 <FontAwesomeIcon icon={faPhone} style={{ marginRight: 8 }} />
                 Contato / Fale Conosco
-              </Link>
+              </a>
             </li>
             <li>
-              <Link to="/" onClick={onClose}>
-                <FontAwesomeIcon
-                  icon={faNewspaper}
-                  style={{ marginRight: 8 }}
-                />
+              <a href="/#blog" onClick={onClose}>
+                <FontAwesomeIcon icon={faNewspaper} style={{ marginRight: 8 }} />
                 Blog / Notícias
-              </Link>
+              </a>
             </li>
             <li>
-              <Link to="/" onClick={onClose}>
-                <FontAwesomeIcon
-                  icon={faQuestionCircle}
-                  style={{ marginRight: 8 }}
-                />
+              <a href="/#faq" onClick={onClose}>
+                <FontAwesomeIcon icon={faQuestionCircle} style={{ marginRight: 8 }} />
                 Ajuda / FAQ
-              </Link>
+              </a>
             </li>
           </ul>
         </div>
-      </div>
+      </nav>
     </>
   );
 };

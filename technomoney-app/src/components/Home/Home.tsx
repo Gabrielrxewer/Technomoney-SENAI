@@ -1,62 +1,167 @@
-import React from "react";
-import "./Home.css";
+import React, { useEffect, useState } from "react";
+import { useLocation, Link } from "react-router-dom";
 
-const cards = [
+import "./Home.css";
+import "./Modal.css";
+
+import AboutSection    from "../sections/AboutSection";
+import ServicesSection from "../sections/ServicesSection";
+import PricingSection  from "../sections/PricingSection";   // contém id="planos"
+import ContactSection  from "../sections/ContactSection";
+import BlogSection     from "../sections/BlogSection";
+import FaqSection      from "../sections/FaqSection";
+
+/* ───────── Tipos e conteúdo dos cards ───────── */
+interface InfoCard {
+  title: string;
+  description: string;
+  details: string[];
+}
+
+const cards: InfoCard[] = [
   {
     title: "Personalização",
     description:
-      "Os usuários podem personalizar a visualização das suas carteiras e das informações das ações, ajustando colunas, filtros e até mesmo os indicadores que desejam visualizar, criando uma experiência mais adaptada às suas necessidades.",
+      "Ajuste o grid, escolha fórmulas e salve tudo em templates. Com carteiras configuráveis, você analisa apenas os dados que importam e compara estratégias rapidamente — liberdade para investir do seu jeito.",
+    details: [
+      "➤ Colunas visíveis: mostre ou oculte métricas conforme sua análise.",
+      "➤ Filtros salvos: aplique rapidamente combinações frequentes.",
+      "➤ Indicadores customizados: adicione fórmulas e KPIs de preferência."
+    ]
   },
   {
     title: "Interação em tempo real",
     description:
-      "A plataforma oferece atualizações dinâmicas em tempo real das ações no mercado, permitindo que os usuários acompanhem as flutuações de preços e volumes de negociação de forma contínua, sem necessidade de recarregar a página.",
+      "Cards atualizam preços, volumes e notícias sem recarregar a página. Defina alertas por preço ou evento e receba notificações instantâneas para agir na hora certa.",
+    details: [
+      "➤ Streaming via WebSocket atualizado a cada segundo.",
+      "➤ Alertas visuais quando o preço atinge metas definidas.",
+      "➤ Destaques automáticos de maior alta e maior baixa."
+    ]
   },
   {
     title: "Simulações",
     description:
-      "A plataforma permite que os usuários criem simulações de investimentos, testando diferentes cenários antes de aplicar dinheiro real. É possível vincular simulações a carteiras específicas e acompanhar o comportamento de seus ativos ao longo do tempo.",
-  },
+      "Monte cenários sem arriscar dinheiro: conecte carteiras ou crie simulações do zero, ajuste período e indicadores e acompanhe gráficos que mostram o desempenho da estratégia antes de investir de verdade.",
+    details: [
+      "➤ Crie múltiplos cenários *what-if* lado a lado.",
+      "➤ Vincule simulações a carteiras para comparar resultados.",
+      "➤ Relatórios de rentabilidade, risco e drawdown projetados."
+    ]
+  }
 ];
+/* ────────────────────────────────────────────── */
 
 const Home: React.FC = () => {
+  const { hash } = useLocation();
+  const [activeCard, setActiveCard] = useState<InfoCard | null>(null);
+
+  /* Scroll suave para a âncora */
+  useEffect(() => {
+    if (hash) {
+      const target = document.querySelector(hash);
+      if (target) {
+        setTimeout(() => target.scrollIntoView({ behavior: "smooth" }), 50);
+      }
+    }
+  }, [hash]);
+
+  /* Fecha o modal com ESC */
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) =>
+      e.key === "Escape" && setActiveCard(null);
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, []);
+
   return (
     <main className="home_home">
-      <header className="hero_home" role="banner">
-        <div className="overlay" />
+      {/* ───── Hero ───── */}
+      <header className="hero_home" role="banner" id="hero">
         <h1 className="hero__title_home">Assessoria em Investimentos</h1>
         <p className="hero__subtitle_home">
           Transforme seu futuro financeiro conosco.
         </p>
-        <button
-          className="btn_home btn--primary_home"
-          aria-label="Saiba mais sobre a assessoria"
-        >
+
+        {/* Link bate com id="planos" */}
+        <Link to="#planos" className="btn_home btn--primary_home">
           Saiba mais
-        </button>
+        </Link>
       </header>
 
+      {/* ───── Cards de benefícios ───── */}
       <section
         className="info-cards_home"
+        id="beneficios"
         aria-label="Principais benefícios da plataforma"
       >
-        {cards.map(({ title, description }) => (
+        {cards.map((card) => (
           <article
-            key={title}
+            key={card.title}
             className="card_home"
             tabIndex={0}
-            aria-labelledby={`${title.replace(/\s+/g, "-").toLowerCase()}-title-home`}
+            role="button"
+            aria-labelledby={`${card.title
+              .replace(/\s+/g, "-")
+              .toLowerCase()}-title-home`}
+            onClick={() => setActiveCard(card)}
+            onKeyDown={(e) =>
+              (e.key === "Enter" || e.key === " ") && setActiveCard(card)
+            }
           >
             <h2
-              id={`${title.replace(/\s+/g, "-").toLowerCase()}-title-home`}
+              id={`${card.title.replace(/\s+/g, "-").toLowerCase()}-title-home`}
               className="card__title_home"
             >
-              {title}
+              {card.title}
             </h2>
-            <p className="card__description_home">{description}</p>
+            <p className="card__description_home">{card.description}</p>
           </article>
         ))}
       </section>
+
+      {/* ───── Modal ───── */}
+      {activeCard && (
+        <div
+          className="modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-title"
+          onClick={() => setActiveCard(null)}
+        >
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <button
+              className="modal__close"
+              onClick={() => setActiveCard(null)}
+              aria-label="Fechar"
+            >
+              ×
+            </button>
+
+            <h2 id="modal-title" className="modal__title">
+              {activeCard.title}
+            </h2>
+
+            <p className="modal__body">{activeCard.description}</p>
+
+            <ul className="modal__list">
+              {activeCard.details.map((d) => (
+                <li key={d}>{d}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {/* ───── Seções em 100 vh ───── */}
+      <div className="lp">
+        <AboutSection    />
+        <ServicesSection />
+        <PricingSection  /> {/* id="planos" está dentro do componente */}
+        <ContactSection  />
+        <BlogSection     />
+        <FaqSection      />
+      </div>
     </main>
   );
 };
