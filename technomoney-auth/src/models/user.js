@@ -16,7 +16,7 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
       },
       email: {
-        type: DataTypes.STRING(255),
+        type: DataTypes.STRING(50),
         allowNull: false,
         unique: true,
       },
@@ -25,8 +25,9 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
       },
       username: {
-        type: DataTypes.STRING(255),
+        type: DataTypes.STRING(50),
         allowNull: true,
+        unique: true,
       },
       created_at: {
         type: DataTypes.DATE,

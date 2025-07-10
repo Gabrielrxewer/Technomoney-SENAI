@@ -6,7 +6,7 @@ import React, {
   useCallback,
 } from "react";
 import { AxiosRequestConfig, AxiosResponse } from "axios";
-import api from "../api";
+import { authApi } from "../services/http";
 
 interface UserPayload {
   id: string;
@@ -38,7 +38,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const logout = useCallback(async () => {
     try {
-      await api.post("/api/auth/logout");
+      await authApi.post("/api/auth/logout");
     } catch (error) {
       console.error("Erro no logout", error);
     }
@@ -49,10 +49,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   const validateTokenBackend = useCallback(
-    async (token: string): Promise<UserPayload | null> => {
+    async (t: string): Promise<UserPayload | null> => {
       try {
-        const res = await api.get("/api/auth/me", {
-          headers: { Authorization: `Bearer ${token}` },
+        const res = await authApi.get("/api/auth/me", {
+          headers: { Authorization: `Bearer ${t}` },
         });
         return res.data as UserPayload;
       } catch {
@@ -64,7 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const refreshAccessToken = useCallback(async (): Promise<string | null> => {
     try {
-      const res = await api.post("/api/auth/refresh");
+      const res = await authApi.post("/api/auth/refresh");
       const newToken = res.data.token;
       localStorage.setItem("token", newToken);
       setToken(newToken);
@@ -115,7 +115,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       };
 
       try {
-        return await api.request({ url, ...config });
+        return await authApi.request({ url, ...config });
       } catch (error: any) {
         if (error.response?.status === 401) {
           const newToken = await refreshAccessToken();
@@ -127,7 +127,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           };
 
           try {
-            return await api.request({ url, ...config });
+            return await authApi.request({ url, ...config });
           } catch (err: any) {
             if (err.response?.status === 401) {
               await logout();

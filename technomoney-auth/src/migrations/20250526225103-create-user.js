@@ -10,7 +10,7 @@ module.exports = {
         primaryKey: true,
       },
       email: {
-        type: Sequelize.STRING(255),
+        type: Sequelize.STRING(50),
         allowNull: false,
         unique: true,
       },
@@ -19,8 +19,9 @@ module.exports = {
         allowNull: false,
       },
       username: {
-        type: Sequelize.STRING(255),
+        type: Sequelize.STRING(50),
         allowNull: true,
+        unique: true,
       },
       created_at: {
         allowNull: false,

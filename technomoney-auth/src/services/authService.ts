@@ -7,6 +7,14 @@ interface UserInterface {
   username: string | null;
 }
 
+export const findUserByUsername = async (
+  username: string
+): Promise<UserInterface | null> => {
+  const user = await User.findOne({ where: { username } });
+  if (!user) return null;
+  return user.toJSON() as UserInterface;
+};
+
 export const registerUser = async (
   email: string,
   password: string,
