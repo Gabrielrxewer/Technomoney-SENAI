@@ -1,19 +1,18 @@
 import { Router } from "express";
-import { authenticate } from "../middlewares/authMiddleware";
 import {
   createAsset,
   getAllAssets,
+  getAssetByTag,
   getAssetsSortedByVolume,
   getAssetsSortedByPrice,
-  getAssetByTag,
-} from "../controllers/assetController";
+} from "../controllers/asset.controller";
 
-const router = Router();
+const assetRouter = Router();
 
-router.post("/assets", createAsset);
-router.get("/assets", getAllAssets);
-router.get("/assets/:tag", getAssetByTag);
-router.get("/assets/sorted/volume", getAssetsSortedByVolume);
-router.get("/assets/sorted/price", getAssetsSortedByPrice);
+assetRouter.post("/assets", createAsset);
+assetRouter.get("/assets", getAllAssets);
+assetRouter.get("/assets/sorted/volume", getAssetsSortedByVolume);
+assetRouter.get("/assets/sorted/price", getAssetsSortedByPrice);
+assetRouter.get("/assets/:tag", getAssetByTag);
 
-export default router;
+export default assetRouter;

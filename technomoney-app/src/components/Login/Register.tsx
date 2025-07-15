@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
 import "./Auth.css";
@@ -21,6 +22,7 @@ const Register: React.FC = () => {
   const [error, setError] = useState("");
   const [emailTaken, setEmailTaken] = useState(false);
 
+  const { executeRecaptcha } = useGoogleReCaptcha();
   const navigate = useNavigate();
   const { login } = useAuth();
 
@@ -49,14 +51,26 @@ const Register: React.FC = () => {
       return;
     }
 
+    if (!executeRecaptcha) {
+      setError("reCAPTCHA não carregou. Atualize a página.");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
     try {
-      await authApi.post("/api/auth/register", { username, email, password });
+      const captchaToken = await executeRecaptcha("register");
+      await authApi.post("/api/auth/register", {
+        username,
+        email,
+        password,
+        captchaToken,
+      });
       const { data } = await authApi.post("/api/auth/login", {
         email,
         password,
+        captchaToken,
       });
       login(data.token, data.username);
       navigate("/dashboard");
