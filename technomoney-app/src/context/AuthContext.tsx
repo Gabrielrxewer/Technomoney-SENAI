@@ -4,9 +4,12 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useRef,
+  ReactNode,
 } from "react";
 import { AxiosRequestConfig, AxiosResponse } from "axios";
 import { authApi } from "../services/http";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 interface UserPayload {
   id: string;
@@ -28,20 +31,20 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const queryClient = new QueryClient();
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [token, setToken] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const initRef = useRef(false);
 
   const logout = useCallback(async () => {
     try {
       await authApi.post("/api/auth/logout");
-    } catch (error) {
-      console.error("Erro no logout", error);
-    }
+    } catch {}
     setToken(null);
     setUsername(null);
     localStorage.removeItem("token");
@@ -76,6 +79,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [logout]);
 
   useEffect(() => {
+    if (initRef.current) return;
+    initRef.current = true;
     const init = async () => {
       const storedToken = localStorage.getItem("token");
       const storedUsername = localStorage.getItem("username");
@@ -108,24 +113,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       config: AxiosRequestConfig = {}
     ): Promise<AxiosResponse> => {
       if (!token) throw new Error("Usuário não autenticado");
-
       config.headers = {
         ...(config.headers || {}),
         Authorization: `Bearer ${token}`,
       };
-
       try {
         return await authApi.request({ url, ...config });
       } catch (error: any) {
         if (error.response?.status === 401) {
           const newToken = await refreshAccessToken();
           if (!newToken) throw new Error("Sessão expirada");
-
           config.headers = {
             ...(config.headers || {}),
             Authorization: `Bearer ${newToken}`,
           };
-
           try {
             return await authApi.request({ url, ...config });
           } catch (err: any) {
@@ -147,19 +148,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   if (loading) return null;
 
   return (
-    <AuthContext.Provider
-      value={{
-        token,
-        username,
-        login,
-        logout,
-        isAuthenticated,
-        loading,
-        fetchWithAuth,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+    <QueryClientProvider client={queryClient}>
+      <AuthContext.Provider
+        value={{
+          token,
+          username,
+          login,
+          logout,
+          isAuthenticated,
+          loading,
+          fetchWithAuth,
+        }}
+      >
+        {children}
+      </AuthContext.Provider>
+    </QueryClientProvider>
   );
 };
 

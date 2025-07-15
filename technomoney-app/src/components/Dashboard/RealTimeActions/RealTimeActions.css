@@ -1,53 +1,45 @@
-/* ===============  ÁREA DE AÇÕES EM TEMPO REAL  =============== */
 .acoes-tempo-real {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
 }
 
-/* ---------------- Slider (faixa de rolagem) ----------------- */
 .slider-cards {
   display: flex;
   gap: 1.5rem;
-
-  /* rolagem apenas no eixo X; sombra liberada no eixo Y        */
   overflow-x: hidden;
   overflow-y: visible;
-
-  padding: 10px 0;          /* ⇠  MESMO ESPAÇAMENTO DE ANTES   */
-
+  padding: 10px 0;
   user-select: none;
-  scroll-behavior: smooth;
   cursor: grab;
   min-width: 100%;
 }
 
-/* Oculta a barra de rolagem */
-.slider-cards::-webkit-scrollbar { height: 0; }
-.slider-cards { scrollbar-width: none; }
+.slider-cards::-webkit-scrollbar {
+  height: 0;
+}
+.slider-cards {
+  scrollbar-width: none;
+}
 
-/* cursor enquanto arrasta */
-.slider-cards:active { cursor: grabbing; }
+.slider-cards:active {
+  cursor: grabbing;
+}
 
-/* ---------------------- Cartão ---------------------- */
 .card {
-  position: relative;              /* base para o ::after */
+  position: relative;
   background: var(--color-card-bg);
   border-radius: 20px;
-  padding: 25px 30px;
-
+  padding: 20px 25px;
   flex-shrink: 0;
   min-width: 320px;
   max-width: 320px;
-
-  margin-top: 50px;               /* ⇠  MESMO ESPAÇAMENTO DE ANTES */
-
+  margin-top: 50px;
   color: var(--color-text-main);
   display: flex;
   flex-direction: column;
   justify-content: center;
   text-align: center;
-
   transition: transform 0.3s ease;
   user-select: none;
   word-break: break-word;
@@ -55,20 +47,16 @@
   cursor: default;
 }
 
-/* Sombra real em pseudo-elemento (não é cortada) */
 .card::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
-
   box-shadow: 0 8px 20px var(--shadow-primary);
   transition: box-shadow 0.3s ease, transform 0.3s ease;
-
-  z-index: -1;                     /* fica atrás do conteúdo */
+  z-index: -1;
 }
 
-/* Hover / Focus */
 .card:hover,
 .card:focus {
   outline: 2px solid var(--color-primary);
@@ -83,11 +71,10 @@
   transform: translateY(-2px);
 }
 
-/* ---------------------- Conteúdo do Card ---------------------- */
 .card__title {
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   color: var(--color-primary);
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   font-weight: 700;
   user-select: none;
   white-space: normal;
@@ -95,13 +82,12 @@
 }
 
 .card__description {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   color: var(--color-text-secondary);
   line-height: 1.4;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
-/* Variação (verde / vermelho) */
 .variacao.text-success {
   color: #3dcca6;
   font-weight: 700;
