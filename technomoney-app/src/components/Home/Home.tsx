@@ -84,7 +84,7 @@ const Home: React.FC = () => {
         </p>
 
         {/* Link bate com id="planos" */}
-        <Link to="#planos" className="btn_home btn--primary_home">
+        <Link to="#precos" className="btn_home btn--primary_home">
           Saiba mais
         </Link>
       </header>

@@ -16,44 +16,34 @@ interface Props {
 
 const RealTimeActions: React.FC<Props> = ({ acoes, loading }) => {
   const sliderRef = useRef<HTMLDivElement>(null);
-  const animationFrameId = useRef<number | null>(null);
-  const isPaused = useRef(false);
-
-  const smoothScroll = () => {
-    if (!sliderRef.current) return;
-
-    if (!isPaused.current) {
-      sliderRef.current.scrollLeft += 0.5;
-
-      if (sliderRef.current.scrollLeft >= sliderRef.current.scrollWidth / 2) {
-        sliderRef.current.scrollLeft = 0;
-      }
-    }
-
-    animationFrameId.current = requestAnimationFrame(smoothScroll);
-  };
+  const paused = useRef(false);
+  const SPEED_PX_S = 60; // pixels por segundo
 
   useEffect(() => {
-    if (!sliderRef.current || acoes.length === 0) return;
+    const step = 1000 / 60; // ms entre frames (~60fps)
+    const pxPerTick = SPEED_PX_S / (1000 / step);
 
-    sliderRef.current.scrollLeft = 0;
-    animationFrameId.current = requestAnimationFrame(smoothScroll);
+    const interval = setInterval(() => {
+      if (!sliderRef.current || paused.current) return;
+      const slider = sliderRef.current;
+      slider.scrollLeft += pxPerTick;
+      const half = slider.scrollWidth / 2;
+      if (slider.scrollLeft >= half) {
+        slider.scrollLeft -= half;
+      }
+    }, step);
 
-    return () => {
-      if (animationFrameId.current)
-        cancelAnimationFrame(animationFrameId.current);
-    };
-  }, [acoes]);
+    return () => clearInterval(interval);
+  }, []); // roda só no mount
 
   const handleMouseEnter = () => {
-    isPaused.current = true;
+    paused.current = true;
   };
-
   const handleMouseLeave = () => {
-    isPaused.current = false;
+    paused.current = false;
   };
 
-  const cardsDuplicados = [...acoes, ...acoes];
+  const cards = [...acoes, ...acoes];
 
   return (
     <section className="acoes-tempo-real">
@@ -68,8 +58,8 @@ const RealTimeActions: React.FC<Props> = ({ acoes, loading }) => {
         ) : acoes.length === 0 ? (
           <p className="loading-text">Nenhuma ação disponível.</p>
         ) : (
-          cardsDuplicados.map((acao, index) => (
-            <article key={`${acao.id}-${index}`} className="card">
+          cards.map((acao, i) => (
+            <article key={`${acao.id}-${i}`} className="card">
               <h3 className="card__title">{acao.nome}</h3>
               <p className="card__description">
                 Preço: R${acao.preco.toFixed(2)}
@@ -79,8 +69,8 @@ const RealTimeActions: React.FC<Props> = ({ acoes, loading }) => {
                   acao.variacao > 0
                     ? "text-success"
                     : acao.variacao < 0
-                      ? "text-danger"
-                      : ""
+                    ? "text-danger"
+                    : ""
                 }`}
               >
                 Variação: {acao.variacao.toFixed(2)}%
