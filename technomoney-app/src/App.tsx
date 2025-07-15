@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { GoogleReCaptchaProvider } from "react-google-recaptcha-v3";
 
 import Header from "./components/Header/Header";
 import Footer from "./components/Footer/Footer";
@@ -16,27 +17,32 @@ const queryClient = new QueryClient();
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Router>
-          <Header />
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route
-              path="/dashboard"
-              element={
-                <PrivateRoute>
-                  <Dashboard />
-                </PrivateRoute>
-              }
-            />
-          </Routes>
-          <Footer />
-        </Router>
-      </AuthProvider>
-    </QueryClientProvider>
+    <GoogleReCaptchaProvider
+      reCaptchaKey={import.meta.env.VITE_RECAPTCHA_SITEKEY as string}
+      scriptProps={{ async: true, defer: true }}
+    >
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <Router>
+            <Header />
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route
+                path="/dashboard"
+                element={
+                  <PrivateRoute>
+                    <Dashboard />
+                  </PrivateRoute>
+                }
+              />
+            </Routes>
+            <Footer />
+          </Router>
+        </AuthProvider>
+      </QueryClientProvider>
+    </GoogleReCaptchaProvider>
   );
 }
 

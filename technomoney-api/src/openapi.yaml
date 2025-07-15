@@ -1,0 +1,124 @@
+openapi: 3.1.0
+info:
+  title: Asset API
+  version: "1.0.0"
+
+servers:
+  - url: http://localhost:4002/api
+    description: Servidor de desenvolvimento
+
+# exige Bearer em TODOS os paths
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Assets
+
+paths:
+  /assets:
+    post:
+      summary: Cria um novo asset
+      tags: [Assets]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssetInput"
+      responses:
+        "201":
+          description: Asset criado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Asset" }
+        "400": { description: Tag ou name faltando }
+        "409": { description: Asset já existe }
+
+    get:
+      summary: Lista todos os assets com dados de hoje
+      tags: [Assets]
+      responses:
+        "200":
+          description: Lista de assets
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Acao" }
+
+  /assets/{tag}:
+    get:
+      summary: Retorna um asset pelo TAG
+      tags: [Assets]
+      parameters:
+        - in: path
+          name: tag
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Asset encontrado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Acao" }
+        "404": { description: Asset não encontrado }
+
+  /assets/sorted/volume:
+    get:
+      summary: Recupera todos os assets atuais ordenados por volume (desc)
+      tags: [Assets]
+      responses:
+        "200":
+          description: Array de assets ordenados por volume
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Acao" }
+        "500": { description: Erro interno }
+
+  /assets/sorted/price:
+    get:
+      summary: Recupera todos os assets atuais ordenados por preço (desc)
+      tags: [Assets]
+      responses:
+        "200":
+          description: Array de assets ordenados por preço
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Acao" }
+        "500": { description: Erro interno }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    AssetInput:
+      type: object
+      required: [tag, name]
+      properties:
+        tag: { type: string, example: PETR4 }
+        name: { type: string, example: Petrobras PN }
+
+    Asset:
+      allOf:
+        - $ref: "#/components/schemas/AssetInput"
+        - type: object
+          properties:
+            id: { type: integer, example: 1 }
+
+    Acao:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        tag: { type: string, example: PETR4 }
+        nome: { type: string, example: Petrobras PN }
+        preco: { type: number, example: 34.2 }
+        variacao: { type: number, example: 3.7 }
+        volume: { type: number, example: 101245 }

@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
+
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
 import "./Auth.css";
 import { useAuth } from "../../context/AuthContext";
 import { authApi } from "../../services/http";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 const MAX_FIELD = 50;
 const MAX_PASS = 50;
@@ -13,11 +15,12 @@ const MAX_PASS = 50;
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShow] = useState(false);
+  const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [loginError, setLoginError] = useState(false);
 
+  const { executeRecaptcha } = useGoogleReCaptcha();
   const navigate = useNavigate();
   const { login } = useAuth();
 
@@ -30,9 +33,12 @@ const Login: React.FC = () => {
       form.reportValidity();
       return;
     }
-
     if (email.length > MAX_FIELD || password.length > MAX_PASS) {
       setError("Cada campo deve ter no máximo 50 caracteres.");
+      return;
+    }
+    if (!executeRecaptcha) {
+      setError("reCAPTCHA não carregou. Atualize a página.");
       return;
     }
 
@@ -41,9 +47,11 @@ const Login: React.FC = () => {
     setLoginError(false);
 
     try {
+      const captchaToken = await executeRecaptcha("login");
       const { data } = await authApi.post("/api/auth/login", {
         email,
         password,
+        captchaToken,
       });
       login(data.token, data.username);
       navigate("/dashboard");
@@ -67,13 +75,11 @@ const Login: React.FC = () => {
   return (
     <div className="auth-container">
       <Header />
-
       <div className="auth-content">
         <div className="auth-card">
           <h2>Login</h2>
 
-          <form onSubmit={handleSubmit}>
-            {/* EMAIL */}
+          <form onSubmit={handleSubmit} noValidate>
             <div className="form-group">
               <label htmlFor="login-email">E-mail</label>
               <input
@@ -92,15 +98,13 @@ const Login: React.FC = () => {
               <span className="char-count">{MAX_FIELD - email.length}</span>
             </div>
 
-            {/* PASSWORD */}
             <div className="form-group">
               <label htmlFor="login-password">Senha</label>
-
               <div className="input-eye">
                 <input
                   id="login-password"
                   className={`password-input ${loginError ? "input-error" : ""}`}
-                  type={showPassword ? "text" : "password"}
+                  type={showPass ? "text" : "password"}
                   required
                   minLength={6}
                   maxLength={MAX_PASS}
@@ -114,13 +118,12 @@ const Login: React.FC = () => {
                 <button
                   type="button"
                   className="eye-btn"
-                  aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-                  onClick={() => setShow(!showPassword)}
+                  aria-label={showPass ? "Ocultar senha" : "Mostrar senha"}
+                  onClick={() => setShowPass(!showPass)}
                 >
-                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                  {showPass ? <FaEyeSlash /> : <FaEye />}
                 </button>
               </div>
-
               <span className="char-count">{MAX_PASS - password.length}</span>
             </div>
 
@@ -132,16 +135,13 @@ const Login: React.FC = () => {
           </form>
 
           <div className="auth-footer">
-            <p>
-              Não tem uma conta?{" "}
-              <Link to="/register">
-                <strong>Registre-se</strong>
-              </Link>
-            </p>
+            Não tem conta?{" "}
+            <Link to="/register">
+              <strong>Registre-se</strong>
+            </Link>
           </div>
         </div>
       </div>
-
       <Footer />
     </div>
   );
