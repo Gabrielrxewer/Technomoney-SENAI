@@ -1,11 +1,11 @@
-// Dashboard.tsx
 import React from "react";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
-import RealTimeActions from "./RealTimeActions/RealTimeActions";
-import ActionsTable from "./ActionsTable/ActionsTable";
-import ActionsAnalysis from "./ActionsAnalysis/ActionsAnalysis";
-import ErrorMessage from "./ErrorMessage/ErrorMessage";
+import RealTimeActions from "../Dashboard/RealTimeActions/RealTimeActions";
+import ActionsTable from "../Dashboard/ActionsTable/ActionsTable";
+import ActionsAnalysis from "../Dashboard/ActionsAnalysis/ActionsAnalysis";
+import ErrorMessage from "../Dashboard/ErrorMessage/ErrorMessage";
+import Spinner from "./Spinner/Spinner";
 import "./Dashboard.css";
 
 interface Acao {
@@ -23,7 +23,12 @@ interface DadosAnalise {
   menorPreco: Acao;
 }
 
-async function fetchAssets(): Promise<{ acoes: Acao[]; dadosAnalise: DadosAnalise }> {
+type AssetsResult = {
+  acoes: Acao[];
+  dadosAnalise: DadosAnalise;
+};
+
+async function fetchAssets(): Promise<AssetsResult> {
   const token = localStorage.getItem("token");
   if (!token) throw new Error("Token não encontrado. Faça login.");
   const res = await axios.get<Acao[]>(
@@ -42,10 +47,7 @@ async function fetchAssets(): Promise<{ acoes: Acao[]; dadosAnalise: DadosAnalis
 }
 
 const Dashboard: React.FC = () => {
-  const { data, isLoading, error } = useQuery<
-    { acoes: Acao[]; dadosAnalise: DadosAnalise },
-    Error
-  >({
+  const { data, isLoading, error } = useQuery<AssetsResult, Error>({
     queryKey: ["assetsSortedByPrice"],
     queryFn: fetchAssets,
     refetchInterval: 5000,
@@ -54,21 +56,16 @@ const Dashboard: React.FC = () => {
     retry: 1,
   });
 
+  if (isLoading && !data) {
+    return <Spinner />;
+  }
+
   return (
     <div className="dashboard-container">
       {error && <ErrorMessage message={error.message} />}
-      <RealTimeActions acoes={data?.acoes ?? []} loading={isLoading} />
-      <ActionsTable acoes={data?.acoes ?? []} loading={isLoading} />
-      <ActionsAnalysis
-        dadosAnalise={
-          data?.dadosAnalise ?? {
-            totalAcoes: 0,
-            maiorPreco: {} as Acao,
-            menorPreco: {} as Acao,
-          }
-        }
-        loading={isLoading}
-      />
+      <RealTimeActions acoes={data!.acoes} loading={isLoading} />
+      <ActionsTable acoes={data!.acoes} loading={isLoading} />
+      <ActionsAnalysis acoes={data!.acoes} loading={isLoading} />
     </div>
   );
 };

@@ -1,7 +1,7 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState, useMemo } from "react";
 import "./RealTimeActions.css";
 
-interface Acao {
+export interface Acao {
   id: number;
   nome: string;
   preco: number;
@@ -17,33 +17,55 @@ interface Props {
 const RealTimeActions: React.FC<Props> = ({ acoes, loading }) => {
   const sliderRef = useRef<HTMLDivElement>(null);
   const paused = useRef(false);
-  const SPEED_PX_S = 60; // pixels por segundo
+  const SPEED_PX_S = 60;
+
+  const [activeId, setActiveId] = useState<number | null>(null);
+
+  const [order, setOrder] = useState<number[]>([]);
+  useEffect(() => {
+    if (order.length === 0 && acoes.length > 0) {
+      setOrder(acoes.map((a) => a.id));
+    }
+  }, [acoes, order.length]);
+
+  const mapById = useMemo(
+    () => Object.fromEntries(acoes.map((a) => [a.id, a])),
+    [acoes]
+  );
 
   useEffect(() => {
-    const step = 1000 / 60; // ms entre frames (~60fps)
+    paused.current = activeId !== null;
+  }, [activeId]);
+
+  useEffect(() => {
+    const step = 1000 / 60;
     const pxPerTick = SPEED_PX_S / (1000 / step);
-
-    const interval = setInterval(() => {
+    const iv = setInterval(() => {
       if (!sliderRef.current || paused.current) return;
-      const slider = sliderRef.current;
-      slider.scrollLeft += pxPerTick;
-      const half = slider.scrollWidth / 2;
-      if (slider.scrollLeft >= half) {
-        slider.scrollLeft -= half;
-      }
+      const s = sliderRef.current;
+      s.scrollLeft += pxPerTick;
+      const half = s.scrollWidth / 2;
+      if (s.scrollLeft >= half) s.scrollLeft -= half;
     }, step);
-
-    return () => clearInterval(interval);
-  }, []); // roda só no mount
+    return () => clearInterval(iv);
+  }, []);
 
   const handleMouseEnter = () => {
-    paused.current = true;
+    if (activeId === null) paused.current = true;
   };
   const handleMouseLeave = () => {
-    paused.current = false;
+    if (activeId === null) paused.current = false;
   };
 
-  const cards = [...acoes, ...acoes];
+  const openModal = (id: number) => {
+    setActiveId(id);
+  };
+  const closeModal = () => {
+    setActiveId(null);
+  };
+
+  const cardsIds = [...order, ...order];
+  const activeCard = activeId !== null ? mapById[activeId] : null;
 
   return (
     <section className="acoes-tempo-real">
@@ -55,30 +77,74 @@ const RealTimeActions: React.FC<Props> = ({ acoes, loading }) => {
       >
         {loading ? (
           <p className="loading-text">Carregando...</p>
-        ) : acoes.length === 0 ? (
+        ) : order.length === 0 ? (
           <p className="loading-text">Nenhuma ação disponível.</p>
         ) : (
-          cards.map((acao, i) => (
-            <article key={`${acao.id}-${i}`} className="card">
-              <h3 className="card__title">{acao.nome}</h3>
-              <p className="card__description">
-                Preço: R${acao.preco.toFixed(2)}
-              </p>
-              <p
-                className={`card__description variacao ${
-                  acao.variacao > 0
-                    ? "text-success"
-                    : acao.variacao < 0
-                    ? "text-danger"
-                    : ""
-                }`}
+          cardsIds.map((id, idx) => {
+            const acao = mapById[id];
+            if (!acao) return null;
+            return (
+              <article
+                key={`${id}-${idx}`}
+                className="card"
+                role="button"
+                tabIndex={0}
+                onClick={() => openModal(id)}
+                onKeyPress={(e) => {
+                  if (e.key === "Enter" || e.key === " ") openModal(id);
+                }}
               >
-                Variação: {acao.variacao.toFixed(2)}%
-              </p>
-            </article>
-          ))
+                <h3 className="card__title">{acao.nome}</h3>
+                <p className="card__description">
+                  Preço: R${acao.preco.toFixed(2)}
+                </p>
+                <p
+                  className={`card__description variacao ${
+                    acao.variacao > 0
+                      ? "text-success"
+                      : acao.variacao < 0
+                        ? "text-danger"
+                        : ""
+                  }`}
+                >
+                  Variação: {acao.variacao.toFixed(2)}%
+                </p>
+              </article>
+            );
+          })
         )}
       </div>
+
+      {activeCard && (
+        <div className="modal-overlay" onClick={closeModal}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <button
+              className="modal__close"
+              onClick={closeModal}
+              aria-label="Fechar"
+            >
+              &times;
+            </button>
+
+            <h2 className="modal__title">{activeCard.nome}</h2>
+            <div className="modal__body">Detalhes da ação selecionada:</div>
+            <ul className="modal__list">
+              <li>
+                Preço atual: <strong>R${activeCard.preco.toFixed(2)}</strong>
+              </li>
+              <li>
+                Variação percentual:{" "}
+                <strong>{activeCard.variacao.toFixed(2)}%</strong>
+              </li>
+              <li>
+                Volume negociado:{" "}
+                <strong>{activeCard.volume.toLocaleString()}</strong>
+              </li>
+              <li>Ajuda a avaliar liquidez e interesse do mercado.</li>
+            </ul>
+          </div>
+        </div>
+      )}
     </section>
   );
 };

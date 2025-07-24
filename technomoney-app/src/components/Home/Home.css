@@ -1,6 +1,3 @@
-/* =====================================================
-   Variáveis de cor e sombras
-   ===================================================== */
 :root {
   --color-primary:        #0cb3a8;
   --color-primary-dark:   #08a295;
@@ -12,27 +9,23 @@
   --shadow-hover:         rgba(12, 179, 168, 0.40);
 }
 
-/* =====================================================
-   Reset essencial
-   ===================================================== */
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-/* Scroll suave e destravado */
 html {
   scroll-behavior: smooth;
 }
 
 html, body, #root {
-  height: auto !important;        /* evita 100 vh travado */
-  overflow-x: hidden !important;  /* impede barra horizontal */
-  overflow-y: auto !important;    /* garante barra vertical */
+  height: auto !important;        
+  overflow-x: hidden !important;  
+  overflow-y: auto !important;    
 }
 
-/* (opcional) devolve a barra se alguém a escondeu */
+
 *::-webkit-scrollbar {
   width: 8px;
 }
@@ -41,9 +34,6 @@ html, body, #root {
   border-radius: 4px;
 }
 
-/* =====================================================
-   Estrutura base
-   ===================================================== */
 body {
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   background: var(--color-bg);
@@ -52,16 +42,12 @@ body {
   min-height: 100vh;
 }
 
-/* Wrapper da página Home */
 .home_home {
   width: 100%;
   padding: 0;
   margin: 0;
 }
 
-/* =====================================================
-   Hero (banner inicial)
-   ===================================================== */
 .hero_home {
   position: relative;
   background: url("/1.jpeg") center/cover no-repeat;
@@ -97,7 +83,6 @@ body {
   z-index: 2;
 }
 
-/* Tipografia do Hero */
 .hero__title_home {
   font-size: 3rem;
   font-weight: 700;
@@ -117,9 +102,7 @@ body {
   margin-inline: auto;
 }
 
-/* =====================================================
-   Botão primário
-   ===================================================== */
+
 .btn_home {
   font-weight: 600;
   border: none;
@@ -148,15 +131,13 @@ body {
   transform: scale(1.05);
 }
 
-/* =====================================================
-   Grid de cards
-   ===================================================== */
+
 .info-cards_home {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 36px;
   padding: 0 160px;
-  margin-top: -80px; /* puxa contra o Hero */
+  margin-top: -80px; 
 }
 
 .card_home {
@@ -198,9 +179,6 @@ body {
   flex-grow: 1;
 }
 
-/* =====================================================
-   Responsividade
-   ===================================================== */
 @media (max-width: 600px) {
   .hero__title_home    { font-size: 2.2rem; }
   .hero__subtitle_home { font-size: 1rem;   }

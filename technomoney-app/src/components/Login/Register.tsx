@@ -1,12 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
+
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
 import "./Auth.css";
+import Spinner from "../../components/Dashboard/Spinner/Spinner";
 import { authApi } from "../../services/http";
 import { useAuth } from "../../context/AuthContext";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 const MAX_FIELD = 50;
 const MAX_PASS = 50;
@@ -19,16 +21,34 @@ const Register: React.FC = () => {
   const [showPass, setShowPass] = useState(false);
   const [showConf, setShowConf] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadingSpinner, setLoadingSpinner] = useState(true);
   const [error, setError] = useState("");
   const [emailTaken, setEmailTaken] = useState(false);
+  const [retryAfter, setRetryAfter] = useState<number | null>(null);
 
   const { executeRecaptcha } = useGoogleReCaptcha();
   const navigate = useNavigate();
   const { login } = useAuth();
 
+  useEffect(() => {
+    const timer = setTimeout(() => setLoadingSpinner(false), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (retryAfter === null) return;
+    if (retryAfter <= 0) {
+      setRetryAfter(null);
+      setError("");
+      return;
+    }
+    const timer = setTimeout(() => setRetryAfter(retryAfter - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [retryAfter]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading) return;
+    if (loading || retryAfter) return;
 
     const form = e.currentTarget as HTMLFormElement;
     if (!form.checkValidity()) {
@@ -75,27 +95,54 @@ const Register: React.FC = () => {
       login(data.token, data.username);
       navigate("/dashboard");
     } catch (err: any) {
+      const status = err.response?.status;
       const msg =
-        err?.response?.data?.message ||
+        err.response?.data?.message ||
         "O servidor não responde. Tente novamente.";
-      if (msg.toLowerCase().includes("e-mail já está em uso"))
-        setEmailTaken(true);
-      setError(msg);
+
+      if (status === 429 && err.response.data.retryAfter) {
+        setRetryAfter(err.response.data.retryAfter);
+        setError(msg);
+      } else {
+        if (msg.toLowerCase().includes("e-mail já está em uso")) {
+          setEmailTaken(true);
+        }
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
   };
 
+  if (loadingSpinner) {
+    return <Spinner />;
+  }
+
+  if (retryAfter !== null) {
+    return (
+      <div className="auth-container">
+        <Header />
+        <div className="auth-content">
+          <div className="auth-card blocked">
+            <h2>Registro Temporariamente Bloqueado</h2>
+            <p>
+              Você poderá tentar novamente em <strong>{retryAfter}s</strong>.
+            </p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="auth-container">
       <Header />
-
       <div className="auth-content">
         <div className="auth-card">
           <h2>Registro</h2>
 
-          <form onSubmit={handleSubmit}>
-            {/* USERNAME */}
+          <form onSubmit={handleSubmit} noValidate>
             <div className="form-group">
               <label htmlFor="reg-username">Usuário</label>
               <input
@@ -106,10 +153,13 @@ const Register: React.FC = () => {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
               />
-              <span className="char-count">{MAX_FIELD - username.length}</span>
+              <span
+                className="char-count"
+                data-current={username.length}
+                data-max={MAX_FIELD}
+              />
             </div>
 
-            {/* EMAIL */}
             <div className="form-group">
               <label htmlFor="reg-email">E-mail</label>
               <input
@@ -125,17 +175,18 @@ const Register: React.FC = () => {
                 }}
                 className={emailTaken ? "input-error" : ""}
               />
-              <span className="char-count">{MAX_FIELD - email.length}</span>
+              <span
+                className="char-count"
+                data-current={email.length}
+                data-max={MAX_FIELD}
+              />
             </div>
 
-            {/* PASSWORD */}
             <div className="form-group">
               <label htmlFor="reg-password">Senha</label>
-
               <div className="input-eye">
                 <input
                   id="reg-password"
-                  className="password-input"
                   type={showPass ? "text" : "password"}
                   required
                   minLength={6}
@@ -143,28 +194,29 @@ const Register: React.FC = () => {
                   placeholder="Mínimo 6 caracteres"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  className="password-input"
                 />
                 <button
                   type="button"
                   className="eye-btn"
-                  aria-label={showPass ? "Ocultar senha" : "Mostrar senha"}
                   onClick={() => setShowPass(!showPass)}
+                  aria-label={showPass ? "Ocultar senha" : "Mostrar senha"}
                 >
                   {showPass ? <FaEyeSlash /> : <FaEye />}
                 </button>
               </div>
-
-              <span className="char-count">{MAX_PASS - password.length}</span>
+              <span
+                className="char-count"
+                data-current={password.length}
+                data-max={MAX_PASS}
+              />
             </div>
 
-            {/* CONFIRM */}
             <div className="form-group">
               <label htmlFor="reg-confirm">Confirmar senha</label>
-
               <div className="input-eye">
                 <input
                   id="reg-confirm"
-                  className="password-input"
                   type={showConf ? "text" : "password"}
                   required
                   minLength={6}
@@ -172,24 +224,27 @@ const Register: React.FC = () => {
                   placeholder="Repita a senha"
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
+                  className="password-input"
                 />
                 <button
                   type="button"
                   className="eye-btn"
-                  aria-label={showConf ? "Ocultar senha" : "Mostrar senha"}
                   onClick={() => setShowConf(!showConf)}
+                  aria-label={showConf ? "Ocultar senha" : "Mostrar senha"}
                 >
                   {showConf ? <FaEyeSlash /> : <FaEye />}
                 </button>
               </div>
-
-              <span className="char-count">{MAX_PASS - confirm.length}</span>
+              <span
+                className="char-count"
+                data-current={confirm.length}
+                data-max={MAX_PASS}
+              />
             </div>
 
             <button className="auth-button" disabled={loading}>
               {loading ? "Enviando…" : "Registrar"}
             </button>
-
             {error && <p className="error-msg">{error}</p>}
           </form>
 
@@ -203,7 +258,6 @@ const Register: React.FC = () => {
           </div>
         </div>
       </div>
-
       <Footer />
     </div>
   );

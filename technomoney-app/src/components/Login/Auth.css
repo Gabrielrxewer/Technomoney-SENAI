@@ -26,7 +26,6 @@
   }
 }
 
-/* ---------- layout ---------- */
 .auth-container {
   background: var(--color-bg);
   color: var(--color-text-main);
@@ -44,6 +43,7 @@
   width: 100%;
   padding: 20px;
 }
+
 .auth-card {
   background: var(--color-card-bg);
   padding: var(--padding);
@@ -52,6 +52,7 @@
   box-shadow: var(--shadow-primary);
   animation: fadeIn 0.6s ease forwards;
 }
+
 .auth-card h2 {
   text-align: center;
   margin-bottom: 24px;
@@ -61,20 +62,20 @@
   text-shadow: 0 0 8px rgba(12, 179, 168, 0.7);
 }
 
-/* ---------- formulário ---------- */
 .form-group {
-  position: relative;
-  margin-bottom: 36px; /* espaço p/ contador */
+  margin-bottom: 28px;
 }
+
 .form-group label {
+  display: block;
   font-size: 14px;
   color: var(--color-text-secondary);
+  margin-bottom: 4px;
 }
 
 .form-group input {
   width: 100%;
   padding: 12px;
-  margin-top: 8px;
   background: var(--color-input-bg);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 6px;
@@ -88,7 +89,6 @@
     box-shadow 0.3s ease;
 }
 
-/* foco + válido */
 .form-group input:focus:not(:invalid) {
   border: 1px solid var(--color-accent);
   box-shadow:
@@ -97,7 +97,6 @@
   outline: none;
 }
 
-/* inválido */
 .form-group input:focus:invalid,
 .form-group input:not(:placeholder-shown):invalid,
 .form-group input.input-error {
@@ -108,40 +107,49 @@
   outline: none;
 }
 
-/* ---------- contador & olho ---------- */
 .char-count {
-  position: absolute;
-  right: 8px;
-  bottom: -16px;
-  font-size: 10px;
-  color: #666;
-  pointer-events: none;
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--color-accent);
+  text-align: right;
 }
 
-/* wrapper para ícone */
+.char-count::before {
+  content: attr(data-current) " / " attr(data-max);
+}
+
 .input-eye {
   position: relative;
 }
+
 .input-eye .password-input {
-  padding-right: 48px;
+  padding-right: 50px;
 }
+
 .input-eye .eye-btn {
   position: absolute;
   top: 50%;
-  right: 16px;
+  right: 14px;
+  color: var(--color-accent);
   transform: translateY(-50%);
   background: none;
   border: none;
   cursor: pointer;
-  line-height: 0;
+  transition: color 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
 }
+
+
+
 .input-eye .eye-btn svg {
-  color: var(--color-text-main);
-  font-size: 1.15rem;
+  font-size: 1.2rem;
   pointer-events: none;
 }
 
-/* ---------- botão ---------- */
 .auth-button {
   width: 100%;
   padding: 12px;
@@ -156,29 +164,33 @@
     transform 0.2s,
     box-shadow 0.3s;
 }
+
 .auth-button:hover {
   background: var(--color-primary-dark);
   box-shadow: 0 4px 10px var(--shadow-hover);
 }
+
 .auth-button:active {
   transform: scale(1.05);
 }
 
-/* ---------- rodapé & erros ---------- */
 .auth-footer {
   margin-top: 20px;
   text-align: center;
 }
-.auth-footer p {
+
+.auth-footer p,
+.auth-footer a {
   font-size: 14px;
-  color: var(--color-text-secondary);
 }
+
 .auth-footer a {
   color: var(--color-accent);
   text-decoration: none;
   font-weight: 500;
   transition: text-decoration 0.2s;
 }
+
 .auth-footer a:hover,
 .auth-footer a:focus {
   text-decoration: underline;
@@ -189,4 +201,29 @@
   color: var(--color-error);
   margin-top: 12px;
   text-align: center;
+}
+
+.auth-card.blocked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--padding) 32px;
+}
+
+.auth-card.blocked h2 {
+  margin-bottom: 16px;
+  color: var(--color-primary);
+  text-shadow: 0 0 8px rgba(12, 179, 168, 0.7);
+}
+
+.auth-card.blocked p {
+  font-size: 16px;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.auth-card.blocked p strong {
+  color: var(--color-primary);
 }

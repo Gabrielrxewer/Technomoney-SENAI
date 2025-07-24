@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { loginLimiter } from "../middlewares/ratelimit.middleware";
+import { loginLimiter } from "../middlewares/rateLimit.middleware";
 import { csrfProtection } from "../middlewares/csrf.middleware";
 import {
   login,
