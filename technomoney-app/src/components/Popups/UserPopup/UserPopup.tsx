@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -13,6 +13,7 @@ import {
 import "./UserPopup.css";
 import "../CSSPopup/Popup.css";
 import { Button } from "../../ui/Button";
+import Spinner from "../../Dashboard/Spinner/Spinner";
 
 interface UserPopupProps {
   onClose: () => void;
@@ -28,13 +29,23 @@ const UserPopup: React.FC<UserPopupProps> = ({
   openHelp,
 }) => {
   const { username, logout, isAuthenticated } = useAuth();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) =>
     e.target === e.currentTarget && onClose();
 
+  if (isLoggingOut) {
+    return (
+      <div className="spinner-fullscreen">
+        <Spinner />
+      </div>
+    );
+  }
+
   return (
     <>
-      <div className="user-popup-overlay" onClick={handleOverlayClick}></div>
+      <div className="user-popup-overlay" onClick={handleOverlayClick} />
+
       <div className="user-popup">
         <div className="popup-content">
           <button
@@ -68,7 +79,10 @@ const UserPopup: React.FC<UserPopupProps> = ({
             </ul>
           ) : (
             <>
-              <p className="greeting">Olá, {username}</p>
+              <p className="greeting" title={username || undefined}>
+                Olá, {username}
+              </p>
+
               <ul className="user-menu">
                 <li onClick={openAccount}>
                   <FontAwesomeIcon icon={faUser} style={{ marginRight: 8 }} />
@@ -90,8 +104,12 @@ const UserPopup: React.FC<UserPopupProps> = ({
               <Button
                 variant="danger"
                 onClick={() => {
-                  logout();
-                  onClose();
+                  setIsLoggingOut(true);
+                  setTimeout(() => {
+                    logout();
+                    onClose();
+                    setIsLoggingOut(false);
+                  }, 100);
                 }}
               >
                 <FontAwesomeIcon

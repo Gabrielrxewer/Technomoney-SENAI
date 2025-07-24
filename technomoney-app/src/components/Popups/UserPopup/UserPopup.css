@@ -46,11 +46,32 @@
   flex-direction: column;
 }
 
+.user-popup .popup-content .close-btn {
+  background: transparent;
+  border: none;
+  font-size: 28px;
+  color: var(--menu-text-color);
+  cursor: pointer;
+  position: absolute;
+  top: -8px;     
+  right: 2px;
+  padding: 6px;
+  transition: color 0.3s ease;
+  z-index: 10;
+}
+
+.user-popup .popup-content .close-btn:hover,
+.user-popup .popup-content .close-btn:focus {
+  color: var(--close-btn-hover-color);
+  outline: none;
+}
+
 .greeting {
   font-size: 18px;
   font-weight: 500;
   color: var(--menu-text-color);
   padding: 0 10px;
+  padding-right: 2.5rem;  
   border-radius: 6px;
   background-color: rgba(0, 0, 0, 0.1);
   margin-bottom: 12px;
@@ -59,6 +80,9 @@
     0 0 5px var(--menu-hover-color),
     0 0 10px var(--menu-hover-color),
     0 0 15px var(--menu-hover-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .popup-content ul {
@@ -100,41 +124,11 @@
   outline: none;
 }
 
-.close-btn {
-  background: transparent;
-  border: none;
-  font-size: 28px;
-  color: var(--menu-text-color);
-  cursor: pointer;
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  padding: 6px;
-  transition: color 0.3s ease;
-  z-index: 10;
-}
-
-.close-btn:hover,
-.close-btn:focus {
-  color: var(--close-btn-hover-color);
-  outline: none;
-}
-
-.logout-btn {
-  background: transparent;
-  border: none;
-  color: var(--menu-text-color);
-  font-size: 16px;
-  cursor: pointer;
+.logout-btn,
+button[variant="danger"] {
   display: block;
   width: 100%;
   text-align: left;
-  padding: 14px 12px;
-  border-radius: 6px;
-  transition:
-    background-color 0.3s ease,
-    color 0.3s ease;
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .logout-btn:hover,
@@ -165,8 +159,22 @@
     padding: 12px 10px;
   }
 
-  .close-btn {
-    top: 8px;
+  .user-popup .popup-content .close-btn {
+    top: -10px;  
     right: 8px;
   }
+
+  .greeting {
+    font-size: 16px;
+    padding-right: 2rem;
+  }
+}
+.spinner-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgb(13, 24, 33); 
 }

@@ -6,7 +6,7 @@
 :root {
   --color-bg:             #0d1821;
   --color-card-bg:        #132f3d;
-  --color-card-glass:     #132f3dcc;     /* 80 % opacidade */
+  --color-card-glass:     #132f3dcc;     /* 80% opacidade */;
   --color-primary:        #00c6ff;
   --color-primary-dark:   #05a7d9;
 
@@ -25,7 +25,9 @@
 /* =====================================================
    CONTEXTUAL – folga após bloco de benefícios
    ===================================================== */
-.info-cards_home { margin-bottom: var(--gap-after-cards); }
+.info-cards_home {
+  margin-bottom: var(--gap-after-cards);
+}
 
 /* =====================================================
    CONTÊINER DE PÁGINAS (snap)
@@ -48,7 +50,6 @@
 
   padding: clamp(1.5rem, 4vw, 7rem);
   scroll-snap-align: start;
-  text-align: center;
   color: var(--color-text-main);
 }
 
@@ -56,6 +57,7 @@
   font-size: clamp(2rem, 2.5vw + 1rem, 3rem);
   color: var(--color-primary);
   margin-bottom: 1.5rem;
+  text-align: center;
 }
 
 .lp .section_generic p,
@@ -65,13 +67,14 @@
   color: var(--color-text-secondary);
   max-width: 70ch;
   margin: 0 auto 1rem;
+  text-align: justify;
+  text-justify: inter-word;
 }
 
 /* =====================================================
-   PLANOS – agora **full-width** e mais vivos
+   PLANOS – full-width, efeito moderno e texto centralizado
    ===================================================== */
 .lp .pricing__plans {
-  /* grid expansivo que preenche tudo, com colunas elásticas */
   --min-card: clamp(280px, 28vw, 380px);
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(var(--min-card), 1fr));
@@ -86,8 +89,6 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-
   background: var(--color-card-glass);
   border: 1px solid transparent;
   backdrop-filter: blur(10px);
@@ -95,14 +96,14 @@
   padding: 3rem 2rem 4rem;
   box-shadow: var(--shadow-primary);
   overflow: hidden;
-  isolation: isolate;                 /* garante que o ::before não vaze */
+  isolation: isolate;
   transition:
     transform .4s cubic-bezier(.22,.61,.36,1),
     box-shadow .35s ease,
     border-color .35s ease;
+  text-align: center; /* CENTRALIZA TODO TEXTO */
 }
 
-/* 🔹 efeito de brilho diagonal */
 .lp .plan_card::before {
   content: "";
   position: absolute;
@@ -133,27 +134,24 @@
   border-color: var(--color-primary);
 }
 
-/* Plano “destacado” – basta adicionar data-featured="true" no markup */
 .lp .plan_card[data-featured="true"] {
   border-color: var(--color-primary);
 }
 .lp .plan_card[data-featured="true"]::after {
-  /* glow interno permanente */
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  box-shadow: 0 0 0 2px var(--color-primary) inset,
-              0 0 18px var(--color-primary);
+  box-shadow:
+    0 0 0 2px var(--color-primary) inset,
+    0 0 18px var(--color-primary);
   pointer-events: none;
 }
 
-/* -------- Tipos internos -------- */
 .lp .plan_card h3 {
   font-size: 1.55rem;
   color: var(--color-primary);
   margin-bottom: .85rem;
-  letter-spacing: .5px;
 }
 
 .lp .plan_card .price {
@@ -168,22 +166,24 @@
   margin: 0 auto 2rem;
   padding: 0;
   max-width: 42ch;
+  text-align: center;
 }
+
 .lp .plan_card li {
   position: relative;
-  padding-left: 1.4rem;
-  margin-bottom: .7rem;
+  display: inline-block; 
+  margin: .4rem 0;
   color: var(--color-text-secondary);
+  line-height: 1.5;
+  padding-left: 0;  
 }
+
 .lp .plan_card li::before {
-  content: "✓";
-  position: absolute;
-  left: 0;
+  content: "✓ ";
   color: var(--color-primary);
   font-weight: 700;
 }
 
-/* -------- Botão -------- */
 .lp .plan_card button {
   padding: .9rem 2.25rem;
   font-weight: 600;
@@ -193,59 +193,61 @@
   color: #081318;
   cursor: pointer;
   transition: transform .2s ease, filter .2s ease, box-shadow .2s ease;
-}
-.lp .plan_card button:hover,
-.lp .plan_card button:focus-visible {
-  filter: brightness(1.18);
-  transform: translateY(-3px);
-  box-shadow: 0 6px 14px rgba(0,0,0,.3);
+  margin: 0 auto; 
 }
 
-/* =====================================================
-   FAQ
-   ===================================================== */
 .lp .faq_item {
   margin-bottom: 1.6rem;
   border-bottom: 1px solid rgba(255, 255, 255, .09);
+  width: 100%;
+  max-width: 70ch;
 }
 
 .lp .faq_item summary {
   cursor: pointer;
   font-weight: 600;
   color: var(--color-primary);
-  padding: .8rem 2.2rem .8rem 0;
+  padding: .8rem 0;
   position: relative;
-  user-select: none;
 }
+
 .lp .faq_item summary::after {
   content: '+';
   position: absolute;
   right: 0;
   top: 50%;
-  translate: 0 -50%;
+  transform: translateY(-50%);
   font-size: 1.5rem;
   transition: transform .25s ease;
 }
-.lp .faq_item[open] summary::after { transform: rotate(45deg); }
+
+.lp .faq_item[open] summary::after {
+  transform: rotate(45deg);
+}
 
 .lp .faq_item p {
   margin: .85rem 0 1.2rem;
   font-size: 1rem;
   line-height: 1.6;
   color: var(--color-text-secondary);
+  text-align: justify;
+  text-justify: inter-word;
 }
 
-/* =====================================================
-   RESPONSIVO
-   ===================================================== */
 @media (max-width: 768px) {
-  .lp .section_generic { padding-inline: 1rem; }
+  .lp .section_generic {
+    padding-inline: 1rem;
+  }
 
   .lp .plan_card {
     padding: 2.2rem 1.5rem 3rem;
   }
 
-  .lp .plan_card .price { font-size: 1.8rem; }
+  .lp .plan_card .price {
+    font-size: 1.8rem;
+  }
 
-  .lp .plan_card button { width: 100%; }
+  .lp .plan_card button {
+    width: 100%;
+  }
 }

@@ -1,17 +1,17 @@
 import React, { useEffect, useState } from "react";
-import { useLocation, Link } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 import "./Home.css";
 import "./Modal.css";
 
-import AboutSection    from "../sections/AboutSection";
-import ServicesSection from "../sections/ServicesSection";
-import PricingSection  from "../sections/PricingSection";   // contém id="planos"
-import ContactSection  from "../sections/ContactSection";
-import BlogSection     from "../sections/BlogSection";
-import FaqSection      from "../sections/FaqSection";
+import AboutSection from "./sections/AboutSection";
+import ServicesSection from "./sections/ServicesSection";
+import PricingSection from "./sections/PricingSection";
+import ContactSection from "./sections/ContactSection";
+import BlogSection from "./sections/BlogSection";
+import FaqSection from "./sections/FaqSection";
+import Spinner from "../../components/Dashboard/Spinner/Spinner";
 
-/* ───────── Tipos e conteúdo dos cards ───────── */
 interface InfoCard {
   title: string;
   description: string;
@@ -26,8 +26,8 @@ const cards: InfoCard[] = [
     details: [
       "➤ Colunas visíveis: mostre ou oculte métricas conforme sua análise.",
       "➤ Filtros salvos: aplique rapidamente combinações frequentes.",
-      "➤ Indicadores customizados: adicione fórmulas e KPIs de preferência."
-    ]
+      "➤ Indicadores customizados: adicione fórmulas e KPIs de preferência.",
+    ],
   },
   {
     title: "Interação em tempo real",
@@ -36,8 +36,8 @@ const cards: InfoCard[] = [
     details: [
       "➤ Streaming via WebSocket atualizado a cada segundo.",
       "➤ Alertas visuais quando o preço atinge metas definidas.",
-      "➤ Destaques automáticos de maior alta e maior baixa."
-    ]
+      "➤ Destaques automáticos de maior alta e maior baixa.",
+    ],
   },
   {
     title: "Simulações",
@@ -46,27 +46,34 @@ const cards: InfoCard[] = [
     details: [
       "➤ Crie múltiplos cenários *what-if* lado a lado.",
       "➤ Vincule simulações a carteiras para comparar resultados.",
-      "➤ Relatórios de rentabilidade, risco e drawdown projetados."
-    ]
-  }
+      "➤ Relatórios de rentabilidade, risco e drawdown projetados.",
+    ],
+  },
 ];
-/* ────────────────────────────────────────────── */
 
 const Home: React.FC = () => {
   const { hash } = useLocation();
   const [activeCard, setActiveCard] = useState<InfoCard | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  /* Scroll suave para a âncora */
   useEffect(() => {
+    const timeout = setTimeout(() => setLoading(false), 100);
+    return () => clearTimeout(timeout);
+  }, []);
+
+  useEffect(() => {
+    if (loading) return;
+
     if (hash) {
       const target = document.querySelector(hash);
       if (target) {
-        setTimeout(() => target.scrollIntoView({ behavior: "smooth" }), 50);
+        setTimeout(() => {
+          target.scrollIntoView({ behavior: "smooth" });
+        }, 50);
       }
     }
-  }, [hash]);
+  }, [hash, loading]);
 
-  /* Fecha o modal com ESC */
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) =>
       e.key === "Escape" && setActiveCard(null);
@@ -74,22 +81,34 @@ const Home: React.FC = () => {
     return () => window.removeEventListener("keydown", handleEsc);
   }, []);
 
+  const scrollToPrecos = () => {
+    const section = document.querySelector("#precos");
+    if (section) {
+      section.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  if (loading) {
+    return <Spinner />;
+  }
+
   return (
     <main className="home_home">
-      {/* ───── Hero ───── */}
+      {/* Hero */}
       <header className="hero_home" role="banner" id="hero">
         <h1 className="hero__title_home">Assessoria em Investimentos</h1>
         <p className="hero__subtitle_home">
           Transforme seu futuro financeiro conosco.
         </p>
-
-        {/* Link bate com id="planos" */}
-        <Link to="#precos" className="btn_home btn--primary_home">
+        <button
+          onClick={scrollToPrecos}
+          className="btn_home btn--primary_home"
+        >
           Saiba mais
-        </Link>
+        </button>
       </header>
 
-      {/* ───── Cards de benefícios ───── */}
+      {/* Benefícios */}
       <section
         className="info-cards_home"
         id="beneficios"
@@ -120,7 +139,7 @@ const Home: React.FC = () => {
         ))}
       </section>
 
-      {/* ───── Modal ───── */}
+      {/* Modal */}
       {activeCard && (
         <div
           className="modal-overlay"
@@ -137,13 +156,10 @@ const Home: React.FC = () => {
             >
               ×
             </button>
-
             <h2 id="modal-title" className="modal__title">
               {activeCard.title}
             </h2>
-
             <p className="modal__body">{activeCard.description}</p>
-
             <ul className="modal__list">
               {activeCard.details.map((d) => (
                 <li key={d}>{d}</li>
@@ -153,14 +169,14 @@ const Home: React.FC = () => {
         </div>
       )}
 
-      {/* ───── Seções em 100 vh ───── */}
+      {/* Seções de 100vh */}
       <div className="lp">
-        <AboutSection    />
+        <AboutSection />
         <ServicesSection />
-        <PricingSection  /> {/* id="planos" está dentro do componente */}
-        <ContactSection  />
-        <BlogSection     />
-        <FaqSection      />
+        <PricingSection />
+        <ContactSection />
+        <BlogSection />
+        <FaqSection />
       </div>
     </main>
   );

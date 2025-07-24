@@ -21,7 +21,6 @@
 .slider-cards {
   scrollbar-width: none;
 }
-
 .slider-cards:active {
   cursor: grabbing;
 }
@@ -76,9 +75,6 @@
   color: var(--color-primary);
   margin-bottom: 10px;
   font-weight: 700;
-  user-select: none;
-  white-space: normal;
-  overflow-wrap: break-word;
 }
 
 .card__description {
@@ -96,4 +92,92 @@
 .variacao.text-danger {
   color: #d85c51;
   font-weight: 700;
+}
+
+.loading-text {
+  color: var(--color-text-secondary);
+  font-size: 1rem;
+  text-align: center;
+  width: 100%;
+  margin-top: 20px;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  animation: fadeIn 0.25s ease forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.modal {
+  background: var(--color-card-bg);
+  border-radius: 20px;
+  max-width: 600px;
+  width: 90%;
+  padding: 40px 32px;
+  box-shadow: 0 16px 40px var(--shadow-hover);
+  position: relative;
+  animation: slideUp 0.25s ease forwards;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.modal__title {
+  color: var(--color-primary);
+  font-size: 1.8rem;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.modal__body {
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  text-align: justify;
+  font-size: 1.05rem;
+}
+
+.modal__list {
+  margin-top: 18px;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: var(--color-text-secondary);
+}
+
+.modal__list li {
+  list-style: disc;
+  line-height: 1.5;
+}
+
+.modal__close {
+  background: transparent;
+  border: none;
+  font-size: 30px;
+  color: var(--menu-text-color);
+  cursor: pointer;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 6px;
+  transition: color 0.3s ease;
+  z-index: 10;
+}
+
+.modal__close:hover,
+.modal__close:focus {
+  color: var(--close-btn-hover-color);
+  outline: none;
 }
