@@ -33,7 +33,7 @@ atualizarPrecos();
 setInterval(() => {
   atualizarPrecos();
   console.log("Preços atualizados");
-}, 5 * 1000);
+}, 30 * 1000);
 app.listen(PORT, () => {
   console.log(`Fake API rodando na porta ${PORT}`);
 });
