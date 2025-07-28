@@ -14,8 +14,15 @@ const router = Router();
 
 router.post("/login", loginLimiter, login);
 router.post("/register", loginLimiter, register);
-router.post("/refresh", csrfProtection, refresh);
-router.post("/logout", csrfProtection, logout);
+
+if (process.env.NODE_ENV === "production") {
+  router.post("/refresh", csrfProtection, refresh);
+  router.post("/logout", csrfProtection, logout);
+} else {
+  router.post("/refresh", refresh);
+  router.post("/logout", logout);
+}
+
 router.get("/me", authenticate, me);
 
 export default router;

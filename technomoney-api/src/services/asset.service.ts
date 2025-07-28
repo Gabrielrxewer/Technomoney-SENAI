@@ -16,17 +16,14 @@ export class AssetService {
   private recordRepo = new AssetRecordRepository();
   private marketData = new MarketDataService();
 
-  /** POST /assets */
   async create(tag: string, name: string) {
     return this.assetRepo.findOrCreate(tag, name);
   }
 
-  /** GET /assets (todos de hoje) */
   async getAllToday(): Promise<AssetDto[]> {
     const assets = await this.assetRepo.findAll();
     const { start, end } = getTodayRange();
 
-    /** Busca registros de hoje já existentes */
     const todayRecs = await this.recordRepo.findToday(
       assets.map((a) => a.id),
       start,
@@ -38,7 +35,6 @@ export class AssetService {
       recordMap.set(asset_id, { price, variation, volume })
     );
 
-    /** Busca preços atuais na fake-API */
     const apiAssets = await this.marketData.fetchAll();
 
     for (const asset of assets) {
@@ -74,7 +70,6 @@ export class AssetService {
       }
     }
 
-    /** Mapeia DTO */
     return assets
       .filter((a) => recordMap.has(a.id))
       .map((a) => {
@@ -90,7 +85,6 @@ export class AssetService {
       });
   }
 
-  /** GET /assets/:tag */
   async getByTagToday(tag: string): Promise<AssetDto | null> {
     const asset = await this.assetRepo.findByTag(tag);
     if (!asset) return null;
