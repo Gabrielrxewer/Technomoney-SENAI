@@ -1,42 +1,74 @@
-import React from "react";
+import React, { useState } from "react";
 import "./Sections.css";
+import CheckoutProForm from "../../Payment/PaymentForm.";
 
-const PricingSection: React.FC = () => (
-  <section
-    id="precos"
-    className="section_generic"
-    aria-label="Preços / Planos"
-  >
-    <h2>Planos</h2>
-    <div className="pricing__plans">
-      <div className="plan_card">
-        <h3>Básico</h3>
-        <p>Perfeito para iniciantes que buscam ferramentas essenciais.</p>
-        <p>
-          <strong>R$ 29,90/mês</strong>
-        </p>
+type Plan = {
+  key: string;
+  title: string;
+  description: string;
+  price: string;
+};
+
+const plans: Plan[] = [
+  {
+    key: "basico",
+    title: "Básico",
+    description: "Perfeito para iniciantes que buscam ferramentas essenciais.",
+    price: "29.90",
+  },
+  {
+    key: "profissional",
+    title: "Profissional",
+    description:
+      "Funcionalidades avançadas, relatórios detalhados e alertas customizáveis.",
+    price: "79.90",
+  },
+  {
+    key: "premium",
+    title: "Premium",
+    description:
+      "Tudo do plano Profissional + consultoria dedicada e treinamentos exclusivos.",
+    price: "149.90",
+  },
+];
+
+const PricingSection: React.FC = () => {
+  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+
+  return (
+    <section
+      id="precos"
+      className="section_generic"
+      aria-label="Preços / Planos"
+    >
+      <h2>Planos</h2>
+      <div className="pricing__plans">
+        {plans.map((plan) => (
+          <div
+            key={plan.key}
+            className={`plan_card${selectedPlan?.key === plan.key ? " active" : ""}`}
+            onClick={() => setSelectedPlan(plan)}
+          >
+            <h3>{plan.title}</h3>
+            <p>{plan.description}</p>
+            <p>
+              <strong>R$ {plan.price}/mês</strong>
+            </p>
+          </div>
+        ))}
       </div>
-      <div className="plan_card">
-        <h3>Profissional</h3>
-        <p>
-          Funcionalidades avançadas, relatórios detalhados e alertas customizáveis.
-        </p>
-        <p>
-          <strong>R$ 79,90/mês</strong>
-        </p>
-      </div>
-      <div className="plan_card">
-        <h3>Premium</h3>
-        <p>
-          Tudo do plano Profissional + consultoria dedicada e treinamentos
-          exclusivos.
-        </p>
-        <p>
-          <strong>R$ 149,90/mês</strong>
-        </p>
-      </div>
-    </div>
-  </section>
-);
+
+      {selectedPlan && (
+        <div className="checkout-container">
+          <h3>Você escolheu: {selectedPlan.title}</h3>
+          <CheckoutProForm
+            defaultAmount={selectedPlan.price}
+            defaultPlan={selectedPlan.title}
+          />
+        </div>
+      )}
+    </section>
+  );
+};
 
 export default PricingSection;
