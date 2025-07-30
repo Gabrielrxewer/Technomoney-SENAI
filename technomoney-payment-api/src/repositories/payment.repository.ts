@@ -9,7 +9,6 @@ export default {
     fullName: string;
     cpf: string;
     email: string;
-    method: string;
     preferenceId: string;
     status: string;
   }) {

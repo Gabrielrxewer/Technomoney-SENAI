@@ -9,7 +9,6 @@ module.exports = {
       fullName: { type: Sequelize.STRING, allowNull: false },
       cpf: { type: Sequelize.STRING, allowNull: false },
       email: { type: Sequelize.STRING, allowNull: false },
-      method: { type: Sequelize.STRING, allowNull: false },
       preferenceId: { type: Sequelize.STRING, allowNull: false },
       status: {
         type: Sequelize.STRING,

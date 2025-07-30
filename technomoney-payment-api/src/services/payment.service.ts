@@ -14,7 +14,6 @@ export interface CreatePreferenceInput {
   fullName: string;
   cpf: string;
   email: string;
-  method: "pix" | "credit_card" | "debit_card";
   amount: number;
 }
 
@@ -22,7 +21,6 @@ export async function createPreference({
   fullName,
   cpf,
   email,
-  method,
   amount,
 }: CreatePreferenceInput) {
   const pref = await preferenceClient.create({
@@ -41,12 +39,6 @@ export async function createPreference({
         email,
         identification: { type: "CPF", number: cpf },
       },
-      payment_methods: {
-        installments: 1,
-        ...(method === "pix" && {
-          excluded_payment_types: [{ id: "credit_card" }, { id: "debit_card" }],
-        }),
-      },
       notification_url: `${process.env.APP_URL}/webhooks/mercadopago`,
       metadata: { email },
     },
@@ -60,7 +52,6 @@ export async function createPreference({
     fullName,
     cpf,
     email,
-    method,
     preferenceId: pref.id,
     status: "pending",
   });

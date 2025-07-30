@@ -1,13 +1,8 @@
 import React, { useState } from "react";
+import CheckoutModal from "../../Payment/PaymentForm";
 import "./Sections.css";
-import CheckoutProForm from "../../Payment/PaymentForm.";
 
-type Plan = {
-  key: string;
-  title: string;
-  description: string;
-  price: string;
-};
+type Plan = { key: string; title: string; description: string; price: string };
 
 const plans: Plan[] = [
   {
@@ -31,9 +26,8 @@ const plans: Plan[] = [
     price: "149.90",
   },
 ];
-
-const PricingSection: React.FC = () => {
-  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+export default function PricingSection() {
+  const [selected, setSelected] = useState<Plan | null>(null);
 
   return (
     <section
@@ -42,33 +36,42 @@ const PricingSection: React.FC = () => {
       aria-label="Preços / Planos"
     >
       <h2>Planos</h2>
+
       <div className="pricing__plans">
-        {plans.map((plan) => (
+        {plans.map((p) => (
           <div
-            key={plan.key}
-            className={`plan_card${selectedPlan?.key === plan.key ? " active" : ""}`}
-            onClick={() => setSelectedPlan(plan)}
+            key={p.key}
+            className={`plan_card${selected?.key === p.key ? " active" : ""}`}
+            onClick={() => setSelected(p)}
           >
-            <h3>{plan.title}</h3>
-            <p>{plan.description}</p>
+            <h3>{p.title}</h3>
+            <p>{p.description}</p>
             <p>
-              <strong>R$ {plan.price}/mês</strong>
+              <strong>R$ {p.price}/mês</strong>
             </p>
+            {/* Botão mudou de lugar — dentro do card */}
+            <button
+              className="btn_home btn--primary_home"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelected(p);
+              }}
+            >
+              Assinar {p.title}
+            </button>
           </div>
         ))}
       </div>
 
-      {selectedPlan && (
-        <div className="checkout-container">
-          <h3>Você escolheu: {selectedPlan.title}</h3>
-          <CheckoutProForm
-            defaultAmount={selectedPlan.price}
-            defaultPlan={selectedPlan.title}
-          />
-        </div>
+      {/* modal fica fora do fluxo normal */}
+      {selected && (
+        <CheckoutModal
+          open={Boolean(selected)}
+          onClose={() => setSelected(null)}
+          price={selected.price}
+          plan={selected.title}
+        />
       )}
     </section>
   );
 };
-
-export default PricingSection;
