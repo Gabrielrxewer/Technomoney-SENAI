@@ -1,31 +1,34 @@
-import express from "express";
-import dotenv from "dotenv";
-import cors from "cors";
-import cookieParser from "cookie-parser";
-import swaggerUi from "swagger-ui-express";
-import assetRoutes from "./routes/assetRoutes";
-import { swaggerSpec } from "./swagger";
-import { authenticate } from "./middlewares/authenticate.middleware";
+import "./config/env";
+import { createApp } from "./app";
 import { logger } from "./utils/logger";
 
-dotenv.config();
+const PORT = process.env.PORT ?? 4002;
+const app = createApp();
 
-const app = express();
-const PORT = process.env.PORT || 4002;
-
-app.use(
-  cors({
-    origin: ["http://localhost:3000", "http://localhost:4002"],
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    credentials: true,
-  })
-);
-app.use(cookieParser());
-app.use(express.json());
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-app.use("/api", authenticate, assetRoutes);
-
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   logger.info(`Server running on http://localhost:${PORT}`);
-  logger.info(`Swagger UI available at http://localhost:${PORT}/api-docs`);
+  logger.info(`Swagger UI   on http://localhost:${PORT}/api-docs`);
+});
+
+function shutdown(signal: NodeJS.Signals) {
+  logger.info(`\n${signal} recebido — encerrando HTTP…`);
+  server.close((err) => {
+    if (err) {
+      logger.error("Erro ao encerrar o servidor", err);
+      process.exit(1);
+    }
+    logger.info("HTTP encerrado com sucesso. Até logo!");
+    process.exit(0);
+  });
+}
+
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
+
+process.on("unhandledRejection", (reason) => {
+  logger.error("Unhandled Rejection:", reason);
+});
+process.on("uncaughtException", (err) => {
+  logger.error("Uncaught Exception:", err);
+  process.exit(1);
 });

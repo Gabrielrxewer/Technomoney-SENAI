@@ -1,30 +1,49 @@
-import axios, { AxiosInstance } from "axios";
+import axios, { AxiosInstance, AxiosError } from "axios";
+import { AppError } from "../utils/app-error";
 
-interface ApiAsset {
+export interface ApiAsset {
   nome: string;
   preco: number;
   volume: number;
 }
 
 export class MarketDataService {
-  private readonly client: AxiosInstance;
-
   constructor(
-    private readonly allUrl = "http://localhost:4001/acoes/all",
-    private readonly byNameUrl = "http://localhost:4001/acoes/byname"
-  ) {
-    this.client = axios.create({ timeout: 8_000 });
-  }
+    private readonly client: AxiosInstance = axios.create({ timeout: 8000 }),
+    private readonly baseUrl: string = "http://localhost:4001"
+  ) {}
 
   async fetchAll(): Promise<ApiAsset[]> {
-    const { data } = await this.client.get<ApiAsset[]>(this.allUrl);
-    return data;
+    try {
+      const { data } = await this.client.get<ApiAsset[]>(
+        `${this.baseUrl}/acoes/all`
+      );
+      if (!Array.isArray(data))
+        throw new AppError(502, "Invalid response from market API");
+      return data;
+    } catch (err) {
+      const e = err as AxiosError;
+      throw new AppError(
+        503,
+        `Market API unavailable${e.response ? `: ${e.response.status}` : ""}`
+      );
+    }
   }
 
   async fetchByName(name: string): Promise<ApiAsset | null> {
-    const { data } = await this.client.post<ApiAsset[]>(this.byNameUrl, {
-      name,
-    });
-    return Array.isArray(data) ? data[0] : data ?? null;
+    try {
+      const { data } = await this.client.post<ApiAsset[]>(
+        `${this.baseUrl}/acoes/byname`,
+        { name }
+      );
+      if (!data) return null;
+      return Array.isArray(data) ? data[0] ?? null : data;
+    } catch (err) {
+      const e = err as AxiosError;
+      throw new AppError(
+        503,
+        `Market API unavailable${e.response ? `: ${e.response.status}` : ""}`
+      );
+    }
   }
 }
