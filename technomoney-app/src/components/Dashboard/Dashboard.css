@@ -1,12 +1,13 @@
 :root {
-  --color-primary: #0cb3a8;
-  --color-primary-dark: #08a295;
-  --color-bg: #0d1821;
-  --color-card-bg: #112933;
-  --color-text-main: #f0f0f0;
-  --color-text-secondary: #cde6e1;
-  --shadow-primary: rgba(12, 179, 168, 0.35);
-  --shadow-hover: rgba(12, 179, 168, 0.4);
+  --color-primary: var(--brand-primary, #0cb3a8);
+  --color-primary-dark: var(--brand-primary-600, #089e92);
+  --color-bg: var(--app-background, #0d1821);
+  --color-card-bg: var(--surface-1, #10222b);
+  --color-card-elev: var(--surface-2, #122a35);
+  --color-text-main: var(--text-1, #f2f4f5);
+  --color-text-secondary: var(--text-2, #cfe3df);
+  --border-soft: var(--border-soft, rgba(255, 255, 255, 0.06));
+  --shadow-soft: 0 6px 18px rgba(0, 0, 0, 0.22);
 }
 
 * {

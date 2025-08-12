@@ -5,7 +5,7 @@ import RealTimeActions from "../Dashboard/RealTimeActions/RealTimeActions";
 import ActionsTable from "../Dashboard/ActionsTable/ActionsTable";
 import ActionsAnalysis from "../Dashboard/ActionsAnalysis/ActionsAnalysis";
 import ErrorMessage from "../Dashboard/ErrorMessage/ErrorMessage";
-import Spinner from "./Spinner/Spinner";
+import Spinner from "../Spinner/Spinner";
 import "./Dashboard.css";
 
 interface Acao {
@@ -30,12 +30,19 @@ type AssetsResult = {
 
 async function fetchAssets(): Promise<AssetsResult> {
   const token = localStorage.getItem("token");
-  if (!token) throw new Error("Token não encontrado. Faça login.");
+  if (!token) {
+    throw new Error("Token não encontrado. Faça login.");
+  }
+
   const res = await axios.get<Acao[]>(
     `${import.meta.env.VITE_API_URL}/api/assets/sorted/price`,
-    { headers: { Authorization: `Bearer ${token}` } }
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
   );
+
   const acoes = res.data;
+
   return {
     acoes,
     dadosAnalise: {
@@ -56,16 +63,21 @@ const Dashboard: React.FC = () => {
     retry: 1,
   });
 
-  if (isLoading && !data) {
+  if (isLoading || !data) {
     return <Spinner />;
+  }
+
+  if (error) {
+    console.error("Erro ao buscar dados do dashboard:", error);
+    return <ErrorMessage message={error.message} />;
   }
 
   return (
     <div className="dashboard-container">
-      {error && <ErrorMessage message={error.message} />}
-      <RealTimeActions acoes={data!.acoes} loading={isLoading} />
-      <ActionsTable acoes={data!.acoes} loading={isLoading} />
-      <ActionsAnalysis acoes={data!.acoes} loading={isLoading} />
+      <RealTimeActions acoes={data.acoes} loading={isLoading} />
+      <ActionsTable acoes={data.acoes} loading={isLoading} />
+      <ActionsAnalysis acoes={data.acoes} loading={isLoading} />
+
     </div>
   );
 };

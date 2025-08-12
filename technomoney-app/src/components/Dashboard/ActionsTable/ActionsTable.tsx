@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef } from "react";
+
 import "./ActionsTable.css";
 
 interface Acao {
@@ -19,14 +20,6 @@ const ActionsTable: React.FC<Props> = ({ acoes, loading }) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const filteredAcoes = useMemo(() => {
-    if (!searchTerm) return acoes;
-    const lower = searchTerm.toLowerCase();
-    return acoes.filter((acao) =>
-      [
-        acao.nome,
-        acao.preco.toFixed(2),
-        acao.variacao.toFixed(2),
-        acao.volume.toString(),
       ].some((field) => field.toLowerCase().includes(lower))
     );
   }, [acoes, searchTerm]);
@@ -44,8 +37,10 @@ const ActionsTable: React.FC<Props> = ({ acoes, loading }) => {
               placeholder="Pesquisar..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              aria-label="Pesquisar por nome, preço, variação ou volume"
             />
-            <span className="icon-lupa" aria-label="Pesquisar">
+
+            <span className="icon-lupa" aria-hidden="true">
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -58,6 +53,30 @@ const ActionsTable: React.FC<Props> = ({ acoes, loading }) => {
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
             </span>
+
+            {/* Botão "Minha Carteira" — SPA navigation */}
+            <Link
+              to="/portfolio"
+              className="icon-cart"
+              aria-label="Ver minha carteira"
+              title="Minha Carteira"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="var(--color-primary)"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="9" cy="21" r="1" />
+                <circle cx="20" cy="21" r="1" />
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+              </svg>
+            </Link>
+
           </div>
         </header>
 
@@ -93,7 +112,12 @@ const ActionsTable: React.FC<Props> = ({ acoes, loading }) => {
                     filteredAcoes.map((acao) => (
                       <tr key={acao.id}>
                         <td>{acao.nome}</td>
-                        <td>{acao.preco.toFixed(2)}</td>
+                        <td>
+                          {Number.isFinite(acao.preco)
+                            ? acao.preco.toFixed(2)
+                            : "-"}
+                        </td>
+
                         <td
                           className={
                             acao.variacao > 0
@@ -103,9 +127,16 @@ const ActionsTable: React.FC<Props> = ({ acoes, loading }) => {
                                 : ""
                           }
                         >
-                          {acao.variacao.toFixed(2)}
+                          {Number.isFinite(acao.variacao)
+                            ? acao.variacao.toFixed(2)
+                            : "-"}
                         </td>
-                        <td>{acao.volume.toLocaleString("pt-BR")}</td>
+                        <td>
+                          {Number.isFinite(acao.volume)
+                            ? acao.volume.toLocaleString("pt-BR")
+                            : "-"}
+                        </td>
+
                       </tr>
                     ))
                   )}

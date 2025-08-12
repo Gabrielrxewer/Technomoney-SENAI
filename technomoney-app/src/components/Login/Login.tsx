@@ -2,11 +2,10 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
 import "./Auth.css";
-import Spinner from "../../components/Dashboard/Spinner/Spinner";
+import Spinner from "../Spinner/Spinner";
 import { useAuth } from "../../context/AuthContext";
 import { authApi } from "../../services/http";
 
