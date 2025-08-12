@@ -15,6 +15,7 @@ import "../CSSPopup/Popup.css";
 import { Button } from "../../ui/Button";
 import Spinner from "../../Spinner/Spinner";
 
+
 interface UserPopupProps {
   onClose: () => void;
   openAccount: () => void;

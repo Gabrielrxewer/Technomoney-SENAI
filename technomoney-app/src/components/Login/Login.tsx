@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
 import "./Auth.css";

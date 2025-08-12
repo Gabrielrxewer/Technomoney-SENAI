@@ -111,6 +111,7 @@ tbody {
 tbody::-webkit-scrollbar {
   width: 8px;
 }
+
 tbody::-webkit-scrollbar-thumb {
   background-color: var(--color-primary);
   border-radius: 12px;

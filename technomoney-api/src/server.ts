@@ -6,6 +6,7 @@ import swaggerUi from "swagger-ui-express";
 import assetRoutes from "./routes/assetRoutes";
 import { swaggerSpec } from "./swagger";
 import { authenticate } from "./middlewares/authenticate.middleware";
+import { logger } from "./utils/logger";
 
 dotenv.config();
 
@@ -25,6 +26,6 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use("/api", authenticate, assetRoutes);
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Swagger UI available at http://localhost:${PORT}/api-docs`);
+  logger.info(`Server running on http://localhost:${PORT}`);
+  logger.info(`Swagger UI available at http://localhost:${PORT}/api-docs`);
 });

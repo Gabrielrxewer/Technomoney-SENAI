@@ -77,6 +77,7 @@ const Dashboard: React.FC = () => {
       <RealTimeActions acoes={data.acoes} loading={isLoading} />
       <ActionsTable acoes={data.acoes} loading={isLoading} />
       <ActionsAnalysis acoes={data.acoes} loading={isLoading} />
+
     </div>
   );
 };

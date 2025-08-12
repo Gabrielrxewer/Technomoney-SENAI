@@ -1,0 +1,95 @@
+.tmchk-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+}
+
+.tmchk-modal {
+  width: min(92%, 420px);
+  background: var(--color-card-bg);
+  border-radius: 18px;
+  padding: 32px 28px 36px;
+  box-shadow: 0 12px 30px var(--shadow-hover);
+  position: relative;
+  animation: tmchk-scaleIn 0.25s ease;
+}
+
+@keyframes tmchk-scaleIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.tmchk-close {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  background: transparent;
+  border: none;
+  font-size: 1.6rem;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.tmchk-close:hover {
+  color: #fff;
+}
+
+.tmchk-title {
+  font-size: 20px;
+  font-weight: 200;
+  color: var(--color-primary);
+  text-align: center;
+  margin-bottom: 1.2rem;
+}
+
+.tmchk-form {
+  display: flex;
+  flex-direction: column;
+}
+.tmchk-form label {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  margin: 6px 0 4px;
+}
+.tmchk-form input,
+.tmchk-form select {
+  padding: 10px 12px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: var(--color-bg);
+  color: var(--color-text-main);
+}
+.tmchk-form input:focus,
+.tmchk-form select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.tmchk-form button[type="submit"] {
+  margin-top: 16px;
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 600;
+  padding: 12px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.25s;
+}
+.tmchk-form button[type="submit"]:hover {
+  background: var(--color-primary-dark);
+}
+
+.tmchk-mp {
+  margin-top: 20px;
+}

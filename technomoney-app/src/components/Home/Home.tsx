@@ -12,6 +12,7 @@ import BlogSection from "./sections/BlogSection";
 import FaqSection from "./sections/FaqSection";
 import Spinner from "../Spinner/Spinner";
 
+
 interface InfoCard {
   title: string;
   description: string;
@@ -101,6 +102,7 @@ const Home: React.FC = () => {
   const scrollToPrecos = () => {
     const section = document.getElementById("precos");
     if (section) section.scrollIntoView({ behavior: "smooth" });
+
   };
 
   if (loading) {
@@ -116,6 +118,7 @@ const Home: React.FC = () => {
           Transforme seu futuro financeiro conosco.
         </p>
         <button onClick={scrollToPrecos} className="btn_home btn--primary_home">
+
           Saiba mais
         </button>
       </header>
