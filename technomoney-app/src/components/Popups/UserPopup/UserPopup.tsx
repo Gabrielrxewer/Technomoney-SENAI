@@ -13,7 +13,7 @@ import {
 import "./UserPopup.css";
 import "../CSSPopup/Popup.css";
 import { Button } from "../../ui/Button";
-import Spinner from "../../Dashboard/Spinner/Spinner";
+import Spinner from "../../Spinner/Spinner";
 
 interface UserPopupProps {
   onClose: () => void;

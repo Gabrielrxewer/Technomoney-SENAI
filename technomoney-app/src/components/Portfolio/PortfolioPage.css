@@ -1,0 +1,72 @@
+.portfolio-page {
+  --color-primary: var(--brand-primary);
+  --color-primary-dark: var(--brand-primary-600);
+  --color-bg: var(--app-background);
+  --color-card-bg: var(--surface-1);
+  --color-card-elev: var(--surface-2);
+  --color-text-main: var(--text-1);
+  --color-text-secondary: var(--text-2);
+  --border-soft: var(--border-soft);
+  --shadow-soft: 0 6px 18px rgba(0, 0, 0, 0.22);
+
+  --page-pad: clamp(8px, 1.2vw, 16px);
+  --footer-safe: 28px;
+
+  font-family:
+    "Segoe UI",
+    system-ui,
+    -apple-system,
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    "Noto Sans",
+    "Liberation Sans",
+    sans-serif;
+  width: 100%;
+  height: 100dvh;
+  overflow-x: visible;
+  overflow-y: hidden;
+  padding: var(--page-pad);
+  background: var(--color-bg);
+  color: var(--color-text-main);
+}
+
+.portfolio-page .page-title {
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+  color: var(--color-primary);
+  text-align: center;
+  margin-top: var(--page-pad);
+  margin-bottom: var(--page-pad);
+  text-shadow: 0 0 8px var(--color-primary);
+  position: relative;
+}
+.portfolio-page .page-title::after {
+  content: "";
+  display: block;
+  width: 60px;
+  height: 4px;
+  background: var(--color-primary);
+  margin: 8px auto 0;
+  border-radius: 2px;
+  box-shadow: 0 0 8px var(--color-primary);
+}
+
+.portfolio-page .edge-x {
+  margin-left: calc(-1 * var(--page-pad));
+  margin-right: calc(-1 * var(--page-pad));
+}
+
+.portfolio-page .viewport-grid {
+  display: grid;
+  grid-template-rows:
+    auto
+    auto
+    minmax(clamp(238px, 42vh, 520px), 0.5fr)
+    auto
+    minmax(0, 0.45fr);
+  gap: 0.75rem;
+  height: calc(100% - var(--footer-safe));
+  padding-bottom: var(--footer-safe);
+  max-width: 100vw;
+  overflow: visible;
+}

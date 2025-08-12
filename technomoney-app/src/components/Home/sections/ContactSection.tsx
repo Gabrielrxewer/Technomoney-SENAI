@@ -9,13 +9,13 @@ const ContactSection: React.FC = () => (
   >
     <h2>Fale Conosco</h2>
     <p>
-      <strong>Email:</strong> suporte@technomoney.com
+      <strong>Email:</strong> debora.romitti@technomoney.com
     </p>
     <p>
-      <strong>Telefone:</strong> (11) 4000-1234
+      <strong>Telefone:</strong> (49)1234-5678
     </p>
     <p>
-      <strong>Endereço:</strong> Av. das Nações, 123, São Paulo/SP
+      <strong>Endereço:</strong>Avenida Engenho, nº 120 – Centro.
     </p>
   </section>
 );

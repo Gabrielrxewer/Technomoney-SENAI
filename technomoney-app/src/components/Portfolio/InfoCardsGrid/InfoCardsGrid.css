@@ -1,0 +1,123 @@
+.icg-grid {
+  margin-top: 8px;
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.4rem !important;
+  row-gap: 0.4rem !important;
+  column-gap: 0.4rem !important;
+  align-content: start;
+
+  --grid-offset-left: 10px;
+  margin-left: calc(-2 * var(--grid-offset-left)) !important;
+  padding-left: calc(6px + var(--grid-offset-left)) !important;
+  padding-right: 6px !important;
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+}
+
+.icg-card {
+  background:
+    radial-gradient(
+      65% 80% at 0% 0%,
+      rgba(255, 255, 255, 0.05),
+      transparent 60%
+    ),
+    linear-gradient(
+      180deg,
+      var(--color-card-bg) 0%,
+      var(--color-card-elev) 100%
+    );
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  box-shadow: var(--shadow-soft);
+  padding: 0.8rem 0.9rem;
+  margin: 6px !important;
+  display: grid;
+  grid-template-rows: auto auto auto;
+  text-align: left;
+  transition:
+    box-shadow 0.18s ease,
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    filter 0.2s ease;
+  cursor: default;
+}
+.icg-card:hover {
+  box-shadow: var(--shadow-medium);
+  transform: translateY(-1px);
+  border-color: var(--border-soft-strong);
+  filter: brightness(1.02);
+}
+.icg-card:focus,
+.icg-card:focus-within {
+  outline: none;
+  border-color: var(--focus-ring);
+  box-shadow:
+    0 0 0 3px color-mix(in oklab, var(--focus-ring) 30%, transparent),
+    var(--shadow-medium);
+}
+
+.icg-title {
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--color-text-secondary);
+  user-select: none;
+  margin: 0 0 0.1rem;
+}
+
+.icg-value {
+  font-size: clamp(1.06rem, 1.2vw + 0.7rem, 1.62rem);
+  font-weight: 800;
+  color: var(--color-text);
+  letter-spacing: 0.01em;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums lining-nums;
+  -webkit-font-feature-settings:
+    "tnum" 1,
+    "lnum" 1;
+  -moz-font-feature-settings:
+    "tnum" 1,
+    "lnum" 1;
+  font-feature-settings:
+    "tnum" 1,
+    "lnum" 1;
+}
+
+.icg-detail {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  margin: 0.05rem 0 0;
+  opacity: 0.95;
+}
+.icg-detail::before {
+  content: "• ";
+  color: var(--color-text-secondary);
+  opacity: 0.9;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .icg-card {
+    transition: none !important;
+    transform: none !important;
+    filter: none !important;
+  }
+}
+@media (max-width: 520px) {
+  .icg-grid {
+    --grid-offset-left: 8px;
+    gap: 0.35rem !important;
+    row-gap: 0.35rem !important;
+    column-gap: 0.35rem !important;
+    padding-left: calc(4px + var(--grid-offset-left)) !important;
+    padding-right: 4px !important;
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+  }
+  .icg-card {
+    padding: 0.75rem 0.85rem;
+    border-radius: 14px;
+  }
+}

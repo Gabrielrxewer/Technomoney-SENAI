@@ -1,3 +1,4 @@
+// src/App.tsx
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -12,6 +13,11 @@ import Dashboard from "./components/Dashboard/Dashboard";
 
 import { AuthProvider } from "./context/AuthContext";
 import PrivateRoute from "./private/PrivateRoute";
+import PortfolioPage from "./components/Portfolio/PortfolioPage";
+
+// ✅ CSS deve ser importado como efeito colateral (sem alias)
+import "./components/Portfolio/styles/tokens.css";
+import "./components/Portfolio/styles/globals.css";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +40,14 @@ function App() {
                 element={
                   <PrivateRoute>
                     <Dashboard />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/portfolio"
+                element={
+                  <PrivateRoute>
+                    <PortfolioPage />
                   </PrivateRoute>
                 }
               />
