@@ -1,4 +1,5 @@
-import express from "express";
+// src/app.ts
+import express, { type RequestHandler, type Request } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import csrf from "csurf";
@@ -10,6 +11,8 @@ import {
   secureHeaders,
   forceHttps,
 } from "./middlewares/secureHeaders.middleware";
+
+type CsrfRequest = Request & { csrfToken(): string };
 
 const app = express();
 const isProd = process.env.NODE_ENV === "production";
@@ -38,22 +41,26 @@ app.use(secureHeaders);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 if (isProd) {
-  app.use(
-    csrf({
-      cookie: {
-        httpOnly: true,
-        sameSite: "strict",
-        secure: true,
-      },
-    })
-  );
-  app.use((req, res, next) => {
-    res.cookie("XSRF-TOKEN", req.csrfToken(), {
+  const csrfProtection = csrf({
+    cookie: {
+      httpOnly: true,
+      sameSite: "strict",
+      secure: true,
+    },
+  });
+
+  app.use(csrfProtection);
+
+  const exposeCsrfCookie: RequestHandler = (req, res, next) => {
+    const token = (req as CsrfRequest).csrfToken();
+    res.cookie("XSRF-TOKEN", token, {
       sameSite: "strict",
       secure: true,
     });
     next();
-  });
+  };
+
+  app.use(exposeCsrfCookie);
 }
 
 app.use("/api/auth", authRoutes);

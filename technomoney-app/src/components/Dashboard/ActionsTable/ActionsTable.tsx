@@ -1,5 +1,6 @@
+// ActionsTable.tsx
 import React, { useState, useMemo, useRef } from "react";
-
+import { Link } from "react-router-dom";
 import "./ActionsTable.css";
 
 interface Acao {
@@ -20,8 +21,18 @@ const ActionsTable: React.FC<Props> = ({ acoes, loading }) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const filteredAcoes = useMemo(() => {
-      ].some((field) => field.toLowerCase().includes(lower))
-    );
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return acoes;
+
+    return acoes.filter((acao) => {
+      const fields = [
+        acao.nome ?? "",
+        Number.isFinite(acao.preco) ? String(acao.preco) : "",
+        Number.isFinite(acao.variacao) ? String(acao.variacao) : "",
+        Number.isFinite(acao.volume) ? String(acao.volume) : "",
+      ];
+      return fields.some((field) => String(field).toLowerCase().includes(term));
+    });
   }, [acoes, searchTerm]);
 
   return (
@@ -62,8 +73,6 @@ const ActionsTable: React.FC<Props> = ({ acoes, loading }) => {
               title="Minha Carteira"
             >
               <svg
-                xmlns="http://www.w3.org/2000/svg"
-
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="var(--color-primary)"
@@ -76,7 +85,6 @@ const ActionsTable: React.FC<Props> = ({ acoes, loading }) => {
                 <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
               </svg>
             </Link>
-
           </div>
         </header>
 
@@ -117,14 +125,13 @@ const ActionsTable: React.FC<Props> = ({ acoes, loading }) => {
                             ? acao.preco.toFixed(2)
                             : "-"}
                         </td>
-
                         <td
                           className={
                             acao.variacao > 0
                               ? "text-success"
                               : acao.variacao < 0
-                                ? "text-danger"
-                                : ""
+                              ? "text-danger"
+                              : ""
                           }
                         >
                           {Number.isFinite(acao.variacao)
@@ -136,7 +143,6 @@ const ActionsTable: React.FC<Props> = ({ acoes, loading }) => {
                             ? acao.volume.toLocaleString("pt-BR")
                             : "-"}
                         </td>
-
                       </tr>
                     ))
                   )}
