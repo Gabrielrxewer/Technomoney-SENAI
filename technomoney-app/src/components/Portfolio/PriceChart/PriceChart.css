@@ -1,0 +1,348 @@
+.price-chart.chart-container {
+  --border-soft: color-mix(in oklab, white 8%, transparent);
+  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.16);
+  --color-text: rgba(255, 255, 255, 0.92);
+  --color-text-secondary: rgba(255, 255, 255, 0.62);
+  --color-card-bg: #112933;
+
+  --chart-stroke: rgb(12 179 168);
+  --chart-stroke-strong: rgb(8, 165, 155);
+  --color-rsi: #f59e0b;
+
+  --chart-min-h: 220px;
+
+  background:
+    radial-gradient(
+      120% 100% at 0% 0%,
+      rgba(96, 165, 250, 0.06),
+      transparent 60%
+    ),
+    var(--color-card-bg);
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  padding: 0.5rem 0.65rem 0.65rem;
+  box-shadow: var(--shadow-soft);
+  min-height: var(--chart-min-h);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  position: relative;
+  overflow: hidden;
+}
+.price-chart.chart-container.allow-bleed {
+  overflow: visible;
+  border-left: 0;
+  border-right: 0;
+  border-radius: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.1rem 0.2rem 0.2rem;
+  position: relative;
+}
+.chart-header::after {
+  content: "";
+  position: absolute;
+  left: 0.2rem;
+  right: 0.2rem;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.12),
+    transparent
+  );
+}
+.asset-heading {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.asset-name {
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: min(52vw, 320px);
+}
+.asset-ticker {
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-soft);
+  color: var(--color-text-secondary);
+}
+
+.asset-change {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+}
+.price-last {
+  font-weight: 700;
+  color: var(--color-text);
+}
+.price-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.22rem 0.52rem;
+  border-radius: 999px;
+  line-height: 1;
+  border: 1px solid var(--border-soft);
+  background: rgba(255, 255, 255, 0.04);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+.asset-change.up .price-delta {
+  color: #22c55e;
+  background: color-mix(in oklab, #22c55e 12%, transparent);
+  border-color: color-mix(in oklab, #22c55e 30%, var(--border-soft));
+}
+.asset-change.down .price-delta {
+  color: #ef4444;
+  background: color-mix(in oklab, #ef4444 12%, transparent);
+  border-color: color-mix(in oklab, #ef4444 30%, var(--border-soft));
+}
+
+.chart-svg-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  isolation: isolate;
+}
+.chart-svg-wrapper.full-bleed {
+  width: calc(100dvw);
+  position: relative;
+  left: 50%;
+  margin-left: -50dvw;
+}
+
+.chart-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  overflow: visible;
+  touch-action: pan-y;
+  outline: none;
+}
+.chart-svg:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--chart-stroke) 70%, white 30%);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+.chart-grid-line {
+  stroke: var(--color-text-secondary);
+  stroke-opacity: 0.16;
+  stroke-width: 0.5;
+  shape-rendering: geometricPrecision;
+}
+.chart-area {
+  shape-rendering: geometricPrecision;
+  opacity: 0.85;
+}
+.chart-price {
+  stroke: var(--chart-stroke);
+  stroke-width: 1.7;
+  fill: none;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  animation: draw-line 950ms cubic-bezier(0.15, 0.85, 0.25, 1) both;
+}
+
+.chart-last-dot {
+  fill: var(--chart-stroke-strong);
+  stroke: rgba(255, 255, 255, 0.75);
+  stroke-width: 0.35;
+  filter: drop-shadow(
+    0 0 6px color-mix(in oklab, var(--chart-stroke-strong) 45%, transparent)
+  );
+}
+.chart-last-dot-pulse {
+  fill: none;
+  stroke: color-mix(in oklab, var(--chart-stroke-strong) 70%, transparent);
+  stroke-width: 0.9;
+  opacity: 0.55;
+  transform-origin: center;
+  animation: dot-pulse 1800ms ease-out infinite;
+}
+
+.chart-rsi {
+  stroke: var(--color-rsi);
+  stroke-width: 1.05;
+  fill: none;
+  stroke-dasharray: 3 3;
+  opacity: 0.95;
+}
+.chart-rsi-level {
+  stroke: var(--color-text-secondary);
+  stroke-opacity: 0.25;
+  stroke-width: 0.45;
+  stroke-dasharray: 2 2;
+}
+.chart-rsi-label {
+  font-size: 2px;
+  fill: var(--color-text-secondary);
+  opacity: 0.8;
+}
+.chart-rsi-title {
+  font-size: 2.2px;
+  fill: var(--color-text-secondary);
+  opacity: 0.85;
+}
+
+.chart-axis-tick {
+  stroke: var(--color-text-secondary);
+  stroke-opacity: 0.38;
+  stroke-width: 0.45;
+  shape-rendering: geometricPrecision;
+}
+.chart-axis-label {
+  font-size: 1.6px;
+  fill: var(--color-text-secondary);
+  opacity: 0.85;
+  font-variant-numeric: tabular-nums;
+  paint-order: stroke fill;
+  stroke: rgba(0, 0, 0, 0.28);
+  stroke-width: 0.15px;
+}
+
+.chart-loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: linear-gradient(
+    180deg,
+    rgba(16, 18, 20, 0.5),
+    rgba(16, 18, 20, 0.68)
+  );
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  filter: saturate(0.98) blur(0px);
+  transition:
+    opacity 0.26s ease,
+    filter 0.26s ease;
+  pointer-events: none;
+}
+.price-chart.is-loading .chart-loading-overlay {
+  opacity: 1;
+  filter: saturate(0.98) blur(1px);
+}
+.chart-skeleton {
+  width: min(92%, 980px);
+  height: 60%;
+  border-radius: 10px;
+  background:
+    linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent)
+      0 0/200% 100%,
+    linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.03),
+        rgba(255, 255, 255, 0.02)
+      )
+      0 0/100% 100%,
+    linear-gradient(180deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.04)) 0 0/100%
+      100%;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 1px 2px rgba(0, 0, 0, 0.12),
+    0 6px 18px rgba(0, 0, 0, 0.18);
+  animation: shimmer 1400ms ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+}
+.chart-skeleton::before,
+.chart-skeleton::after {
+  content: "";
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  border-top: 1px dashed rgba(255, 255, 255, 0.06);
+}
+.chart-skeleton::before {
+  top: 33%;
+}
+.chart-skeleton::after {
+  top: 66%;
+}
+
+.chart-empty {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  color: var(--color-text-secondary);
+  border: 1px dashed var(--border-soft);
+  border-radius: 10px;
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chart-skeleton {
+    animation: none;
+  }
+  .chart-price {
+    animation: none;
+  }
+}
+.chart-series {
+  opacity: 0;
+  transition: opacity 0.22s ease;
+}
+.chart-series.is-visible {
+  opacity: 1;
+}
+
+@keyframes draw-line {
+  from {
+    stroke-dasharray: 0 600;
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dasharray: 600 0;
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes shimmer {
+  0% {
+    background-position:
+      -200% 0,
+      0 0,
+      0 0;
+  }
+  100% {
+    background-position:
+      200% 0,
+      0 0,
+      0 0;
+  }
+}
+@keyframes dot-pulse {
+  0% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  60% {
+    opacity: 0;
+    transform: scale(1.9);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.9);
+  }
+}

@@ -1,13 +1,10 @@
-
 :root {
-  --color-primary:        #0cb3a8;
-  --color-primary-dark:   #08a295;
-  --color-bg:             #0d1821;
-  --color-card-bg:        #112933;
-  --color-text-main:      #f0f0f0;
+  --color-primary: #0cb3a8;
+  --color-primary-dark: #08a295;
+  --color-bg: #0d1821;
+  --color-card-bg: #112933;
+  --color-text-main: #f0f0f0;
   --color-text-secondary: #cde6e1;
-  --shadow-primary:       rgba(12, 179, 168, 0.35);
-  --shadow-hover:         rgba(12, 179, 168, 0.40);
 }
 
 * {
@@ -20,12 +17,13 @@ html {
   scroll-behavior: smooth;
 }
 
-html, body, #root {
-  height: auto !important;        
-  overflow-x: hidden !important;  
-  overflow-y: auto !important;    
+html,
+body,
+#root {
+  height: auto !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
 }
-
 
 *::-webkit-scrollbar {
   width: 6px;
@@ -121,7 +119,6 @@ body {
   margin-inline: auto;
 }
 
-
 .btn_home {
   font-weight: 600;
   border: none;
@@ -150,13 +147,12 @@ body {
   transform: scale(1.05);
 }
 
-
 .info-cards_home {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 36px;
   padding: 0 160px;
-  margin-top: -80px; 
+  margin-top: -80px;
 }
 
 .card_home {
@@ -199,9 +195,16 @@ body {
 }
 
 @media (max-width: 600px) {
-  .hero__title_home    { font-size: 2.2rem; }
-  .hero__subtitle_home { font-size: 1rem;   }
-  .btn_home            { padding: 12px 35px; font-size: 1rem; }
+  .hero__title_home {
+    font-size: 2.2rem;
+  }
+  .hero__subtitle_home {
+    font-size: 1rem;
+  }
+  .btn_home {
+    padding: 12px 35px;
+    font-size: 1rem;
+  }
 
   .info-cards_home {
     padding: 0 8px;

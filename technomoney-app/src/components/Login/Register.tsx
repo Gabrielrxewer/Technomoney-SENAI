@@ -6,7 +6,7 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
 import "./Auth.css";
-import Spinner from "../../components/Dashboard/Spinner/Spinner";
+import Spinner from "../Spinner/Spinner";
 import { authApi } from "../../services/http";
 import { useAuth } from "../../context/AuthContext";
 

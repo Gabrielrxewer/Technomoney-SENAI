@@ -32,7 +32,7 @@
     "@types/express": "^5.0.3",
     "@types/node": "^22.15.17",
     "nodemon": "^3.1.10",
-    "pino-pretty": "^13.0.0",
+    "pino-pretty": "^13.1.1",
     "sequelize-cli": "^6.6.3",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",

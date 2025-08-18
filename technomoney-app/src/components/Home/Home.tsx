@@ -10,7 +10,8 @@ import PricingSection from "./sections/PricingSection";
 import ContactSection from "./sections/ContactSection";
 import BlogSection from "./sections/BlogSection";
 import FaqSection from "./sections/FaqSection";
-import Spinner from "../../components/Dashboard/Spinner/Spinner";
+import Spinner from "../Spinner/Spinner";
+
 
 interface InfoCard {
   title: string;
@@ -57,20 +58,37 @@ const Home: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const timeout = setTimeout(() => setLoading(false), 100);
-    return () => clearTimeout(timeout);
+    let raf = requestAnimationFrame(() => {
+      const t = window.setTimeout(() => setLoading(false), 120);
+      return () => clearTimeout(t);
+    });
+    return () => cancelAnimationFrame(raf);
   }, []);
 
   useEffect(() => {
     if (loading) return;
 
-    if (hash) {
-      const target = document.querySelector(hash);
-      if (target) {
-        setTimeout(() => {
-          target.scrollIntoView({ behavior: "smooth" });
-        }, 50);
+    try {
+      if (hash && hash.length > 1) {
+        const id = hash.slice(1);
+
+        const byId = document.getElementById(id);
+        if (byId) {
+          setTimeout(() => byId.scrollIntoView({ behavior: "smooth" }), 50);
+          return;
+        }
+
+        const escaped = (window as any).CSS?.escape
+          ? (window as any).CSS.escape(`#${id}`)
+          : `#${id.replace(/([ !"$%&'()*+,./:;<=>?@[\\\]^`{|}~])/g, "\\$1")}`;
+
+        const target = document.querySelector(escaped);
+        if (target) {
+          setTimeout(() => target.scrollIntoView({ behavior: "smooth" }), 50);
+        }
       }
+    } catch (err) {
+      console.error("Falha ao rolar até o hash:", err);
     }
   }, [hash, loading]);
 
@@ -82,10 +100,9 @@ const Home: React.FC = () => {
   }, []);
 
   const scrollToPrecos = () => {
-    const section = document.querySelector("#precos");
-    if (section) {
-      section.scrollIntoView({ behavior: "smooth" });
-    }
+    const section = document.getElementById("precos");
+    if (section) section.scrollIntoView({ behavior: "smooth" });
+
   };
 
   if (loading) {
@@ -100,10 +117,8 @@ const Home: React.FC = () => {
         <p className="hero__subtitle_home">
           Transforme seu futuro financeiro conosco.
         </p>
-        <button
-          onClick={scrollToPrecos}
-          className="btn_home btn--primary_home"
-        >
+        <button onClick={scrollToPrecos} className="btn_home btn--primary_home">
+
           Saiba mais
         </button>
       </header>

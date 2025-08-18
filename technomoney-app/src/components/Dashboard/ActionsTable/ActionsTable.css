@@ -14,9 +14,8 @@
   width: 100%;
   margin-top: 30px;
   max-width: 100vw;
-  background: var(--color-card-bg);
+  box-shadow: none;
   border-radius: 20px;
-  box-shadow: 0 10px 30px var(--shadow-primary);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -32,7 +31,7 @@
 .table-card:focus,
 .table-card:focus-visible {
   outline: none !important;
-  box-shadow: 0 10px 30px var(--shadow-primary) !important;
+  box-shadow: none !important;
   transform: none !important;
   cursor: default !important;
 }
@@ -218,4 +217,26 @@ tbody:empty::after {
   color: #d85c51;
   font-weight: 700;
   text-shadow: 0 0 3px #d85c5188;
+}
+
+.icon-cart {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.icon-cart svg {
+  width: 28px;
+  height: 28px;
+  stroke: var(--color-primary);
+}
+
+.icon-cart:hover svg {
+  transform: scale(1.1);
+  stroke: var(--color-primary-dark);
 }
