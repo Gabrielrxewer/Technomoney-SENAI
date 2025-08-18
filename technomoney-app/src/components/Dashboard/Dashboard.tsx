@@ -35,10 +35,8 @@ async function fetchAssets(): Promise<AssetsResult> {
   }
 
   const res = await axios.get<Acao[]>(
-    `${import.meta.env.VITE_API_URL}/api/assets/sorted/price`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
+    `${import.meta.env.VITE_API_URL}/assets/sorted/price`,
+    { headers: { Authorization: `Bearer ${token}` } }
   );
 
   const acoes = res.data;
