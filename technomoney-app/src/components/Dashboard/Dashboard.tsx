@@ -32,7 +32,7 @@ async function fetchAssets(): Promise<AssetsResult> {
   const token = localStorage.getItem("token");
   if (!token) throw new Error("Token não encontrado. Faça login.");
   const res = await axios.get<Acao[]>(
-    `${import.meta.env.VITE_API_URL}/api/assets/sorted/price`,
+    `${import.meta.env.VITE_API_URL}/assets/sorted/price`,
     { headers: { Authorization: `Bearer ${token}` } }
   );
   const acoes = res.data;

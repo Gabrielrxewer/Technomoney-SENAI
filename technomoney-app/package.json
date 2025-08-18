@@ -38,7 +38,7 @@
   "scripts": {
     "start": "vite",
     "dev": "vite",
-    "build": "react-scripts build",
+    "build": "vite build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

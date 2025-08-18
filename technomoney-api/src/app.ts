@@ -1,5 +1,5 @@
 import express, { Application } from "express";
-import cors from "cors";
+import cors, { CorsOptions } from "cors";
 import cookieParser from "cookie-parser";
 import swaggerUi from "swagger-ui-express";
 import assetRoutes from "./routes/assetRoutes";
@@ -10,14 +10,34 @@ import { errorHandler } from "./middlewares/error.middleware";
 export function createApp(): Application {
   const app = express();
 
-  app.use(
-    cors({
-      origin: ["http://localhost:3000", "http://localhost:4002"],
-      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-      credentials: true,
-    })
-  );
+  const allowedOrigins = [
+    "https://www.technomoney.net.br",
+    "https://technomoney.net.br",
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://localhost",
+    "https://localhost",
+  ];
 
+  const corsOptions: CorsOptions = {
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true);
+      if (allowedOrigins.includes(origin)) return cb(null, true);
+      return cb(null, false);
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "X-CSRF-Token",
+    ],
+    optionsSuccessStatus: 204,
+    maxAge: 86400,
+  };
+
+  app.use(cors(corsOptions));
   app.use(cookieParser());
   app.use(express.json());
   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
