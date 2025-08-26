@@ -15,6 +15,39 @@ interface AssetRecordCache {
   volume: number;
 }
 
+interface AssetEntity {
+  id: number;
+  tag: string;
+  name: string;
+}
+
+interface ApiAsset {
+  nome: string;
+  preco: number;
+  volume: number;
+}
+
+interface TodayRecord {
+  asset_id: number;
+  price: number;
+  variation: number;
+  volume: number;
+}
+
+function getRecValues(
+  r: unknown
+): { price: number; variation: number; volume: number } | null {
+  if (!r) return null;
+  const o =
+    typeof (r as any).get === "function" ? (r as any).get() : (r as any);
+  if (o == null) return null;
+  return {
+    price: Number(o.price),
+    variation: Number(o.variation),
+    volume: Number(o.volume),
+  };
+}
+
 export class AssetService {
   constructor(
     private readonly assetRepo: AssetRepository,
@@ -27,13 +60,13 @@ export class AssetService {
   }
 
   async getAllToday(): Promise<AssetDto[]> {
-    const assets = await this.assetRepo.findAll();
+    const assets = (await this.assetRepo.findAll()) as unknown as AssetEntity[];
     if (!assets.length) return [];
 
     const { start, end } = getTodayRange();
     const [todayRecs, apiAssets] = await Promise.all([
       this.recordRepo.findToday(
-        assets.map((a) => a.id),
+        assets.map((a: AssetEntity) => a.id),
         start,
         end
       ),
@@ -41,7 +74,7 @@ export class AssetService {
     ]);
 
     const recMap = new Map<number, AssetRecordCache>();
-    todayRecs.forEach((r) =>
+    (todayRecs as unknown as TodayRecord[]).forEach((r: TodayRecord) =>
       recMap.set(r.asset_id, {
         price: r.price,
         variation: r.variation,
@@ -50,10 +83,11 @@ export class AssetService {
     );
 
     const upserts: AssetRecordUpsert[] = [];
+    const apiArr = apiAssets as unknown as ApiAsset[];
 
     for (const asset of assets) {
-      const api = apiAssets.find(
-        (a) => a.nome === asset.tag || a.nome === asset.name
+      const api = apiArr.find(
+        (a: ApiAsset) => a.nome === asset.tag || a.nome === asset.name
       );
       if (!api) continue;
 
@@ -80,8 +114,8 @@ export class AssetService {
     if (upserts.length) await this.recordRepo.bulkAdd(upserts);
 
     return assets
-      .filter((a) => recMap.has(a.id))
-      .map((a) => {
+      .filter((a: AssetEntity) => recMap.has(a.id))
+      .map((a: AssetEntity) => {
         const { price, variation, volume } = recMap.get(a.id)!;
         return {
           id: a.id,
@@ -95,17 +129,26 @@ export class AssetService {
   }
 
   async getByTagToday(tag: string): Promise<AssetDto | null> {
-    const asset = await this.assetRepo.findByTag(tag);
+    const asset = (await this.assetRepo.findByTag(
+      tag
+    )) as unknown as AssetEntity | null;
     if (!asset) return null;
 
-    const api = await this.marketData.fetchByName(asset.tag);
+    const api = (await this.marketData.fetchByName(
+      asset.tag
+    )) as unknown as ApiAsset | null;
     if (!api || api.preco == null || api.volume == null)
       throw new AppError(502, "No data from market API");
 
     const { start, end } = getTodayRange();
-    let rec = await this.recordRepo.findLatest(asset.id, start, end);
+    let rec: any = await this.recordRepo.findLatest(asset.id, start, end);
 
-    if (!rec || rec.price !== api.preco || rec.volume !== api.volume) {
+    const current = getRecValues(rec);
+    if (
+      !current ||
+      current.price !== api.preco ||
+      current.volume !== api.volume
+    ) {
       const base = basePriceMap[tag] ?? api.preco;
       const variation = +(api.preco - base).toFixed(2);
       rec = await this.recordRepo.add(
@@ -117,7 +160,7 @@ export class AssetService {
       );
     }
 
-    const { price, variation, volume } = rec.get();
+    const { price, variation, volume } = getRecValues(rec)!;
     return {
       id: asset.id,
       tag: asset.tag,

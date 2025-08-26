@@ -5,7 +5,6 @@ import { AuthResponse, LoginVars, RegisterVars } from "../types/auth";
 
 type ApiError = AxiosError<{ message: string }>;
 
-/* ---------- LOGIN ---------- */
 export const useLogin = () =>
   useMutation<AuthResponse, ApiError, LoginVars>({
     mutationFn: (vars) =>
@@ -14,7 +13,6 @@ export const useLogin = () =>
         .then(({ data }) => data),
   });
 
-/* ---------- REGISTER ---------- */
 export const useRegister = () =>
   useMutation<void, ApiError, RegisterVars>({
     mutationFn: (vars) =>

@@ -1,0 +1,49 @@
+version: "3.9"
+services:
+  api:
+    build:
+      context: ./technomoney-api
+    container_name: technomoney-api
+    env_file:
+      - ./technomoney-api/.env
+    environment:
+      NODE_ENV: production
+      PORT: "4002"
+      SWAGGER_FILE: /app/dist/openapi.yaml
+      MARKET_API_BASE_URL: "http://host.docker.internal:4001"
+    ports:
+      - "4002:4002"
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  auth:
+    build:
+      context: ./technomoney-auth
+    container_name: technomoney-auth
+    env_file:
+      - ./technomoney-auth/.env
+    environment:
+      NODE_ENV: production
+      PORT: "4000"
+      SWAGGER_FILE: /app/dist/openapi.yaml
+      ENTRY_FILE: dist/server.js
+    ports:
+      - "4000:4000"
+    restart: unless-stopped
+
+  payments:
+    build:
+      context: ./technomoney-payment-api
+    container_name: technomoney-payments
+    env_file:
+      - ./technomoney-payment-api/.env
+    environment:
+      NODE_ENV: production
+      PORT: "3001"
+      DB_HOST: "host.docker.internal"
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

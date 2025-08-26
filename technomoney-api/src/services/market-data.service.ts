@@ -10,7 +10,8 @@ export interface ApiAsset {
 export class MarketDataService {
   constructor(
     private readonly client: AxiosInstance = axios.create({ timeout: 8000 }),
-    private readonly baseUrl: string = "http://localhost:4001"
+    private readonly baseUrl: string = process.env.MARKET_API_BASE_URL ||
+      "http://host.docker.internal:4001"
   ) {}
 
   async fetchAll(): Promise<ApiAsset[]> {

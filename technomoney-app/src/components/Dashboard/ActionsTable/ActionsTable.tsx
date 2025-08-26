@@ -1,4 +1,3 @@
-// ActionsTable.tsx
 import React, { useState, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import "./ActionsTable.css";

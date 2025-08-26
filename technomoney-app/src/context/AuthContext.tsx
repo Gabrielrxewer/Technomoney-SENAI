@@ -43,7 +43,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   const logout = useCallback(async () => {
     try {
-      await authApi.post("/api/auth/logout");
+      await authApi.get("auth/csrf");
+      await authApi.post("auth/logout");
     } catch {}
     setToken(null);
     setUsername(null);
@@ -54,7 +55,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const validateTokenBackend = useCallback(
     async (t: string): Promise<UserPayload | null> => {
       try {
-        const res = await authApi.get("/api/auth/me", {
+        const res = await authApi.get("auth/me", {
           headers: { Authorization: `Bearer ${t}` },
         });
         return res.data as UserPayload;
@@ -67,7 +68,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   const refreshAccessToken = useCallback(async (): Promise<string | null> => {
     try {
-      const res = await authApi.post("/api/auth/refresh");
+      const res = await authApi.post("auth/refresh");
       const newToken = res.data.token;
       localStorage.setItem("token", newToken);
       setToken(newToken);

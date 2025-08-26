@@ -2,11 +2,10 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
 import "./Auth.css";
-import Spinner from "../Spinner/Spinner";
+import Spinner from "../../components/Dashboard/Spinner/Spinner";
 import { authApi } from "../../services/http";
 import { useAuth } from "../../context/AuthContext";
 
@@ -81,13 +80,14 @@ const Register: React.FC = () => {
 
     try {
       const captchaToken = await executeRecaptcha("register");
-      await authApi.post("/api/auth/register", {
+      await authApi.get("auth/csrf");
+      await authApi.post("auth/register", {
         username,
         email,
         password,
         captchaToken,
       });
-      const { data } = await authApi.post("/api/auth/login", {
+      const { data } = await authApi.post("auth/login", {
         email,
         password,
         captchaToken,
@@ -114,9 +114,7 @@ const Register: React.FC = () => {
     }
   };
 
-  if (loadingSpinner) {
-    return <Spinner />;
-  }
+  if (loadingSpinner) return <Spinner />;
 
   if (retryAfter !== null) {
     return (
@@ -141,7 +139,6 @@ const Register: React.FC = () => {
       <div className="auth-content">
         <div className="auth-card">
           <h2>Registro</h2>
-
           <form onSubmit={handleSubmit} noValidate>
             <div className="form-group">
               <label htmlFor="reg-username">Usuário</label>
