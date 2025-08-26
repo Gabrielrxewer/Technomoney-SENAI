@@ -5,7 +5,7 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
 import "./Auth.css";
-import Spinner from "../Spinner/Spinner";
+import Spinner from "../../components/Dashboard/Spinner/Spinner";
 import { useAuth } from "../../context/AuthContext";
 import { authApi } from "../../services/http";
 
@@ -66,7 +66,8 @@ const Login: React.FC = () => {
 
     try {
       const captchaToken = await executeRecaptcha("login");
-      const { data } = await authApi.post("/api/auth/login", {
+      await authApi.get("auth/csrf");
+      const { data } = await authApi.post("auth/login", {
         email,
         password,
         captchaToken,
@@ -97,9 +98,7 @@ const Login: React.FC = () => {
     }
   };
 
-  if (loadingSpinner) {
-    return <Spinner />;
-  }
+  if (loadingSpinner) return <Spinner />;
 
   if (retryAfter !== null) {
     return (

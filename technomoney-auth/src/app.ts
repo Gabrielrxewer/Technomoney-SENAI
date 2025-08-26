@@ -44,7 +44,7 @@ const corsOptions: CorsOptions = {
 };
 
 if (isProd) {
-  app.set("trust proxy", 2);
+  app.set("trust proxy", 1);
   app.use(forceHttps);
 }
 
@@ -57,15 +57,9 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 if (isProd) {
   const csrfProtection = csrf({
-    cookie: {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: true,
-    },
+    cookie: { httpOnly: true, sameSite: "lax", secure: true },
   });
-
   app.use(csrfProtection);
-
   app.use((req, res, next) => {
     if (["GET", "HEAD", "OPTIONS"].includes(req.method)) {
       const token = (req as unknown as CsrfRequest).csrfToken();

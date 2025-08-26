@@ -4,6 +4,8 @@ function createApi(baseURL: string): AxiosInstance {
   return axios.create({
     baseURL,
     withCredentials: true,
+    xsrfCookieName: "XSRF-TOKEN",
+    xsrfHeaderName: "X-CSRF-Token",
     timeout: 10_000,
   });
 }
