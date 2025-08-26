@@ -1,17 +1,22 @@
 require("dotenv").config();
 
+const base = {
+  username: process.env.DB_USERNAME || "",
+  password: process.env.DB_PASSWORD || "",
+  database: process.env.DB_DATABASE || "",
+  host: process.env.DB_HOST || "",
+  port: Number(process.env.DB_PORT || 1433),
+  dialect: process.env.DB_DRIVER || "mssql",
+  logging: false,
+  dialectOptions: {
+    options: {
+      encrypt: false
+    }
+  }
+};
+
 module.exports = {
-  development: {
-    username: process.env.DB_USERNAME || "",
-    password: process.env.DB_PASSWORD || "",
-    database: process.env.DB_DATABASE || "",
-    server: process.env.DB_HOST || "",
-    dialect: process.env.DB_DRIVER || "",
-    dialectOptions: {
-      options: {
-        encrypt: false,
-      },
-    },
-    logging: false,
-  },
+  production: { ...base },
+  development: { ...base },
+  test: { ...base }
 };

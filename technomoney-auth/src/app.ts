@@ -37,13 +37,14 @@ const corsOptions: CorsOptions = {
     "Authorization",
     "X-Requested-With",
     "X-CSRF-Token",
+    "X-XSRF-TOKEN",
   ],
   optionsSuccessStatus: 204,
   maxAge: 86400,
 };
 
 if (isProd) {
-  app.enable("trust proxy");
+  app.set("trust proxy", 2);
   app.use(forceHttps);
 }
 
@@ -58,23 +59,20 @@ if (isProd) {
   const csrfProtection = csrf({
     cookie: {
       httpOnly: true,
-      sameSite: "strict",
+      sameSite: "lax",
       secure: true,
     },
   });
 
   app.use(csrfProtection);
 
-  const exposeCsrfCookie: RequestHandler = (req, res, next) => {
-    const token = (req as CsrfRequest).csrfToken();
-    res.cookie("XSRF-TOKEN", token, {
-      sameSite: "strict",
-      secure: true,
-    });
+  app.use((req, res, next) => {
+    if (["GET", "HEAD", "OPTIONS"].includes(req.method)) {
+      const token = (req as unknown as CsrfRequest).csrfToken();
+      res.cookie("XSRF-TOKEN", token, { sameSite: "lax", secure: true });
+    }
     next();
-  };
-
-  app.use(exposeCsrfCookie);
+  });
 }
 
 app.use("/api/auth", authRoutes);
