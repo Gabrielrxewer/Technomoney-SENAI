@@ -1,5 +1,7 @@
 import { Router, type RequestHandler } from "express";
 import { loginLimiter } from "../middlewares/rateLimit.middleware";
+import { loginByEmailLimiter } from "../middlewares/rateLimitByEmail.middleware";
+import { requireRecaptcha } from "../middlewares/recaptcha.middleware";
 import {
   login,
   register,
@@ -8,11 +10,28 @@ import {
   logout,
 } from "../controllers/auth.controller";
 import { authenticate } from "../middlewares/auth.middleware";
+import {
+  validateLogin,
+  validateRegister,
+} from "../middlewares/validate.middleware";
 
 const router = Router();
 
-router.post("/login", loginLimiter, login);
-router.post("/register", loginLimiter, register);
+router.post(
+  "/login",
+  validateLogin,
+  loginByEmailLimiter,
+  loginLimiter,
+  requireRecaptcha,
+  login
+);
+router.post(
+  "/register",
+  validateRegister,
+  loginLimiter,
+  requireRecaptcha,
+  register
+);
 router.post("/refresh", refresh);
 router.post("/logout", logout);
 

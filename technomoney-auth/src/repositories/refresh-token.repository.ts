@@ -22,4 +22,20 @@ export class RefreshTokenRepository {
       where: { token: token.trim(), revoked: false },
     });
   }
+
+  wasIssued(token: string) {
+    return RefreshToken.findOne({
+      where: { token: token.trim() },
+    });
+  }
+
+  async revokeAllForUser(userId: string) {
+    const recs = await RefreshToken.findAll({
+      where: { user_id: userId, revoked: false },
+    });
+    for (const r of recs) {
+      r.revoked = true;
+      await r.save();
+    }
+  }
 }

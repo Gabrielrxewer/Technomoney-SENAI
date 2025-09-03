@@ -18,15 +18,16 @@ export const register: RequestHandler = async (req, res) => {
       refresh,
       username: uname,
     } = await authService.register(email, password, username);
-    res.cookie("refreshToken", refresh, cookieOpts).status(201).json({
-      token: access,
-      username: uname,
-    });
+    res
+      .cookie("refreshToken", refresh, cookieOpts)
+      .status(201)
+      .json({ token: access, username: uname });
   } catch (e: any) {
     logger.error({ err: e }, "REGISTER_ERROR");
     const map: Record<string, [number, string]> = {
       EMAIL_TAKEN: [400, "E-mail já está em uso"],
       USERNAME_TAKEN: [400, "Nome de usuário já está em uso"],
+      WEAK_PASSWORD: [400, "Senha fraca"],
       JWT_CONFIG_INVALID: [500, "Configuração de JWT ausente"],
       ISSUE_TOKENS_FAILED: [500, "Falha ao emitir tokens"],
     };
@@ -42,14 +43,13 @@ export const login: RequestHandler = async (req, res) => {
       email,
       password
     );
-    res.cookie("refreshToken", refresh, cookieOpts).json({
-      token: access,
-      username,
-    });
+    res
+      .cookie("refreshToken", refresh, cookieOpts)
+      .json({ token: access, username });
   } catch (e: any) {
     const map: Record<string, [number, string]> = {
-      NOT_FOUND: [404, "Conta não encontrada"],
-      INVALID_PASSWORD: [400, "Senha inválida"],
+      NOT_FOUND: [401, "Credenciais inválidas"],
+      INVALID_PASSWORD: [401, "Credenciais inválidas"],
       JWT_CONFIG_INVALID: [500, "Configuração de JWT ausente"],
       ISSUE_TOKENS_FAILED: [500, "Falha ao emitir tokens"],
     };
@@ -67,8 +67,13 @@ export const refresh: RequestHandler = async (req, res) => {
   try {
     const { access, newRefresh } = await authService.refresh(old);
     res.cookie("refreshToken", newRefresh, cookieOpts).json({ token: access });
-  } catch {
-    res.status(403).json({ message: "Refresh token revogado ou inválido" });
+  } catch (e: any) {
+    const map: Record<string, [number, string]> = {
+      REFRESH_REUSE_DETECTED: [401, "Sessão comprometida"],
+      INVALID_REFRESH: [403, "Refresh token revogado ou inválido"],
+    };
+    const [code, msg] = map[e.message] || [500, "Erro interno"];
+    res.status(code).json({ message: msg });
   }
 };
 
