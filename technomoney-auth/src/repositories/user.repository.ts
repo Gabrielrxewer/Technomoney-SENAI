@@ -14,6 +14,10 @@ export class UserRepository {
   }
 
   create(data: { email: string; password: string; username?: string | null }) {
-    return User.create(data);
+    return User.create({
+      email: data.email,
+      username: data.username ?? null,
+      password_hash: data.password,
+    });
   }
 }

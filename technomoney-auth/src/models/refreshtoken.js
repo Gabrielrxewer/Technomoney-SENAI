@@ -20,17 +20,19 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
       },
       token: {
-        type: DataTypes.TEXT,
+        type: DataTypes.STRING(255),
         allowNull: false,
+        unique: true,
       },
       revoked: {
         type: DataTypes.BOOLEAN,
+        allowNull: false,
         defaultValue: false,
       },
       created_at: {
         type: DataTypes.DATE,
         allowNull: false,
-        defaultValue: sequelize.literal("SYSDATETIME()"),
+        defaultValue: sequelize.literal("CURRENT_TIMESTAMP"),
       },
     },
     {

@@ -7,7 +7,11 @@ const mask = (s?: string) =>
   !s ? "" : s.length <= 12 ? "***" : `${s.slice(0, 6)}...${s.slice(-6)}`;
 
 export class RecaptchaService {
-  verify(token: string, remoteip?: string): Promise<boolean> {
+  verify(
+    token: string,
+    remoteip?: string,
+    expectedAction?: string
+  ): Promise<boolean> {
     return new Promise((resolve, reject) => {
       const secret = process.env.RECAPTCHA_SECRET?.trim() || "";
       if (!secret || !token) {
@@ -18,15 +22,11 @@ export class RecaptchaService {
         resolve(false);
         return;
       }
-      const body = new URLSearchParams();
-      body.append("secret", secret);
-      body.append("response", token);
-      if (remoteip) body.append("remoteip", remoteip);
-      const data = body.toString();
-      logger.debug(
-        { remoteip, token: mask(token), secret: mask(secret) },
-        "recaptcha.verify.start"
-      );
+      const data = new URLSearchParams({
+        secret,
+        response: token,
+        remoteip: remoteip || "",
+      }).toString();
       const req = request(
         {
           method: "POST",
@@ -45,7 +45,11 @@ export class RecaptchaService {
               const raw = Buffer.concat(chunks).toString();
               const json = JSON.parse(raw);
               const min = Number(process.env.RECAPTCHA_MIN_SCORE || "0.5");
-              const expected = process.env.RECAPTCHA_EXPECTED_ACTION || "login";
+              const expected = (
+                expectedAction?.trim() ||
+                process.env.RECAPTCHA_EXPECTED_ACTION ||
+                "login"
+              ).trim();
               const expectedHost = process.env.RECAPTCHA_HOSTNAME || "";
               const hostOk = expectedHost
                 ? json.hostname === expectedHost
@@ -60,6 +64,7 @@ export class RecaptchaService {
                   success: json.success,
                   score: json.score,
                   action: json.action,
+                  expected,
                   challenge_ts: json.challenge_ts,
                   hostname: json.hostname,
                   checks: { hostOk, actionOk, scoreOk },
@@ -68,7 +73,7 @@ export class RecaptchaService {
               );
               resolve(ok);
             } catch (e) {
-              logger.error({ err: e }, "recaptcha.verify.parse_error");
+              logger.error({ e }, "recaptcha.verify.parse_error");
               reject(e);
             }
           });

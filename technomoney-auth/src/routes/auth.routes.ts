@@ -1,7 +1,10 @@
 import { Router, type RequestHandler } from "express";
 import { loginLimiter } from "../middlewares/rateLimit.middleware";
 import { loginByEmailLimiter } from "../middlewares/rateLimitByEmail.middleware";
-import { requireRecaptcha } from "../middlewares/recaptcha.middleware";
+import {
+  recaptchaFor,
+  requireRecaptcha,
+} from "../middlewares/recaptcha.middleware";
 import {
   login,
   register,
@@ -22,16 +25,18 @@ router.post(
   validateLogin,
   loginByEmailLimiter,
   loginLimiter,
-  requireRecaptcha,
+  recaptchaFor("login"),
   login
 );
+
 router.post(
   "/register",
   validateRegister,
   loginLimiter,
-  requireRecaptcha,
+  recaptchaFor("register"),
   register
 );
+
 router.post("/refresh", refresh);
 router.post("/logout", logout);
 

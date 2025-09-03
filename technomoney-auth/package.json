@@ -31,7 +31,8 @@
     "redis": "^5.8.2",
     "sequelize": "^6.37.7",
     "swagger-ui-express": "^5.0.1",
-    "tedious": "^18.6.1",
+    "pg": "^8.12.0",
+    "pg-hstore": "^2.3.4",
     "url": "^0.11.4",
     "yamljs": "^0.3.0"
   },

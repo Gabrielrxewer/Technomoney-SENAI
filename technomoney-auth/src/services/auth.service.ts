@@ -55,7 +55,7 @@ export class AuthService {
       logger.warn({ email: maskEmail(email) }, "auth.login.not_found");
       throw new Error("NOT_FOUND");
     }
-    const ok = await comparePassword(password, user.password);
+    const ok = await comparePassword(password, (user as any).password_hash);
     if (!ok) {
       logger.warn({ userId: mask(user.id) }, "auth.login.invalid_password");
       throw new Error("INVALID_PASSWORD");

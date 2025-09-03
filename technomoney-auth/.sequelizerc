@@ -1,8 +1,7 @@
-const path = require('path');
-
+const path = require("path");
 module.exports = {
-  'config': path.resolve('src', 'config', 'config.js'),      // configurações do banco
-  'models-path': path.resolve('src', 'models'),              // models
-  'seeders-path': path.resolve('src', 'seeders'),            // seeders (se quiser)
-  'migrations-path': path.resolve('src', 'migrations'),      // migrations
+  config: path.resolve("src", "config", "config.js"),
+  "models-path": path.resolve("src", "models"),
+  "seeders-path": path.resolve("src", "seeders"),
+  "migrations-path": path.resolve("src", "migrations"),
 };

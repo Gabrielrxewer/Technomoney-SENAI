@@ -20,24 +20,29 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         unique: true,
       },
-      password: {
+      username: {
+        type: DataTypes.STRING(30),
+        allowNull: true,
+        unique: true,
+      },
+      password_hash: {
         type: DataTypes.STRING(255),
         allowNull: false,
       },
-      username: {
-        type: DataTypes.STRING(50),
-        allowNull: true,
-        unique: true,
+      is_email_verified: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
       },
       created_at: {
         type: DataTypes.DATE,
         allowNull: false,
-        defaultValue: sequelize.literal("SYSDATETIME()"),
+        defaultValue: sequelize.literal("CURRENT_TIMESTAMP"),
       },
       updated_at: {
         type: DataTypes.DATE,
         allowNull: false,
-        defaultValue: sequelize.literal("SYSDATETIME()"),
+        defaultValue: sequelize.literal("CURRENT_TIMESTAMP"),
       },
     },
     {
