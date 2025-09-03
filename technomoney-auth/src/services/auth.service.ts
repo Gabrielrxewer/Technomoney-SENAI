@@ -4,7 +4,6 @@ import { JwtService } from "./jwt.service";
 import { TokenService } from "./token.service";
 import { AuthTokensDto } from "../types/auth.dto";
 import { logger } from "../utils/logger";
-import { validatePassword } from "../utils/passwordPolicy.util";
 
 const mask = (s?: string) =>
   !s ? "" : s.length <= 8 ? "***" : `${s.slice(0, 4)}...${s.slice(-4)}`;
@@ -27,10 +26,6 @@ export class AuthService {
     username?: string
   ): Promise<AuthTokensDto> {
     logger.debug({ email: maskEmail(email), username }, "auth.register.start");
-    if (!validatePassword(password)) {
-      logger.warn({ email: maskEmail(email) }, "auth.register.weak_password");
-      throw new Error("WEAK_PASSWORD");
-    }
     if (await this.users.findByEmail(email)) {
       logger.warn({ email: maskEmail(email) }, "auth.register.email_taken");
       throw new Error("EMAIL_TAKEN");

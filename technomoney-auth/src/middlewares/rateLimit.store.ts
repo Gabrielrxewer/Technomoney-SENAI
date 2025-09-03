@@ -1,16 +1,26 @@
+import { logger } from "../utils/logger";
+import type { Store } from "express-rate-limit";
+import { createClient } from "redis";
 import RedisStore from "rate-limit-redis";
-import { createClient, type RedisClientType } from "redis";
 
-let client: RedisClientType | null = null;
-let store: InstanceType<typeof RedisStore> | undefined;
+let store: Store | undefined;
+let client: ReturnType<typeof createClient> | undefined;
 
 const ensureClient = async () => {
-  if (client && client.isOpen) return client;
+  if (client) return client;
   const url = process.env.REDIS_URL?.trim();
-  if (!url) return null;
+  if (!url) {
+    if (process.env.NODE_ENV === "production") {
+      logger.warn({}, "ratelimit.redis.missing");
+    } else {
+      logger.debug({}, "ratelimit.redis.disabled");
+    }
+    return undefined;
+  }
   client = createClient({ url });
-  client.on("error", () => {});
-  if (!client.isOpen) await client.connect().catch(() => {});
+  client.on("error", (err) => logger.warn({ err }, "ratelimit.redis.error"));
+  await client.connect();
+  logger.debug({}, "ratelimit.redis.connected");
   return client;
 };
 
@@ -25,5 +35,6 @@ export const getRateLimitStore = () => {
       return c.sendCommand(args as any);
     },
   }) as any;
+  logger.debug({}, "ratelimit.store.ready");
   return store;
 };

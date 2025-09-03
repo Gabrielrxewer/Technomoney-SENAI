@@ -17,26 +17,25 @@ import {
   validateLogin,
   validateRegister,
 } from "../middlewares/validate.middleware";
+import { enforcePasswordPolicy } from "../middlewares/passwordPolicy.middleware";
 
 const router = Router();
 
 router.post(
   "/login",
-  validateLogin,
-  loginByEmailLimiter,
   loginLimiter,
-  recaptchaFor("login"),
+  loginByEmailLimiter,
+  recaptchaFor(process.env.RECAPTCHA_EXPECTED_ACTION || "login"),
+  validateLogin,
   login
 );
-
 router.post(
   "/register",
+  requireRecaptcha,
   validateRegister,
-  loginLimiter,
-  recaptchaFor("register"),
+  enforcePasswordPolicy,
   register
 );
-
 router.post("/refresh", refresh);
 router.post("/logout", logout);
 

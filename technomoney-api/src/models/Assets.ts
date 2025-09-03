@@ -1,13 +1,24 @@
-"use strict";
-const { Model } = require("sequelize");
+import {
+  DataTypes,
+  Model,
+  InferAttributes,
+  InferCreationAttributes,
+  CreationOptional,
+  Sequelize,
+} from "sequelize";
 
-module.exports = (sequelize, DataTypes) => {
-  class Asset extends Model {
-    static associate(models) {
-      Asset.hasMany(models.AssetRecord, { foreignKey: "asset_id" });
-    }
-  }
+export class Asset extends Model<
+  InferAttributes<Asset>,
+  InferCreationAttributes<Asset>
+> {
+  declare id: CreationOptional<number>;
+  declare tag: string;
+  declare name: string;
+  declare created_at: CreationOptional<Date>;
+  declare updated_at: CreationOptional<Date>;
+}
 
+export function initAsset(sequelize: Sequelize) {
   Asset.init(
     {
       id: {
@@ -17,7 +28,7 @@ module.exports = (sequelize, DataTypes) => {
         primaryKey: true,
       },
       tag: {
-        type: DataTypes.STRING(4),
+        type: DataTypes.STRING(12),
         allowNull: false,
         unique: true,
       },
@@ -29,12 +40,12 @@ module.exports = (sequelize, DataTypes) => {
       created_at: {
         type: DataTypes.DATE,
         allowNull: false,
-        defaultValue: sequelize.literal("SYSDATETIME()"),
+        defaultValue: DataTypes.NOW,
       },
       updated_at: {
         type: DataTypes.DATE,
         allowNull: false,
-        defaultValue: sequelize.literal("SYSDATETIME()"),
+        defaultValue: DataTypes.NOW,
       },
     },
     {
@@ -44,6 +55,4 @@ module.exports = (sequelize, DataTypes) => {
       timestamps: false,
     }
   );
-
-  return Asset;
-};
+}
