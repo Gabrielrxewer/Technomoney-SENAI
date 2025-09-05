@@ -6,12 +6,18 @@ const recaptcha = new RecaptchaService();
 
 export const recaptchaFor = (expectedAction: string): RequestHandler => {
   return async (req, res, next) => {
-    const token = (req.body && (req.body.captchaToken || req.body.captcha)) as
-      | string
-      | undefined;
-    const xff = req.headers["x-forwarded-for"];
-    const remoteip =
-      (Array.isArray(xff) ? xff[0] : xff)?.split(",")[0]?.trim() || req.ip;
+    const token =
+      (req.body &&
+        (req.body.recaptchaToken ||
+          req.body.captcha ||
+          req.body.captchaToken)) ||
+      (req.headers["x-recaptcha-token"] as string) ||
+      (req.query &&
+        ((req.query.recaptchaToken as string) ||
+          (req.query.captcha as string) ||
+          (req.query.captchaToken as string))) ||
+      undefined;
+    const remoteip = req.ip;
     if (!token) {
       logger.warn({ path: req.path, remoteip }, "recaptcha.missing_token");
       res.status(400).json({ message: "Captcha inválido" });

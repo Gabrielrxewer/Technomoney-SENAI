@@ -15,6 +15,8 @@ const EnvSchema = z.object({
   AUTH_ISSUER: z.string(),
   AUTH_AUDIENCE: z.string(),
   AUTH_CLOCK_TOLERANCE: z.string().optional(),
+  AUTH_ALLOWED_ALGS: z.string().optional(),
+  AUTH_STATIC_JWKS: z.string().optional(),
 });
 
 export const env = EnvSchema.parse(process.env);

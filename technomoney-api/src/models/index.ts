@@ -1,6 +1,6 @@
 import { Sequelize as SequelizeCtor } from "sequelize";
 import * as SequelizeNS from "sequelize";
-import { initAsset, Asset } from "./assets";
+import { initAsset, Asset } from "./Assets";
 import { initAssetRecord, AssetRecord } from "./AssetRecord";
 
 export const Sequelize = SequelizeNS;

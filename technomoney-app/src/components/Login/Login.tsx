@@ -21,7 +21,6 @@ const Login: React.FC = () => {
   const [error, setError] = useState("");
   const [loginError, setLoginError] = useState(false);
   const [retryAfter, setRetryAfter] = useState<number | null>(null);
-
   const { executeRecaptcha } = useGoogleReCaptcha();
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -45,7 +44,6 @@ const Login: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading || retryAfter) return;
-
     const form = e.currentTarget as HTMLFormElement;
     if (!form.checkValidity()) {
       form.reportValidity();
@@ -59,19 +57,21 @@ const Login: React.FC = () => {
       setError("reCAPTCHA não carregou. Atualize a página.");
       return;
     }
-
     setLoading(true);
     setError("");
     setLoginError(false);
-
     try {
       const captchaToken = await executeRecaptcha("login");
-      await authApi.get("auth/csrf");
-      const { data } = await authApi.post("auth/login", {
-        email,
-        password,
-        captchaToken,
+      const { data: csrf } = await authApi.get("auth/csrf", {
+        withCredentials: true,
       });
+      if (csrf?.csrfToken)
+        authApi.defaults.headers.common["x-csrf-token"] = csrf.csrfToken;
+      const { data } = await authApi.post(
+        "auth/login",
+        { email, password, recaptchaToken: captchaToken },
+        { withCredentials: true }
+      );
       login(data.token, data.username);
       navigate("/dashboard");
     } catch (err: any) {
@@ -79,7 +79,7 @@ const Login: React.FC = () => {
       const msg =
         err.response?.data?.message ||
         "O servidor não responde. Tente novamente.";
-      if (status === 429 && err.response.data.retryAfter) {
+      if (status === 429 && err.response?.data?.retryAfter) {
         setRetryAfter(err.response.data.retryAfter);
         setError(msg);
       } else {

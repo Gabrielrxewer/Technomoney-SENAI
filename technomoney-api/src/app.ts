@@ -4,7 +4,6 @@ import cookieParser from "cookie-parser";
 import swaggerUi from "swagger-ui-express";
 import assetRoutes from "./routes/assetRoutes";
 import { swaggerSpec } from "./swagger";
-import { authenticate } from "./middlewares/authenticate.middleware";
 import { errorHandler } from "./middlewares/error.middleware";
 import {
   secureHeaders,
@@ -41,7 +40,7 @@ export function createApp(): Application {
   app.use(cookieParser());
   app.use(express.json());
   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-  app.use("/api", authenticate, assetRoutes);
+  app.use("/api", assetRoutes);
   app.use((_req, res) => {
     res.status(404).json({ message: "Rota não encontrada." });
   });

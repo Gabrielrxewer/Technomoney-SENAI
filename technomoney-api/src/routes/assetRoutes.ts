@@ -1,4 +1,6 @@
 import { Router } from "express";
+import { authenticate } from "../middlewares/auth.middleware";
+import { requireDPoPIfBound } from "../middlewares/dpop.middleware";
 import {
   createAsset,
   getAllAssets,
@@ -8,6 +10,8 @@ import {
 } from "../controllers/asset.controller";
 
 const assetRouter = Router();
+
+assetRouter.use(authenticate, requireDPoPIfBound);
 
 assetRouter.post("/assets", createAsset);
 assetRouter.get("/assets", getAllAssets);

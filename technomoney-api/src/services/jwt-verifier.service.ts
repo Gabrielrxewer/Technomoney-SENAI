@@ -1,58 +1,116 @@
+import type {
+  JWSHeaderParameters,
+  JWTPayload,
+  FlattenedJWSInput,
+  KeyLike,
+} from "jose";
+import { joseImport } from "../utils/joseDynamic";
 import { logger } from "../utils/logger";
 
-type JWTPayload = import("jose").JWTPayload;
-type Jose = typeof import("jose");
+const ISS = process.env.AUTH_ISSUER as string;
+const AUD = process.env.AUTH_AUDIENCE as string;
+const TOL = Number(process.env.AUTH_CLOCK_TOLERANCE || "5");
+const JWKS_URL = process.env.AUTH_JWKS_URL as string;
+const ALGS = (process.env.AUTH_ALLOWED_ALGS || "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter((s) => !!s);
+const LOCAL_JWKS_RAW = process.env.AUTH_STATIC_JWKS || "";
 
-let josePromise: Promise<Jose> | null = null;
-const dynImport = new Function("m", "return import(m)") as (
-  m: string
-) => Promise<any>;
-const loadJose = () => (josePromise ??= dynImport("jose") as Promise<Jose>);
-
-const parseAudienceVerify = (v?: string) => {
-  if (!v) return undefined;
-  const arr = v
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-  return arr.length ? (arr as any) : undefined;
-};
-
-const mask = (s?: string) =>
-  !s ? "" : s.length <= 8 ? "***" : `${s.slice(0, 4)}...${s.slice(-4)}`;
-
-const jwksUrl = process.env.AUTH_JWKS_URL || "";
-const issuer = process.env.AUTH_ISSUER || "technomoney";
-const audience = parseAudienceVerify(process.env.AUTH_AUDIENCE);
-const clockTolerance = Number(process.env.AUTH_CLOCK_TOLERANCE || "5");
-
-let jwks: any;
-
-const getJWKS = async () => {
-  if (jwks) return jwks;
-  if (!jwksUrl) throw new Error("AUTH_JWKS_URL missing");
-  const { createRemoteJWKSet } = await loadJose();
-  jwks = createRemoteJWKSet(new URL(jwksUrl), {
-    cooldownDuration: 60000,
-    cacheMaxAge: 600000,
-  });
-  logger.debug({ jwksUrl }, "jwt.jwks.init");
-  return jwks;
-};
+async function fetchJwksKids(url: string): Promise<string[]> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = (await res.json()) as {
+      keys?: Array<{ kid?: string; alg?: string }>;
+    };
+    return (data.keys || []).map((k) => String(k.kid || ""));
+  } catch {
+    return [];
+  }
+}
 
 export class JwtVerifierService {
-  async verifyAccess(
-    token: string
-  ): Promise<{ id: string; jti: string; scope: string; payload: JWTPayload }> {
-    const { jwtVerify } = await loadJose();
-    const keySet = await getJWKS();
-    const options: any = { algorithms: ["RS256"], issuer, clockTolerance };
-    if (audience) options.audience = audience;
-    const res = await jwtVerify(token, keySet, options);
-    const id = String((res.payload as any).id || res.payload.sub || "");
-    const jti = String(res.payload.jti || "");
-    const scope = String((res.payload as any).scope || "");
-    logger.debug({ id: mask(id), jti: mask(jti) }, "jwt.verify_access.ok");
-    return { id, jti, scope, payload: res.payload };
+  async verifyAccess(token: string): Promise<{
+    id: string;
+    jti: string;
+    scope: string[];
+    payload: JWTPayload;
+    header: JWSHeaderParameters;
+  }> {
+    let header: JWSHeaderParameters | undefined;
+    try {
+      const {
+        createRemoteJWKSet,
+        createLocalJWKSet,
+        jwtVerify,
+        decodeProtectedHeader,
+      } = await joseImport();
+
+      header = decodeProtectedHeader(token);
+
+      const remote = createRemoteJWKSet(new URL(JWKS_URL));
+      const local = LOCAL_JWKS_RAW
+        ? createLocalJWKSet(JSON.parse(LOCAL_JWKS_RAW))
+        : null;
+
+      const getKey = async (
+        protectedHeader: JWSHeaderParameters,
+        flattened: FlattenedJWSInput
+      ): Promise<KeyLike | Uint8Array> => {
+        if (local) {
+          try {
+            return await local(protectedHeader, flattened);
+          } catch {}
+        }
+        return await remote(protectedHeader, flattened);
+      };
+
+      const opts: Parameters<typeof jwtVerify>[2] = {
+        issuer: ISS,
+        audience: AUD,
+        clockTolerance: TOL,
+      };
+      if (ALGS.length) (opts as any).algorithms = ALGS as any;
+
+      const { payload, protectedHeader } = await jwtVerify(token, getKey, opts);
+
+      const scope = Array.isArray((payload as any).scope)
+        ? ((payload as any).scope as string[])
+        : String((payload as any).scope || "")
+            .split(" ")
+            .filter((s) => !!s);
+
+      return {
+        id: String(payload.sub || ""),
+        jti: String(payload.jti || ""),
+        scope,
+        payload,
+        header: protectedHeader,
+      };
+    } catch (e: any) {
+      try {
+        const kids = await fetchJwksKids(JWKS_URL);
+        const localKids = LOCAL_JWKS_RAW
+          ? (JSON.parse(LOCAL_JWKS_RAW).keys || []).map((k: any) =>
+              String(k.kid || "")
+            )
+          : [];
+        logger.debug(
+          {
+            err: String(e),
+            header: header || {},
+            jwks_kids: kids,
+            jwks_local_kids: localKids,
+            jwks_url: JWKS_URL,
+            issuer_expected: ISS,
+            audience_expected: AUD,
+            algorithms_allowed: ALGS,
+          },
+          "jwt.verify.failed"
+        );
+      } catch {}
+      throw e;
+    }
   }
 }

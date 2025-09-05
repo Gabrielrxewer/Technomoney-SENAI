@@ -65,10 +65,22 @@ export class AuthService {
   async refresh(oldToken: string) {
     logger.debug({}, "auth.refresh.start");
     const valid = await this.tokens.isValid(oldToken);
-    const { id } = this.jwt.verifyRefresh(oldToken);
+    let id = "";
+    try {
+      const v = this.jwt.verifyRefresh(oldToken);
+      id = String(v.id || "");
+    } catch (e) {
+      if (valid) {
+        try {
+          await this.tokens.revoke(oldToken);
+        } catch {}
+      }
+      logger.warn({}, "auth.refresh.invalid");
+      throw new Error("INVALID_REFRESH");
+    }
     if (!valid) {
       const issued = await this.tokens.wasIssued(oldToken);
-      if (issued) {
+      if (issued && id) {
         logger.warn({ userId: mask(id) }, "auth.refresh.reuse_detected");
         await this.tokens.revokeAllForUser(id);
         throw new Error("REFRESH_REUSE_DETECTED");

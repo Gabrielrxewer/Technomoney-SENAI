@@ -1,9 +1,10 @@
-import express from "express";
-import cors, { CorsOptions } from "cors";
+import express, { RequestHandler } from "express";
+import cors from "cors";
 import cookieParser from "cookie-parser";
-import csrf from "csurf";
+import helmet from "helmet";
 import swaggerUi from "swagger-ui-express";
 import authRoutes from "./routes/auth.routes";
+import webauthnRoutes from "./routes/webauthn.routes";
 import wellKnownRoutes from "./routes/wellknown.routes";
 import { swaggerSpec } from "./swagger";
 import {
@@ -11,13 +12,10 @@ import {
   forceHttps,
 } from "./middlewares/secureHeaders.middleware";
 import { requestId } from "./middlewares/requestId.middleware";
-import type { Request } from "express";
-import { logger } from "./utils/logger";
-
-type CsrfRequest = Request & { csrfToken(): string };
+import { corsOptions } from "./config/cors";
+import { csrfProtection } from "./middlewares/csrf.middleware";
 
 const app = express();
-
 const isProd = process.env.NODE_ENV === "production";
 const swaggerEnabled =
   String(
@@ -25,85 +23,62 @@ const swaggerEnabled =
   ).toLowerCase() === "true";
 
 app.set("trust proxy", 1);
-
-const allowedOrigins = [
-  "https://www.technomoney.net.br",
-  "https://technomoney.net.br",
-  "http://localhost:5173",
-  "http://localhost:3000",
-  "http://localhost",
-  "https://localhost",
-];
-
-const corsOptions: CorsOptions = {
-  origin: (origin, cb) => {
-    if (!origin) return cb(null, true);
-    if (allowedOrigins.includes(origin)) return cb(null, true);
-    cb(new Error("Origin not allowed"));
-  },
-  credentials: true,
-};
-
+app.use("/.well-known", wellKnownRoutes);
 app.use(requestId);
-app.use(secureHeaders);
 app.use(forceHttps);
-app.use(cors(corsOptions));
-app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
-
-const csrfSecure = csrf({
-  cookie: { httpOnly: true, sameSite: "lax", secure: true },
-});
-const csrfInsecure = csrf({
-  cookie: { httpOnly: true, sameSite: "lax", secure: false },
-});
-
-app.use((req, res, next) => {
-  const host = (req.headers.host || "").toLowerCase();
-  const shouldUseSecure =
-    isProd && !host.startsWith("localhost") && !host.startsWith("127.0.0.1");
-  const chosen = shouldUseSecure ? csrfSecure : csrfInsecure;
-  return chosen(req, res, next);
-});
-
-app.use((req, res, next) => {
-  if (["GET", "HEAD", "OPTIONS"].includes(req.method)) {
-    const token = (req as CsrfRequest).csrfToken();
-    const host = (req.headers.host || "").toLowerCase();
-    const shouldUseSecure =
-      isProd && !host.startsWith("localhost") && !host.startsWith("127.0.0.1");
-    res.cookie("XSRF-TOKEN", token, {
-      sameSite: "lax",
-      secure: shouldUseSecure,
-      httpOnly: false,
-      path: "/",
-    });
-  }
-  next();
-});
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: false }));
+app.use(cors(corsOptions));
+app.use(secureHeaders);
+app.use(
+  helmet.hsts({ maxAge: 15552000, includeSubDomains: true, preload: false })
+);
 
 if (swaggerEnabled) {
-  const basicUser = process.env.SWAGGER_BASIC_USER || "";
-  const basicPass = process.env.SWAGGER_BASIC_PASS || "";
-  const hasAuth = basicUser.length > 0 && basicPass.length > 0;
-  const mw = hasAuth
-    ? (req: Request, res: any, next: any) => {
-        const hdr = String(req.headers.authorization || "");
-        const expected =
-          "Basic " +
-          Buffer.from(`${basicUser}:${basicPass}`).toString("base64");
-        if (hdr === expected) return next();
-        res.setHeader("WWW-Authenticate", "Basic");
-        res.sendStatus(401);
-      }
-    : (_: any, __: any, next: any) => next();
-  logger.debug({ enabled: true }, "swagger.enabled");
-  app.use("/api-docs", mw, swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-} else {
-  logger.debug({ enabled: false }, "swagger.enabled");
+  const mw: RequestHandler =
+    process.env.SWAGGER_BASIC_USER && process.env.SWAGGER_BASIC_PASS
+      ? (req, res, next) => {
+          const auth = String(req.headers.authorization || "");
+          if (!auth.startsWith("Basic ")) {
+            res.status(401).set("WWW-Authenticate", "Basic").end();
+            return;
+          }
+          const raw = Buffer.from(auth.slice(6), "base64").toString();
+          const [u, p] = raw.split(":");
+          if (
+            u === process.env.SWAGGER_BASIC_USER &&
+            p === process.env.SWAGGER_BASIC_PASS
+          ) {
+            next();
+            return;
+          }
+          res.status(401).set("WWW-Authenticate", "Basic").end();
+        }
+      : (_req, _res, next) => next();
+  const swaggerServe = Array.isArray(swaggerUi.serve)
+    ? (swaggerUi.serve as unknown as RequestHandler[])
+    : [swaggerUi.serve as unknown as RequestHandler];
+  const swaggerSetup = swaggerUi.setup(swaggerSpec, { explorer: false });
+  app.use("/api-docs", mw, ...swaggerServe, swaggerSetup);
 }
 
-app.use("/.well-known", wellKnownRoutes);
+const healthz: RequestHandler = (_req, res) => {
+  res.json({ ok: true });
+};
+app.get("/healthz", healthz);
+
 app.use("/api/auth", authRoutes);
+app.use("/api/webauthn", webauthnRoutes);
+
+const csrfGet: RequestHandler = (req: any, res) => {
+  const t = req.csrfToken();
+  const secure =
+    isProd &&
+    String(process.env.COOKIE_SECURE || "true").toLowerCase() === "true";
+  res.cookie("csrf", t, { httpOnly: false, sameSite: "strict", secure });
+  res.json({ csrfToken: t });
+};
+app.get("/api/auth/csrf", csrfProtection, csrfGet);
 
 export default app;

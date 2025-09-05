@@ -5,6 +5,12 @@ import { logger } from "../utils/logger";
 
 const mask = (s?: string) =>
   !s ? "" : s.length <= 12 ? "***" : `${s.slice(0, 6)}...${s.slice(-6)}`;
+const normalizeHost = (h?: string) =>
+  (h || "")
+    .toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .split(":")[0]
+    .trim();
 
 export class RecaptchaService {
   verify(
@@ -44,17 +50,21 @@ export class RecaptchaService {
             try {
               const raw = Buffer.concat(chunks).toString();
               const json = JSON.parse(raw);
-              const min = Number(process.env.RECAPTCHA_MIN_SCORE || "0.5");
+              const min = Number(process.env.RECAPTCHA_MIN_SCORE || "0.7");
               const expected = (
                 expectedAction?.trim() ||
                 process.env.RECAPTCHA_EXPECTED_ACTION ||
                 "login"
               ).trim();
-              const expectedHost = process.env.RECAPTCHA_HOSTNAME || "";
-              const hostOk = expectedHost
-                ? json.hostname === expectedHost
-                : true;
-              const actionOk = json.action ? json.action === expected : true;
+              const isProd = process.env.NODE_ENV === "production";
+              const expectedHost = normalizeHost(
+                process.env.RECAPTCHA_HOSTNAME
+              );
+              const dataHost = normalizeHost(json.hostname);
+              const hostOk =
+                !isProd || !expectedHost || dataHost === expectedHost;
+              const actionOk =
+                !isProd || !json.action || json.action === expected;
               const scoreOk =
                 typeof json.score === "number" ? json.score >= min : true;
               const ok = !!json.success && hostOk && actionOk && scoreOk;

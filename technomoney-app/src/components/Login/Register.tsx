@@ -24,7 +24,6 @@ const Register: React.FC = () => {
   const [error, setError] = useState("");
   const [emailTaken, setEmailTaken] = useState(false);
   const [retryAfter, setRetryAfter] = useState<number | null>(null);
-
   const { executeRecaptcha } = useGoogleReCaptcha();
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -48,13 +47,11 @@ const Register: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading || retryAfter) return;
-
     const form = e.currentTarget as HTMLFormElement;
     if (!form.checkValidity()) {
       form.reportValidity();
       return;
     }
-
     if (
       username.length > MAX_FIELD ||
       email.length > MAX_FIELD ||
@@ -64,43 +61,41 @@ const Register: React.FC = () => {
       setError("Cada campo deve ter no máximo 50 caracteres.");
       return;
     }
-
     if (password !== confirm) {
       setError("As senhas não coincidem.");
       return;
     }
-
     if (!executeRecaptcha) {
       setError("reCAPTCHA não carregou. Atualize a página.");
       return;
     }
-
     setLoading(true);
     setError("");
-
     try {
-      const captchaToken = await executeRecaptcha("register");
-      await authApi.get("auth/csrf");
-      await authApi.post("auth/register", {
-        username,
-        email,
-        password,
-        captchaToken,
+      const captchaToken = await executeRecaptcha("login");
+      const { data: csrf } = await authApi.get("auth/csrf", {
+        withCredentials: true,
       });
-      const { data } = await authApi.post("auth/login", {
-        email,
-        password,
-        captchaToken,
-      });
-      login(data.token, data.username);
+      if (csrf?.csrfToken)
+        authApi.defaults.headers.common["x-csrf-token"] = csrf.csrfToken;
+      await authApi.post(
+        "auth/register",
+        { username, email, password, recaptchaToken: captchaToken },
+        { withCredentials: true }
+      );
+      const loginRes = await authApi.post(
+        "auth/login",
+        { email, password, recaptchaToken: captchaToken },
+        { withCredentials: true }
+      );
+      login(loginRes.data.token, loginRes.data.username);
       navigate("/dashboard");
     } catch (err: any) {
       const status = err.response?.status;
       const msg =
         err.response?.data?.message ||
         "O servidor não responde. Tente novamente.";
-
-      if (status === 429 && err.response.data.retryAfter) {
+      if (status === 429 && err.response?.data?.retryAfter) {
         setRetryAfter(err.response.data.retryAfter);
         setError(msg);
       } else {
@@ -156,7 +151,6 @@ const Register: React.FC = () => {
                 data-max={MAX_FIELD}
               />
             </div>
-
             <div className="form-group">
               <label htmlFor="reg-email">E-mail</label>
               <input
@@ -178,7 +172,6 @@ const Register: React.FC = () => {
                 data-max={MAX_FIELD}
               />
             </div>
-
             <div className="form-group">
               <label htmlFor="reg-password">Senha</label>
               <div className="input-eye">
@@ -208,7 +201,6 @@ const Register: React.FC = () => {
                 data-max={MAX_PASS}
               />
             </div>
-
             <div className="form-group">
               <label htmlFor="reg-confirm">Confirmar senha</label>
               <div className="input-eye">
@@ -238,13 +230,11 @@ const Register: React.FC = () => {
                 data-max={MAX_PASS}
               />
             </div>
-
             <button className="auth-button" disabled={loading}>
               {loading ? "Enviando…" : "Registrar"}
             </button>
             {error && <p className="error-msg">{error}</p>}
           </form>
-
           <div className="auth-footer">
             <p>
               Já tem conta?{" "}

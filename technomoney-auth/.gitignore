@@ -22,3 +22,8 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+*_private.pem
+*_public.pem
+
+jwks.json

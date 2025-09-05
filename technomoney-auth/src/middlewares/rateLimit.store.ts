@@ -10,13 +10,13 @@ const ensureClient = async () => {
   if (client) return client;
   const url = process.env.REDIS_URL?.trim();
   if (!url) {
-    if (process.env.NODE_ENV === "production") {
-      logger.warn({}, "ratelimit.redis.missing");
-    } else {
-      logger.debug({}, "ratelimit.redis.disabled");
-    }
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("REDIS_URL ausente em produção");
+  } else {
+    logger.debug({}, "ratelimit.redis.disabled");
     return undefined;
   }
+}
   client = createClient({ url });
   client.on("error", (err) => logger.warn({ err }, "ratelimit.redis.error"));
   await client.connect();
@@ -27,7 +27,7 @@ const ensureClient = async () => {
 export const getRateLimitStore = () => {
   if (store) return store;
   const url = process.env.REDIS_URL?.trim();
-  if (!url) return undefined;
+  if (!url) { if (process.env.NODE_ENV === "production") { throw new Error("REDIS_URL ausente em produção"); } return undefined; }
   store = new RedisStore({
     sendCommand: async (...args: string[]) => {
       const c = await ensureClient();

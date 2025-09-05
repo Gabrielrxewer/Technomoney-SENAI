@@ -21,8 +21,7 @@ export class TokenService {
     const h = hashRt(token);
     logger.debug({}, "token.revoke.start");
     await this.repo.revoke(h);
-    await this.repo.revoke(token);
-    logger.debug({}, "token.revoke.ok");
+        logger.debug({}, "token.revoke.ok");
   }
 
   async revokeAllForUser(userId: string) {
@@ -47,7 +46,6 @@ export class TokenService {
   async wasIssued(token: string) {
     const h = hashRt(token);
     const a = await this.repo.wasIssued(h);
-    if (a) return true;
-    return !!(await this.repo.wasIssued(token));
+    return !!a;
   }
 }
