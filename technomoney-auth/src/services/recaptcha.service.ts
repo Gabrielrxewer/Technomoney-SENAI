@@ -3,8 +3,6 @@ import { request } from "https";
 import { URLSearchParams } from "url";
 import { logger } from "../utils/logger";
 
-const mask = (s?: string) =>
-  !s ? "" : s.length <= 12 ? "***" : `${s.slice(0, 6)}...${s.slice(-6)}`;
 const normalizeHost = (h?: string) =>
   (h || "")
     .toLowerCase()
