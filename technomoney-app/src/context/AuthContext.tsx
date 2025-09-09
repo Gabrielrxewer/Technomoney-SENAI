@@ -76,8 +76,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           headers: { Authorization: `Bearer ${currentToken}` },
         });
         setUsername(r.data.username || null);
+        setIsAuthenticated(true);
         return r.data;
       } catch {
+        setIsAuthenticated(false);
         return null;
       }
     },
