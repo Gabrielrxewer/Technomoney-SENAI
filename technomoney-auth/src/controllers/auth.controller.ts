@@ -85,13 +85,13 @@ export const refresh: RequestHandler = async (req, res) => {
     return;
   }
   try {
-    const { access, newRefresh } = await authService.refresh(old);
+    const { access, refresh } = await authService.refresh(old);
     const oldSid = deriveSid(old);
-    const newSid = deriveSid(newRefresh);
+    const newSid = deriveSid(refresh);
     const exp = decodeExp(access);
     scheduleTokenExpiringSoon(newSid, exp);
     publishToSid(oldSid, { type: "session.refreshed", exp });
-    res.cookie("refreshToken", newRefresh, cookieOpts).json({ token: access });
+    res.cookie("refreshToken", refresh, cookieOpts).json({ token: access });
   } catch (e: any) {
     const map: Record<string, [number, string]> = {
       REFRESH_REUSE_DETECTED: [401, "Sessão comprometida"],

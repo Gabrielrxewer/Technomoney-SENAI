@@ -1,12 +1,46 @@
-"use strict";
-const { Model } = require("sequelize");
+import { DataTypes, Model, Optional, Sequelize } from "sequelize";
 
-module.exports = (sequelize, DataTypes) => {
-  class Credential extends Model {
-    static associate(models) {
-      Credential.belongsTo(models.User, { foreignKey: "user_id" });
-    }
-  }
+export interface CredentialAttributes {
+  id: string;
+  user_id: string;
+  credential_id: Buffer;
+  public_key: Buffer;
+  counter: number;
+  transports: string | null;
+  device_type: string | null;
+  backed_up: boolean | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export type CredentialCreationAttributes = Optional<
+  CredentialAttributes,
+  | "id"
+  | "transports"
+  | "device_type"
+  | "backed_up"
+  | "created_at"
+  | "updated_at"
+>;
+
+export class Credential
+  extends Model<CredentialAttributes, CredentialCreationAttributes>
+  implements CredentialAttributes
+{
+  public id!: string;
+  public user_id!: string;
+  public credential_id!: Buffer;
+  public public_key!: Buffer;
+  public counter!: number;
+  public transports!: string | null;
+  public device_type!: string | null;
+  public backed_up!: boolean | null;
+  public created_at!: Date;
+  public updated_at!: Date;
+  static associate(_: any): void {}
+}
+
+export function initCredentialModel(sequelize: Sequelize): typeof Credential {
   Credential.init(
     {
       id: {
@@ -41,4 +75,4 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
   return Credential;
-};
+}

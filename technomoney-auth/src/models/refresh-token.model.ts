@@ -1,12 +1,31 @@
-"use strict";
-const { Model } = require("sequelize");
+import { DataTypes, Model, Optional, Sequelize } from "sequelize";
 
-module.exports = (sequelize, DataTypes) => {
-  class RefreshToken extends Model {
-    static associate(models) {
-      RefreshToken.belongsTo(models.User, { foreignKey: "user_id" });
-    }
-  }
+export interface RefreshTokenAttributes {
+  id: string;
+  user_id: string;
+  token: string;
+  revoked: boolean;
+  created_at: Date;
+}
+
+export type RefreshTokenCreationAttributes = Optional<
+  RefreshTokenAttributes,
+  "id" | "revoked" | "created_at"
+>;
+
+export class RefreshToken
+  extends Model<RefreshTokenAttributes, RefreshTokenCreationAttributes>
+  implements RefreshTokenAttributes
+{
+  public id!: string;
+  public user_id!: string;
+  public token!: string;
+  public revoked!: boolean;
+  public created_at!: Date;
+  static associate(_: any): void {}
+}
+
+export function initRefreshTokenModel(sequelize: Sequelize): typeof RefreshToken {
   RefreshToken.init(
     {
       id: {
@@ -43,4 +62,4 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
   return RefreshToken;
-};
+}

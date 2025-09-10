@@ -1,12 +1,35 @@
-"use strict";
-const { Model } = require("sequelize");
+import { DataTypes, Model, Optional, Sequelize } from "sequelize";
 
-module.exports = (sequelize, DataTypes) => {
-  class User extends Model {
-    static associate(models) {
-      User.hasMany(models.RefreshToken, { foreignKey: "user_id" });
-    }
-  }
+export interface UserAttributes {
+  id: string;
+  email: string;
+  username: string | null;
+  password_hash: string;
+  is_email_verified: boolean;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export type UserCreationAttributes = Optional<
+  UserAttributes,
+  "id" | "username" | "is_email_verified" | "created_at" | "updated_at"
+>;
+
+export class User
+  extends Model<UserAttributes, UserCreationAttributes>
+  implements UserAttributes
+{
+  public id!: string;
+  public email!: string;
+  public username!: string | null;
+  public password_hash!: string;
+  public is_email_verified!: boolean;
+  public created_at!: Date;
+  public updated_at!: Date;
+  static associate(_: any): void {}
+}
+
+export function initUserModel(sequelize: Sequelize): typeof User {
   User.init(
     {
       id: {
@@ -53,4 +76,4 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
   return User;
-};
+}
