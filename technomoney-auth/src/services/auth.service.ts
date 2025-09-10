@@ -2,8 +2,9 @@ import { hashPassword, comparePassword } from "../utils/password.util";
 import { UserRepository } from "../repositories/user.repository";
 import { JwtService } from "./jwt.service";
 import { TokenService } from "./token.service";
-import { AuthTokensDto } from "../types/auth.dto";
+import { AuthTokensDto, RefreshTokensDto } from "../types/auth.dto";
 import { logger } from "../utils/logger";
+import { sequelize } from "../models";
 
 const mask = (s?: string) =>
   !s ? "" : s.length <= 8 ? "***" : `${s.slice(0, 4)}...${s.slice(-4)}`;
@@ -40,7 +41,7 @@ export class AuthService {
       { userId: mask(user.id), username: user.username },
       "auth.register.created"
     );
-    return this.issueTokens(user.id, user.username);
+    return this.issueTokens(user.id, user.username ?? null);
   }
 
   async login(email: string, password: string): Promise<AuthTokensDto> {
@@ -50,7 +51,9 @@ export class AuthService {
       logger.warn({ email: maskEmail(email) }, "auth.login.not_found");
       throw new Error("NOT_FOUND");
     }
-    const ok = await comparePassword(password, (user as any).password_hash);
+    const storedHash =
+      (user as any).password_hash ?? (user as any).password ?? "";
+    const ok = await comparePassword(password, storedHash);
     if (!ok) {
       logger.warn({ userId: mask(user.id) }, "auth.login.invalid_password");
       throw new Error("INVALID_PASSWORD");
@@ -59,18 +62,18 @@ export class AuthService {
       { userId: mask(user.id), username: user.username },
       "auth.login.ok"
     );
-    return this.issueTokens(user.id, user.username);
+    return this.issueTokens(user.id, user.username ?? null);
   }
 
-  async refresh(oldToken: string) {
+  async refresh(oldToken: string): Promise<RefreshTokensDto> {
     logger.debug({}, "auth.refresh.start");
-    const valid = await this.tokens.isValid(oldToken);
     let id = "";
     try {
       const v = this.jwt.verifyRefresh(oldToken);
       id = String(v.id || "");
-    } catch (e) {
-      if (valid) {
+    } catch {
+      const stillValid = await this.tokens.isValid(oldToken);
+      if (stillValid) {
         try {
           await this.tokens.revoke(oldToken);
         } catch {}
@@ -78,6 +81,7 @@ export class AuthService {
       logger.warn({}, "auth.refresh.invalid");
       throw new Error("INVALID_REFRESH");
     }
+    const valid = await this.tokens.isValid(oldToken);
     if (!valid) {
       const issued = await this.tokens.wasIssued(oldToken);
       if (issued && id) {
@@ -88,21 +92,28 @@ export class AuthService {
       logger.warn({}, "auth.refresh.invalid");
       throw new Error("INVALID_REFRESH");
     }
-    const newRefresh = this.jwt.signRefresh(id);
-    await this.tokens.save(newRefresh, id);
-    await this.tokens.revoke(oldToken);
-    const access = this.jwt.signAccess(id);
+    let access = "";
+    let refresh = "";
+    await sequelize.transaction(async (tx) => {
+      refresh = this.jwt.signRefresh(id);
+      await this.tokens.save(refresh, id, tx);
+      await this.tokens.revoke(oldToken, tx);
+      access = this.jwt.signAccess(id);
+    });
     logger.debug({ userId: mask(id) }, "auth.refresh.ok");
-    return { access, newRefresh };
+    return { access, refresh };
   }
 
-  async logout(refreshToken: string) {
+  async logout(refreshToken: string): Promise<void> {
     logger.debug({}, "auth.logout.start");
     await this.tokens.revoke(refreshToken);
     logger.debug({}, "auth.logout.ok");
   }
 
-  private async issueTokens(id: string, username: string | null) {
+  private async issueTokens(
+    id: string,
+    username: string | null
+  ): Promise<AuthTokensDto> {
     try {
       logger.debug({ userId: mask(id) }, "auth.issue_tokens.start");
       const access = this.jwt.signAccess(id);

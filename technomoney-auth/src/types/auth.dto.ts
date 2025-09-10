@@ -3,3 +3,5 @@ export interface AuthTokensDto {
   refresh: string;
   username: string | null;
 }
+
+export interface RefreshTokensDto { access: string; refresh: string }

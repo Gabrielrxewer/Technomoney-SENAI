@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { Transaction } from "sequelize";
 import { RefreshTokenRepository } from "../repositories/refresh-token.repository";
 import { logger } from "../utils/logger";
 
@@ -10,37 +11,32 @@ const hashRt = (t: string) =>
 export class TokenService {
   private repo = new RefreshTokenRepository();
 
-  async save(token: string, userId: string) {
+  async save(token: string, userId: string, tx?: Transaction) {
     const h = hashRt(token);
     logger.debug({ userId: mask(userId) }, "token.save.start");
-    await this.repo.save(h, userId);
+    await this.repo.save(h, userId, tx);
     logger.debug({ userId: mask(userId) }, "token.save.ok");
   }
 
-  async revoke(token: string) {
+  async revoke(token: string, tx?: Transaction) {
     const h = hashRt(token);
     logger.debug({}, "token.revoke.start");
-    await this.repo.revoke(h);
-        logger.debug({}, "token.revoke.ok");
+    await this.repo.revoke(h, tx);
+    logger.debug({}, "token.revoke.ok");
   }
 
-  async revokeAllForUser(userId: string) {
+  async revokeAllForUser(userId: string, tx?: Transaction) {
     logger.debug({ userId: mask(userId) }, "token.revoke_all_for_user.start");
-    await this.repo.revokeAllForUser(userId);
+    await this.repo.revokeAllForUser(userId, tx);
     logger.debug({ userId: mask(userId) }, "token.revoke_all_for_user.ok");
   }
 
   async isValid(token: string) {
     const h = hashRt(token);
     logger.debug({}, "token.is_valid.start");
-    const okHashed = !!(await this.repo.isValid(h));
-    if (okHashed) {
-      logger.debug({ ok: true, hashed: true }, "token.is_valid.result");
-      return true;
-    }
-    const okPlain = !!(await this.repo.isValid(token));
-    logger.debug({ ok: okPlain, hashed: false }, "token.is_valid.result");
-    return okPlain;
+    const ok = !!(await this.repo.isValid(h));
+    logger.debug({ ok, hashed: true }, "token.is_valid.result");
+    return ok;
   }
 
   async wasIssued(token: string) {
