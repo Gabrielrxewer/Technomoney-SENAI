@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { request } from "https";
 import { URLSearchParams } from "url";
-import { logger } from "../utils/logger";
+import { logger } from "../utils/log/logger";
 
 const normalizeHost = (h?: string) =>
   (h || "")

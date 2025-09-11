@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express, { RequestHandler } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -14,6 +15,10 @@ import {
 import { requestId } from "./middlewares/requestId.middleware";
 import { corsOptions } from "./config/cors";
 import { csrfProtection } from "./middlewares/csrf.middleware";
+import {
+  httpLogger,
+  contextMiddleware,
+} from "./middlewares/http-logger.middleware";
 
 const app = express();
 const isProd = process.env.NODE_ENV === "production";
@@ -25,6 +30,8 @@ const swaggerEnabled =
 app.set("trust proxy", 1);
 app.use("/.well-known", wellKnownRoutes);
 app.use(requestId);
+app.use(httpLogger);
+app.use(contextMiddleware);
 app.use(forceHttps);
 app.use(cookieParser());
 app.use(express.json({ limit: "1mb" }));
@@ -67,7 +74,6 @@ const healthz: RequestHandler = (_req, res) => {
   res.json({ ok: true });
 };
 app.get("/healthz", healthz);
-
 app.use("/api/auth", authRoutes);
 app.use("/api/webauthn", webauthnRoutes);
 
@@ -80,5 +86,16 @@ const csrfGet: RequestHandler = (req: any, res) => {
   res.json({ csrfToken: t });
 };
 app.get("/api/auth/csrf", csrfProtection, csrfGet);
+app.use((err: any, req: any, res: any, _next: any) => {
+  const isSyntax =
+    err?.type === "entity.parse.failed" || err instanceof SyntaxError;
+  const status = isSyntax ? 400 : Number(err?.status) || 500;
+  const code = isSyntax
+    ? "INVALID_JSON"
+    : String(err?.code || "INTERNAL_ERROR");
+  if (!res.getHeader("X-Request-Id") && req?.id)
+    res.setHeader("X-Request-Id", String(req.id));
+  res.status(status).json({ error: code });
+});
 
 export default app;

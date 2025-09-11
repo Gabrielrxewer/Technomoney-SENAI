@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 import http from "http";
 import app from "./app";
 import { ensureRedis } from "./startup/ensureRedis";
-import { logger } from "./utils/logger";
+import { logger } from "./utils/log/logger";
 import { attachWs } from "./ws";
 
 dotenv.config();

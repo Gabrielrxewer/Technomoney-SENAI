@@ -1,29 +1,30 @@
-import jwt from "jsonwebtoken";
+import { getLogger } from "../utils/log/logger";
+import {
+  mask,
+  maskEmail,
+  maskJti,
+  getJti,
+  safeErr,
+} from "../utils/log/log.helpers";
+import { getLogContext } from "../utils/log/logging-context";
 import { hashPassword, comparePassword } from "../utils/password.util";
 import { UserRepository } from "../repositories/user.repository";
 import { JwtService } from "./jwt.service";
 import { TokenService } from "./token.service";
 import { AuthTokensDto, RefreshTokensDto } from "../types/auth.dto";
-import { logger } from "../utils/logger";
 import { sequelize } from "../models";
 import { keysService } from "./keys.service";
 
-const mask = (s?: string) =>
-  !s ? "" : s.length <= 8 ? "***" : `${s.slice(0, 4)}...${s.slice(-4)}`;
-const maskEmail = (e?: string) => {
-  if (!e) return "";
-  const [user, domain] = e.split("@");
-  if (!domain) return mask(e);
-  const u = user.length <= 2 ? "*" : `${user.slice(0, 2)}***`;
-  return `${u}@${domain}`;
+type RefreshPayload = {
+  sub?: string;
+  jti?: string;
+  id?: string;
+  iss?: string;
+  aud?: string;
+  iat: number;
+  exp: number;
 };
-const getJti = (t: string) => {
-  try {
-    return ((jwt.decode(t) as any)?.jti as string) || "";
-  } catch {
-    return "";
-  }
-};
+type IUser = { id: string; username: string | null; password_hash: string };
 
 export class DomainError extends Error {
   code: string;
@@ -40,76 +41,103 @@ export class AuthService {
   private jwt = new JwtService();
   private tokens = new TokenService();
 
+  private log(bindings?: Record<string, unknown>) {
+    return getLogger({
+      svc: "AuthService",
+      ...getLogContext(),
+      ...(bindings || {}),
+    });
+  }
+
   async register(
     email: string,
     password: string,
     username?: string
   ): Promise<AuthTokensDto> {
-    logger.debug({ email: maskEmail(email), username }, "auth.register.start");
-    if (await this.users.findByEmail(email)) {
-      logger.warn({ email: maskEmail(email) }, "auth.register.email_taken");
+    const log = this.log();
+    log.debug({
+      evt: "auth.register.start",
+      email: maskEmail(email),
+      username,
+    });
+    const existsByEmail = await this.users.findByEmail(email);
+    if (existsByEmail) {
+      log.warn({ evt: "auth.register.email_taken", email: maskEmail(email) });
       throw new DomainError("EMAIL_TAKEN", 409);
     }
     if (username && (await this.users.findByUsername(username))) {
-      logger.warn({ username }, "auth.register.username_taken");
+      log.warn({ evt: "auth.register.username_taken", username });
       throw new DomainError("USERNAME_TAKEN", 409);
     }
     const hashed = await hashPassword(password);
-    const user = await this.users.create({ email, password: hashed, username });
-    logger.debug(
-      { userId: mask(user.id), username: user.username },
-      "auth.register.created"
-    );
+    const user = (await this.users.create({
+      email,
+      password: hashed,
+      username,
+    })) as unknown as IUser;
+    log.debug({
+      evt: "auth.register.created",
+      userId: mask(user.id),
+      username: user.username,
+    });
     return this.issueTokens(user.id, user.username ?? null);
   }
 
   async login(email: string, password: string): Promise<AuthTokensDto> {
-    logger.debug({ email: maskEmail(email) }, "auth.login.start");
-    const user = await this.users.findByEmail(email);
+    const log = this.log();
+    log.debug({ evt: "auth.login.start", email: maskEmail(email) });
+    const user = (await this.users.findByEmail(email)) as IUser | null;
     if (!user) {
-      logger.warn({ email: maskEmail(email) }, "auth.login.not_found");
-      throw new DomainError("NOT_FOUND", 404);
+      log.warn({
+        evt: "auth.login.invalid_credentials",
+        email: maskEmail(email),
+      });
+      throw new DomainError("INVALID_CREDENTIALS", 401);
     }
-    const storedHash = (user as any).password_hash as string;
-    const ok = await comparePassword(password, storedHash);
+    const ok = await comparePassword(password, user.password_hash);
     if (!ok) {
-      logger.warn({ userId: mask(user.id) }, "auth.login.invalid_password");
-      throw new DomainError("INVALID_PASSWORD", 401);
+      log.warn({
+        evt: "auth.login.invalid_credentials",
+        userId: mask(user.id),
+      });
+      throw new DomainError("INVALID_CREDENTIALS", 401);
     }
-    logger.debug(
-      { userId: mask(user.id), username: user.username },
-      "auth.login.ok"
-    );
+    log.debug({
+      evt: "auth.login.ok",
+      userId: mask(user.id),
+      username: user.username,
+    });
     return this.issueTokens(user.id, user.username ?? null);
   }
 
   async refresh(oldToken: string): Promise<RefreshTokensDto> {
-    logger.debug({ oldJti: getJti(oldToken) }, "auth.refresh.start");
+    const log = this.log();
+    log.debug({ evt: "auth.refresh.start", oldJti: maskJti(getJti(oldToken)) });
     let id = "";
     try {
-      const v = this.jwt.verifyRefresh(oldToken);
-      id = String(v.id || "");
+      const v = this.jwt.verifyRefresh(oldToken) as RefreshPayload;
+      id = String(v.sub || v.id || "");
     } catch {
       const stillValid = await this.tokens.isValid(oldToken);
       if (stillValid) {
         try {
           await this.tokens.revoke(oldToken);
         } catch (err) {
-          logger.debug({ err }, "auth.refresh.revoke_failed");
+          log.debug({ evt: "auth.refresh.revoke_failed", err: safeErr(err) });
         }
       }
-      logger.warn({}, "auth.refresh.invalid");
+      log.warn({ evt: "auth.refresh.invalid" });
       throw new DomainError("INVALID_REFRESH", 401);
     }
     const valid = await this.tokens.isValid(oldToken);
     if (!valid) {
       const issued = await this.tokens.wasIssued(oldToken);
       if (issued && id) {
-        logger.warn({ userId: mask(id) }, "auth.refresh.reuse_detected");
+        log.warn({ evt: "auth.refresh.reuse_detected", userId: mask(id) });
         await this.tokens.revokeAllForUser(id);
         throw new DomainError("REFRESH_REUSE_DETECTED", 403);
       }
-      logger.warn({}, "auth.refresh.invalid");
+      log.warn({ evt: "auth.refresh.invalid" });
       throw new DomainError("INVALID_REFRESH", 401);
     }
     let access = "";
@@ -120,33 +148,37 @@ export class AuthService {
       await this.tokens.revoke(oldToken, tx);
       access = this.jwt.signAccess(id);
     });
-    logger.debug(
-      { userId: mask(id), oldJti: getJti(oldToken), newJti: getJti(refresh) },
-      "auth.refresh.ok"
-    );
+    log.debug({
+      evt: "auth.refresh.ok",
+      userId: mask(id),
+      oldJti: maskJti(getJti(oldToken)),
+      newJti: maskJti(getJti(refresh)),
+    });
     return { access, refresh };
   }
 
   async logout(refreshToken: string): Promise<void> {
-    logger.debug({}, "auth.logout.start");
+    const log = this.log();
+    log.debug({ evt: "auth.logout.start" });
     await this.tokens.revoke(refreshToken);
-    logger.debug({}, "auth.logout.ok");
+    log.debug({ evt: "auth.logout.ok" });
   }
 
   private async issueTokens(
     id: string,
     username: string | null
   ): Promise<AuthTokensDto> {
+    const log = this.log({ userId: mask(id) });
     try {
       const { kid, alg } = keysService.getActive();
-      logger.debug({ userId: mask(id), kid, alg }, "auth.issue_tokens.start");
+      log.debug({ evt: "auth.issue_tokens.start", kid, alg });
       const access = this.jwt.signAccess(id);
       const refresh = this.jwt.signRefresh(id);
       await this.tokens.save(refresh, id);
-      logger.debug({ userId: mask(id), kid, alg }, "auth.issue_tokens.ok");
+      log.debug({ evt: "auth.issue_tokens.ok", kid, alg });
       return { access, refresh, username };
     } catch (e: any) {
-      logger.error({ err: e }, "ISSUE_TOKENS_FAILED");
+      log.error({ evt: "auth.issue_tokens.failed", err: safeErr(e) });
       throw new DomainError("ISSUE_TOKENS_FAILED", 500);
     }
   }

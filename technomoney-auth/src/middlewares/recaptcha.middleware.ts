@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 import { RecaptchaService } from "../services/recaptcha.service";
-import { logger } from "../utils/logger";
+import { logger } from "../utils/log/logger";
 
 const recaptcha = new RecaptchaService();
 

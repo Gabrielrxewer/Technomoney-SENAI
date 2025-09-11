@@ -1,6 +1,6 @@
 import rateLimit from "express-rate-limit";
-import { logger } from "../utils/logger";
-import { getRateLimitStore } from "./rateLimit.store";
+import { logger } from "../utils/log/logger";
+import { makeRateLimitStore } from "./rateLimit.store";
 
 export const loginByEmailLimiter = rateLimit({
   windowMs: 5 * 60 * 1000,
@@ -8,14 +8,14 @@ export const loginByEmailLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true,
-  keyGenerator: (req) => {
+  keyGenerator: (req: any) => {
     const email =
       typeof req.body?.email === "string"
         ? req.body.email.toLowerCase().trim()
         : "";
     return `${email}|${req.ip || ""}`;
   },
-  handler: (req, res) => {
+  handler: (req: any, res: any) => {
     const resetTime = (req as any).rateLimit.resetTime as Date | undefined;
     const now = new Date();
     const secs = resetTime
@@ -29,5 +29,5 @@ export const loginByEmailLimiter = rateLimit({
         retryAfter: secs,
       });
   },
-  store: getRateLimitStore(),
+  store: makeRateLimitStore("rl:email:"),
 });

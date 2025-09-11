@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 import { PwnedService } from "../services/pwned.service";
-import { logger } from "../utils/logger";
+import { logger } from "../utils/log/logger";
 import { isStrong } from "../utils/password-policy.util";
 
 const pwned = new PwnedService();

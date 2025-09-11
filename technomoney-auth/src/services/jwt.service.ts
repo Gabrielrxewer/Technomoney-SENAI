@@ -3,6 +3,8 @@ import jwt, { SignOptions, VerifyOptions, JwtPayload } from "jsonwebtoken";
 import ms from "ms";
 import { v4 as uuid } from "uuid";
 import { keysService } from "./keys.service";
+import { getLogger } from "../utils/log/logger";
+import { mask, maskJti, safeErr } from "../utils/log/log.helpers";
 
 type AccessData = {
   id: string;
@@ -28,6 +30,7 @@ const toSeconds = (v: unknown, fallback: number): number => {
 };
 
 export class JwtService {
+  private log = getLogger({ svc: "JwtService" });
   private issuer = process.env.JWT_ISSUER || "technomoney";
   private audienceSign = (process.env.JWT_AUDIENCE || "")
     .split(",")
@@ -43,10 +46,38 @@ export class JwtService {
     28800
   );
   private clockTolerance = Number(process.env.JWT_CLOCK_TOLERANCE || 5);
+  private allowedSignAlgs = (
+    process.env.JWT_ALLOWED_ALGS_SIGN ||
+    process.env.JWT_ALLOWED_ALGS ||
+    "RS256,ES256,PS256"
+  )
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  private allowedVerifyAlgs = (
+    process.env.JWT_ALLOWED_ALGS_VERIFY ||
+    process.env.JWT_ALLOWED_ALGS ||
+    "RS256,ES256,PS256"
+  )
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
 
   signAccess(id: string, extra: Record<string, unknown> = {}): string {
     const active = keysService.getActive();
-    const payload = { id, jti: uuid(), typ: "access", ...extra };
+    if (
+      this.allowedSignAlgs.length &&
+      !this.allowedSignAlgs.includes(String(active.alg))
+    ) {
+      this.log.error({
+        evt: "jwt.sign.access.alg_blocked",
+        kid: active.kid,
+        alg: active.alg,
+      });
+      throw new Error("ALG_NOT_ALLOWED");
+    }
+    const jti = uuid();
+    const payload = { ...extra, id, sub: id, jti, typ: "access" };
     const opts: SignOptions = {
       algorithm: active.alg as any,
       expiresIn: this.expiresIn,
@@ -54,12 +85,34 @@ export class JwtService {
       audience: this.audienceSign.length ? this.audienceSign : undefined,
       keyid: active.kid,
     };
-    return jwt.sign(payload, active.privatePem, opts);
+    const token = jwt.sign(payload, active.privatePem, opts);
+    this.log.debug({
+      evt: "jwt.sign.access.ok",
+      kid: active.kid,
+      alg: active.alg,
+      sub: mask(id),
+      jti: maskJti(jti),
+      expSec: this.expiresIn,
+      audSet: this.audienceSign.length > 0,
+    });
+    return token;
   }
 
   signRefresh(id: string): string {
     const active = keysService.getActive();
-    const payload = { id, jti: uuid(), typ: "refresh" };
+    if (
+      this.allowedSignAlgs.length &&
+      !this.allowedSignAlgs.includes(String(active.alg))
+    ) {
+      this.log.error({
+        evt: "jwt.sign.refresh.alg_blocked",
+        kid: active.kid,
+        alg: active.alg,
+      });
+      throw new Error("ALG_NOT_ALLOWED");
+    }
+    const jti = uuid();
+    const payload = { id, sub: id, jti, typ: "refresh" };
     const opts: SignOptions = {
       algorithm: active.alg as any,
       expiresIn: this.refreshExpiresIn,
@@ -67,17 +120,44 @@ export class JwtService {
       audience: this.audienceSign.length ? this.audienceSign : undefined,
       keyid: active.kid,
     };
-    return jwt.sign(payload, active.privatePem, opts);
+    const token = jwt.sign(payload, active.privatePem, opts);
+    this.log.debug({
+      evt: "jwt.sign.refresh.ok",
+      kid: active.kid,
+      alg: active.alg,
+      sub: mask(id),
+      jti: maskJti(jti),
+      expSec: this.refreshExpiresIn,
+      audSet: this.audienceSign.length > 0,
+    });
+    return token;
   }
 
   verifyAccess(token: string): AccessData {
     const decoded = jwt.decode(token, { complete: true }) as {
-      header?: { kid?: string };
+      header?: { kid?: string; alg?: string };
     } | null;
     const kid = decoded?.header?.kid;
-    if (!kid) throw new Error("MISSING_KID");
+    if (!kid) {
+      this.log.warn({ evt: "jwt.verify.access.missing_kid" });
+      throw new Error("MISSING_KID");
+    }
     const entry = keysService.getByKid(kid);
-    if (!entry) throw new Error("UNKNOWN_KID");
+    if (!entry) {
+      this.log.warn({ evt: "jwt.verify.access.unknown_kid", kid });
+      throw new Error("UNKNOWN_KID");
+    }
+    if (
+      this.allowedVerifyAlgs.length &&
+      !this.allowedVerifyAlgs.includes(String(entry.alg))
+    ) {
+      this.log.warn({
+        evt: "jwt.verify.access.alg_blocked",
+        kid,
+        alg: entry.alg,
+      });
+      throw new Error("ALG_NOT_ALLOWED");
+    }
     const opts: VerifyOptions = {
       algorithms: [entry.alg as any],
       issuer: this.issuer,
@@ -86,26 +166,66 @@ export class JwtService {
         ? (this.audienceVerify as any)
         : undefined,
     };
-    const d = jwt.verify(token, entry.publicPem, opts) as JwtPayload & {
-      id: string;
-      jti: string;
-      typ: string;
-      scope?: unknown;
-      acr?: unknown;
-      amr?: unknown;
-    };
-    if (d.typ !== "access") throw new Error("INVALID_TOKEN_TYPE");
-    return { id: d.id, jti: d.jti, scope: d.scope, acr: d.acr, amr: d.amr };
+    if (!opts.audience)
+      this.log.debug({ evt: "jwt.verify.access.no_audience_enforced" });
+    try {
+      const d = jwt.verify(token, entry.publicPem, opts) as JwtPayload & {
+        id: string;
+        jti: string;
+        typ: string;
+        scope?: unknown;
+        acr?: unknown;
+        amr?: unknown;
+      };
+      if (d.typ !== "access") {
+        this.log.warn({ evt: "jwt.verify.access.invalid_type", typ: d.typ });
+        throw new Error("INVALID_TOKEN_TYPE");
+      }
+      const sub = String(d.id || d.sub || "");
+      this.log.debug({
+        evt: "jwt.verify.access.ok",
+        kid,
+        alg: entry.alg,
+        sub: mask(sub),
+        jti: maskJti(String(d.jti || "")),
+      });
+      return { id: d.id, jti: d.jti, scope: d.scope, acr: d.acr, amr: d.amr };
+    } catch (e: any) {
+      this.log.warn({
+        evt: "jwt.verify.access.fail",
+        kid,
+        alg: entry.alg,
+        err: safeErr(e),
+      });
+      throw e;
+    }
   }
 
   verifyRefresh(token: string): RefreshData {
     const decoded = jwt.decode(token, { complete: true }) as {
-      header?: { kid?: string };
+      header?: { kid?: string; alg?: string };
     } | null;
     const kid = decoded?.header?.kid;
-    if (!kid) throw new Error("MISSING_KID");
+    if (!kid) {
+      this.log.warn({ evt: "jwt.verify.refresh.missing_kid" });
+      throw new Error("MISSING_KID");
+    }
     const entry = keysService.getByKid(kid);
-    if (!entry) throw new Error("UNKNOWN_KID");
+    if (!entry) {
+      this.log.warn({ evt: "jwt.verify.refresh.unknown_kid", kid });
+      throw new Error("UNKNOWN_KID");
+    }
+    if (
+      this.allowedVerifyAlgs.length &&
+      !this.allowedVerifyAlgs.includes(String(entry.alg))
+    ) {
+      this.log.warn({
+        evt: "jwt.verify.refresh.alg_blocked",
+        kid,
+        alg: entry.alg,
+      });
+      throw new Error("ALG_NOT_ALLOWED");
+    }
     const opts: VerifyOptions = {
       algorithms: [entry.alg as any],
       issuer: this.issuer,
@@ -114,12 +234,35 @@ export class JwtService {
         ? (this.audienceVerify as any)
         : undefined,
     };
-    const d = jwt.verify(token, entry.publicPem, opts) as JwtPayload & {
-      id: string;
-      jti: string;
-      typ: string;
-    };
-    if (d.typ !== "refresh") throw new Error("INVALID_TOKEN_TYPE");
-    return { id: d.id, jti: d.jti };
+    if (!opts.audience)
+      this.log.debug({ evt: "jwt.verify.refresh.no_audience_enforced" });
+    try {
+      const d = jwt.verify(token, entry.publicPem, opts) as JwtPayload & {
+        id: string;
+        jti: string;
+        typ: string;
+      };
+      if (d.typ !== "refresh") {
+        this.log.warn({ evt: "jwt.verify.refresh.invalid_type", typ: d.typ });
+        throw new Error("INVALID_TOKEN_TYPE");
+      }
+      const sub = String(d.id || d.sub || "");
+      this.log.debug({
+        evt: "jwt.verify.refresh.ok",
+        kid,
+        alg: entry.alg,
+        sub: mask(sub),
+        jti: maskJti(String(d.jti || "")),
+      });
+      return { id: d.id, jti: d.jti };
+    } catch (e: any) {
+      this.log.warn({
+        evt: "jwt.verify.refresh.fail",
+        kid,
+        alg: entry.alg,
+        err: safeErr(e),
+      });
+      throw e;
+    }
   }
 }

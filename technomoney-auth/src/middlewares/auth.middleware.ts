@@ -1,5 +1,5 @@
 import { JwtService } from "../services/jwt.service";
-import { logger } from "../utils/logger";
+import { logger } from "../utils/log/logger";
 
 const jwtSvc = new JwtService();
 

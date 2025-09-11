@@ -2,7 +2,7 @@ import { RequestHandler } from "express";
 import jwt from "jsonwebtoken";
 import { buildRefreshCookie } from "../utils/cookie.util";
 import { AuthService } from "../services/auth.service";
-import { logger } from "../utils/logger";
+import { logger } from "../utils/log/logger";
 import {
   deriveSid,
   publishToSid,

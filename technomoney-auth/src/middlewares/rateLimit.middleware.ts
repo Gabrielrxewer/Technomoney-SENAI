@@ -1,13 +1,13 @@
 import rateLimit from "express-rate-limit";
-import { logger } from "../utils/logger";
-import { getRateLimitStore } from "./rateLimit.store";
+import { logger } from "../utils/log/logger";
+import { makeRateLimitStore } from "./rateLimit.store";
 
 export const loginLimiter = rateLimit({
   windowMs: 5 * 60 * 1000,
   max: 50,
   standardHeaders: true,
   legacyHeaders: false,
-  handler: (req, res) => {
+  handler: (req: any, res: any) => {
     const resetTime = (req as any).rateLimit.resetTime as Date | undefined;
     const now = new Date();
     const secs = resetTime
@@ -21,5 +21,5 @@ export const loginLimiter = rateLimit({
         retryAfter: secs,
       });
   },
-  store: getRateLimitStore(),
+  store: makeRateLimitStore("rl:ip:"),
 });

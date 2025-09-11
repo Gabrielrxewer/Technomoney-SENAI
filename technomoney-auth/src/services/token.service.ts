@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { Transaction } from "sequelize";
 import { RefreshTokenRepository } from "../repositories/refresh-token.repository";
-import { logger } from "../utils/logger";
+import { logger } from "../utils/log/logger";
 
 const mask = (s?: string) =>
   !s ? "" : s.length <= 8 ? "***" : `${s.slice(0, 4)}...${s.slice(-4)}`;

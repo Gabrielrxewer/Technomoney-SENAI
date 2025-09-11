@@ -1,5 +1,5 @@
 import { v4 as uuid } from "uuid";
-import { logger } from "../utils/logger";
+import { logger } from "../utils/log/logger";
 
 export const requestId = (req: any, res: any, next: any) => {
   const incoming = String(req.headers["x-request-id"] || "").trim();
