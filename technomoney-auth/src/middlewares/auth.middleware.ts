@@ -11,8 +11,8 @@ export const authenticate = (req: any, res: any, next: any) => {
       res.status(401).json({ message: "Unauthorized" });
       return;
     }
-    const { id, jti, scope } = jwtSvc.verifyAccess(token);
-    req.user = { id, jti, scope };
+    const { id, jti, scope, acr, amr } = jwtSvc.verifyAccess(token);
+    req.user = { id, jti, scope, acr, amr };
     next();
   } catch (e) {
     logger.debug({ err: String(e) }, "auth.middleware.denied");

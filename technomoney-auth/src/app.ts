@@ -5,7 +5,7 @@ import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import swaggerUi from "swagger-ui-express";
 import authRoutes from "./routes/auth.routes";
-import webauthnRoutes from "./routes/webauthn.routes";
+import totpRoutes from "./routes/totp.routes";
 import wellKnownRoutes from "./routes/wellknown.routes";
 import { swaggerSpec } from "./swagger";
 import {
@@ -75,7 +75,7 @@ const healthz: RequestHandler = (_req, res) => {
 };
 app.get("/healthz", healthz);
 app.use("/api/auth", authRoutes);
-app.use("/api/webauthn", webauthnRoutes);
+app.use("/api/totp", totpRoutes);
 
 const csrfGet: RequestHandler = (req: any, res) => {
   const t = req.csrfToken();

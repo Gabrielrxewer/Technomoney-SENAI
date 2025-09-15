@@ -77,7 +77,9 @@ export class JwtService {
       throw new Error("ALG_NOT_ALLOWED");
     }
     const jti = uuid();
-    const payload = { ...extra, id, sub: id, jti, typ: "access" };
+    const acr = typeof extra.acr === "string" ? extra.acr : "aal1";
+    const amr = Array.isArray(extra.amr) ? (extra.amr as string[]) : ["pwd"];
+    const payload = { id, sub: id, jti, typ: "access", acr, amr, ...extra };
     const opts: SignOptions = {
       algorithm: active.alg as any,
       expiresIn: this.expiresIn,

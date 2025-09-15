@@ -1,0 +1,194 @@
+import crypto from "crypto";
+import base64url from "base64url";
+import { getRedis } from "./redis.service";
+
+const period = 30;
+const digits = 6;
+
+const b32Alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+const b32Map: Record<string, number> = Object.fromEntries(
+  b32Alphabet.split("").map((c, i) => [c, i])
+);
+
+const b32Pad = (s: string) => {
+  const r = s.length % 8;
+  return r === 0 ? s : s + "=".repeat(8 - r);
+};
+
+const base32Encode = (buf: Buffer) => {
+  let bits = 0;
+  let value = 0;
+  let output = "";
+  for (let i = 0; i < buf.length; i++) {
+    value = (value << 8) | buf[i];
+    bits += 8;
+    while (bits >= 5) {
+      output += b32Alphabet[(value >>> (bits - 5)) & 31];
+      bits -= 5;
+    }
+  }
+  if (bits > 0) output += b32Alphabet[(value << (5 - bits)) & 31];
+  while (output.length % 8 !== 0) output += "=";
+  return output;
+};
+
+const base32Decode = (s: string) => {
+  const str = b32Pad(s.toUpperCase().replace(/[^A-Z2-7]/g, ""));
+  let bits = 0;
+  let value = 0;
+  const out: number[] = [];
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i];
+    if (ch === "=") break;
+    const v = b32Map[ch];
+    if (v === undefined) continue;
+    value = (value << 5) | v;
+    bits += 5;
+    if (bits >= 8) {
+      out.push((value >>> (bits - 8)) & 255);
+      bits -= 8;
+    }
+  }
+  return Buffer.from(out);
+};
+
+const hotp = (secret: Buffer, counter: number) => {
+  const buf = Buffer.alloc(8);
+  for (let i = 7; i >= 0; i--) {
+    buf[i] = counter & 0xff;
+    counter = counter >> 8;
+  }
+  const h = crypto.createHmac("sha1", secret).update(buf).digest();
+  const offset = h[h.length - 1] & 0xf;
+  const code =
+    ((h[offset] & 0x7f) << 24) |
+    ((h[offset + 1] & 0xff) << 16) |
+    ((h[offset + 2] & 0xff) << 8) |
+    (h[offset + 3] & 0xff);
+  const mod = 10 ** digits;
+  return String(code % mod).padStart(digits, "0");
+};
+
+const verifyTotp = (
+  secret: Buffer,
+  code: string,
+  tsSec: number,
+  window = 1
+) => {
+  const base = Math.floor(tsSec / period);
+  const target = String(code || "").padStart(digits, "0");
+  for (let w = -window; w <= window; w++) {
+    if (hotp(secret, base + w) === target) return true;
+  }
+  return false;
+};
+
+const keyFromEnv = () =>
+  crypto
+    .createHash("sha256")
+    .update(String(process.env.TOTP_ENC_KEY || "changeme"))
+    .digest();
+
+const seal = (plain: string) => {
+  const key = keyFromEnv();
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
+  const enc = Buffer.concat([
+    cipher.update(Buffer.from(plain, "utf8")),
+    cipher.final(),
+  ]);
+  const tag = cipher.getAuthTag();
+  return base64url.encode(Buffer.concat([iv, enc, tag]));
+};
+
+const open = (token: string) => {
+  const key = keyFromEnv();
+  const buf = base64url.toBuffer(token);
+  const iv = buf.subarray(0, 12);
+  const tag = buf.subarray(buf.length - 16);
+  const enc = buf.subarray(12, buf.length - 16);
+  const decipher = crypto.createDecipheriv("aes-256-gcm", key, iv);
+  decipher.setAuthTag(tag);
+  const dec = Buffer.concat([decipher.update(enc), decipher.final()]);
+  return dec.toString("utf8");
+};
+
+export class TotpService {
+  private issuer = process.env.TOTP_ISSUER || "Technomoney";
+  private pendingTtl = 900;
+  private mem = new Map<string, string>();
+
+  private activeKey(userId: string) {
+    return `mfa:totp:active:${userId}`;
+  }
+
+  private pendingKey(userId: string) {
+    return `mfa:totp:pending:${userId}`;
+  }
+
+  async status(userId: string) {
+    const r: any = await getRedis();
+    if (r) {
+      const v = (await r.get(this.activeKey(userId))) as string | null;
+      return !!v;
+    }
+    return this.mem.has(this.activeKey(userId));
+  }
+
+  async setupStart(userId: string, label?: string) {
+    const secretRaw = crypto.randomBytes(20);
+    const secretB32 = base32Encode(secretRaw).replace(/=+$/g, "");
+    const enc = seal(secretB32);
+    const r: any = await getRedis();
+    if (r) await r.setEx(this.pendingKey(userId), this.pendingTtl, enc);
+    else this.mem.set(this.pendingKey(userId), enc);
+    const account = encodeURIComponent(label || userId);
+    const issuer = encodeURIComponent(this.issuer);
+    const otpauth = `otpauth://totp/${issuer}:${account}?secret=${secretB32}&issuer=${issuer}&algorithm=SHA1&digits=${digits}&period=${period}`;
+    return { secret: secretB32, otpauth };
+  }
+
+  async setupVerify(userId: string, code: string) {
+    const r: any = await getRedis();
+    const kPending = this.pendingKey(userId);
+    const enc =
+      (r
+        ? ((await r.get(kPending)) as string | null)
+        : this.mem.get(kPending) ?? null) ?? "";
+    if (!enc) return { enrolled: false };
+    const b32 = open(enc);
+    const ok = verifyTotp(
+      base32Decode(b32),
+      code,
+      Math.floor(Date.now() / 1000)
+    );
+    if (!ok) return { enrolled: false };
+    const act = seal(b32);
+    const kActive = this.activeKey(userId);
+    if (r) {
+      await r.set(kActive, act);
+      await r.del(kPending);
+    } else {
+      this.mem.set(kActive, act);
+      this.mem.delete(kPending);
+    }
+    return { enrolled: true };
+  }
+
+  async challengeVerify(userId: string, code: string) {
+    const r: any = await getRedis();
+    const kActive = this.activeKey(userId);
+    const enc =
+      (r
+        ? ((await r.get(kActive)) as string | null)
+        : this.mem.get(kActive) ?? null) ?? "";
+    if (!enc) return { verified: false };
+    const b32 = open(enc);
+    const ok = verifyTotp(
+      base32Decode(b32),
+      code,
+      Math.floor(Date.now() / 1000)
+    );
+    return { verified: ok };
+  }
+}

@@ -10,8 +10,11 @@ import {
   scheduleTokenExpiringSoon,
   clearSessionSchedules,
 } from "../ws";
+import { getTrustedDevice } from "../services/trusted-device.service";
+import { TotpService } from "../services/totp.service";
 
 const authService = new AuthService();
+const totpService = new TotpService();
 const cookieOpts = buildRefreshCookie();
 
 const decodeExp = (token: string) => {
@@ -20,6 +23,15 @@ const decodeExp = (token: string) => {
     return typeof d?.exp === "number" ? d.exp : 0;
   } catch {
     return 0;
+  }
+};
+
+const decodeUserId = (token: string) => {
+  try {
+    const d: any = jwt.decode(token);
+    return String(d?.sub || d?.id || "");
+  } catch {
+    return "";
   }
 };
 
@@ -60,6 +72,24 @@ export const login: RequestHandler = async (req, res) => {
       email,
       password
     );
+    const userId = decodeUserId(access);
+    if (!userId) {
+      await authService.logout(refresh);
+      res.status(401).json({ message: "Credenciais inválidas" });
+      return;
+    }
+    const td = await getTrustedDevice(req);
+    const isTrusted = !!td && td.userId === userId;
+    if (!isTrusted) {
+      const enrolled = await totpService.status(userId);
+      await authService.logout(refresh);
+      if (!enrolled) {
+        res.status(401).json({ stepUp: "enroll_totp" });
+        return;
+      }
+      res.status(401).json({ stepUp: "totp" });
+      return;
+    }
     const sid = deriveSid(refresh);
     const exp = decodeExp(access);
     scheduleTokenExpiringSoon(sid, exp);
