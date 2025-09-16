@@ -7,6 +7,7 @@ import swaggerUi from "swagger-ui-express";
 import authRoutes from "./routes/auth.routes";
 import totpRoutes from "./routes/totp.routes";
 import wellKnownRoutes from "./routes/wellknown.routes";
+import oidcRoutes from "./routes/oidc.routes"
 import { swaggerSpec } from "./swagger";
 import {
   secureHeaders,
@@ -29,6 +30,7 @@ const swaggerEnabled =
 
 app.set("trust proxy", 1);
 app.use("/.well-known", wellKnownRoutes);
+app.use(oidcRoutes)
 app.use(requestId);
 app.use(httpLogger);
 app.use(contextMiddleware);
