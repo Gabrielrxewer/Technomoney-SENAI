@@ -7,7 +7,7 @@ import swaggerUi from "swagger-ui-express";
 import authRoutes from "./routes/auth.routes";
 import totpRoutes from "./routes/totp.routes";
 import wellKnownRoutes from "./routes/wellknown.routes";
-import oidcRoutes from "./routes/oidc.routes"
+import oidcRoutes from "./routes/oidc.routes";
 import { swaggerSpec } from "./swagger";
 import {
   secureHeaders,
@@ -27,10 +27,16 @@ const swaggerEnabled =
   String(
     process.env.SWAGGER_ENABLED || (isProd ? "false" : "true")
   ).toLowerCase() === "true";
-
+  
+app.use(helmet());
+app.use(helmet.crossOriginOpenerPolicy());
+app.use(helmet.crossOriginResourcePolicy({ policy: "same-site" }));
+app.use(helmet.frameguard({ action: "deny" }));
+app.use(helmet.noSniff());
+app.use(helmet.referrerPolicy({ policy: "no-referrer" }));
 app.set("trust proxy", 1);
 app.use("/.well-known", wellKnownRoutes);
-app.use(oidcRoutes)
+app.use(oidcRoutes);
 app.use(requestId);
 app.use(httpLogger);
 app.use(contextMiddleware);

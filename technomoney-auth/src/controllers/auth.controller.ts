@@ -55,8 +55,8 @@ export const register: RequestHandler = async (req, res) => {
       .json({ token: access, username: uname });
   } catch (e: any) {
     const map: Record<string, [number, string]> = {
-      EMAIL_TAKEN: [400, "E-mail em uso"],
-      USERNAME_TAKEN: [400, "Username em uso"],
+      EMAIL_TAKEN: [400, "Falha ao tentar se registrar"],
+      USERNAME_TAKEN: [400, "Falha ao tentar se registrar"],
       JWT_CONFIG_INVALID: [500, "Configuração de JWT ausente"],
       ISSUE_TOKENS_FAILED: [500, "Falha ao emitir tokens"],
     };

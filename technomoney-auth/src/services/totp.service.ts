@@ -86,7 +86,7 @@ const verifyTotp = (
 const keyFromEnv = () =>
   crypto
     .createHash("sha256")
-    .update(String(process.env.TOTP_ENC_KEY || "changeme"))
+    .update(String(process.env.TOTP_ENC_KEY))
     .digest();
 
 const seal = (plain: string) => {

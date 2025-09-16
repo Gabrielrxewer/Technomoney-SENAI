@@ -2,6 +2,7 @@ import { RequestHandler } from "express";
 import { TotpService } from "../services/totp.service";
 import { JwtService } from "../services/jwt.service";
 import { setTrustedDevice } from "../services/trusted-device.service";
+import { resetTotpLimiter } from "../middlewares/totpLimiter.middleware";
 import QRCode from "qrcode";
 
 const svc = new TotpService();
@@ -58,6 +59,7 @@ export const challengeVerify: RequestHandler = async (req: any, res) => {
     res.status(400).json({ message: "Invalid code" });
     return;
   }
+  await resetTotpLimiter(res);
   await setTrustedDevice(res, u.id);
   const token = jwt.signAccess(u.id, { acr: "aal2", amr: ["pwd", "otp"] });
   res.json({ token, acr: "aal2" });
