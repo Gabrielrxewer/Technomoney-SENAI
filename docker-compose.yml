@@ -50,6 +50,7 @@ services:
       PORT: "4000"
       SWAGGER_FILE: /app/dist/openapi.yaml
       ENTRY_FILE: dist/server.js
+      TOTP_ENC_KEY: "${TOTP_ENC_KEY:-p9ZAq7xM4sN1vT8yR3bC6wH2kJ5fL0GdQzXeUiPoSrYtVh8L_c2BnEmWjRs9F!}"
       DB_DRIVER: postgres
       DB_HOST: postgres
       DB_PORT: "5432"

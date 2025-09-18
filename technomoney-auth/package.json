@@ -5,8 +5,9 @@
   "main": "server.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/server.js",
-    "dev": "nodemon"
+    "start": "node scripts/with-totp-key.cjs node dist/server.js",
+    "dev": "node scripts/with-totp-key.cjs nodemon",
+    "test": "node scripts/with-totp-key.cjs npm run build"
   },
   "keywords": [],
   "author": "",

@@ -2,6 +2,44 @@ import crypto from "crypto";
 import base64url from "base64url";
 import { getRedis } from "./redis.service";
 
+const MIN_TOTP_KEY_LENGTH = 32;
+const keyStrengthMatchers = [/[A-Z]/, /[a-z]/, /\d/, /[^A-Za-z0-9]/];
+
+let cachedNormalizedKey: string | null = null;
+
+const normalizeTotpKey = (): string => {
+  if (cachedNormalizedKey) return cachedNormalizedKey;
+
+  const raw = process.env.TOTP_ENC_KEY;
+  if (typeof raw !== "string" || raw.trim().length === 0) {
+    throw new Error(
+      "TOTP_ENC_KEY is required and must be a strong secret (min. 32 characters)."
+    );
+  }
+
+  const normalized = raw.trim();
+  if (normalized.length < MIN_TOTP_KEY_LENGTH) {
+    throw new Error(
+      `TOTP_ENC_KEY must be at least ${MIN_TOTP_KEY_LENGTH} characters long.`
+    );
+  }
+
+  const satisfiedChecks = keyStrengthMatchers.reduce(
+    (acc, matcher) => acc + Number(matcher.test(normalized)),
+    0
+  );
+  if (satisfiedChecks < 3) {
+    throw new Error(
+      "TOTP_ENC_KEY must mix at least three character groups (upper, lower, number, symbol)."
+    );
+  }
+
+  cachedNormalizedKey = normalized;
+  return normalized;
+};
+
+export const ensureTotpEncKey = (): string => normalizeTotpKey();
+
 const period = 30;
 const digits = 6;
 
@@ -84,10 +122,7 @@ const verifyTotp = (
 };
 
 const keyFromEnv = () =>
-  crypto
-    .createHash("sha256")
-    .update(String(process.env.TOTP_ENC_KEY))
-    .digest();
+  crypto.createHash("sha256").update(normalizeTotpKey()).digest();
 
 const seal = (plain: string) => {
   const key = keyFromEnv();
