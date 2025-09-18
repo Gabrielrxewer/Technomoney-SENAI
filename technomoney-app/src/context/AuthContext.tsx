@@ -14,6 +14,7 @@ import type {
   AuthEvent,
   AuthResponse,
   MeResponse,
+  StepUpRequirement,
 } from "../types/auth";
 
 function b64urlToBuffer(b64url: string): ArrayBuffer {
@@ -50,6 +51,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [connected, setConnected] = useState<boolean>(false);
   const [lastEvent, setLastEvent] = useState<AuthEvent | null>(null);
+  const [stepUpRequirement, setStepUpRequirement] =
+    useState<StepUpRequirement | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const backoffRef = useRef<number>(500);
 
@@ -157,6 +160,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               } catch {}
             } else if (msg.type === "hello") {
             } else if (msg.type === "stepup.required") {
+              setStepUpRequirement({
+                type: "totp",
+                acr: msg.acr,
+                source: "websocket",
+              });
             }
           } catch {}
         };
@@ -328,6 +336,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       connectEvents,
       webauthnRegister,
       webauthnAuthenticate,
+      stepUpRequirement,
+      setStepUpRequirement,
     }),
     [
       token,
@@ -342,6 +352,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       connectEvents,
       webauthnRegister,
       webauthnAuthenticate,
+      stepUpRequirement,
+      setStepUpRequirement,
     ]
   );
 
