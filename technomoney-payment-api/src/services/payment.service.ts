@@ -1,4 +1,5 @@
 import "dotenv/config";
+import crypto from "crypto";
 import MercadoPagoConfig, { Preference, Payment } from "mercadopago";
 import repo from "../repositories/payment.repository";
 
@@ -15,6 +16,43 @@ export interface CreatePreferenceInput {
   cpf: string;
   email: string;
   amount: number;
+}
+
+export class ValidationError extends Error {}
+
+export class UnauthorizedError extends Error {}
+
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
+
+const digitsOnly = (value: string) => value.replace(/\D+/g, "");
+
+export function validateCreatePreferencePayload(data: any): CreatePreferenceInput {
+  if (typeof data !== "object" || data === null) {
+    throw new ValidationError("payload must be an object");
+  }
+
+  const fullName = String((data as any).fullName || "").trim();
+  if (!fullName) {
+    throw new ValidationError("fullName is required");
+  }
+
+  const rawEmail = String((data as any).email || "").trim();
+  if (!emailRegex.test(rawEmail)) {
+    throw new ValidationError("email is invalid");
+  }
+
+  const rawCpf = String((data as any).cpf || "");
+  const cpf = digitsOnly(rawCpf);
+  if (cpf.length !== 11) {
+    throw new ValidationError("cpf must contain 11 digits");
+  }
+
+  const amount = Number((data as any).amount);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new ValidationError("amount must be a positive number");
+  }
+
+  return { fullName, email: rawEmail.toLowerCase(), cpf, amount };
 }
 
 export async function createPreference({
@@ -75,4 +113,97 @@ export async function processWebhook(topic: string, resourceId: string) {
     preferenceId,
     (payment.status ?? "unknown") as string
   );
+}
+
+type HeaderDictionary = NodeJS.Dict<string | string[] | undefined>;
+
+interface VerifyWebhookSecurityInput {
+  topic: string;
+  resourceId: string;
+  headers: HeaderDictionary;
+}
+
+const headerValueToString = (value?: string | string[]) => {
+  if (Array.isArray(value)) return value[0];
+  return value;
+};
+
+const parseSignatureHeader = (raw: string) => {
+  return raw.split(";").reduce<Record<string, string>>((acc, part) => {
+    const [key, ...valueParts] = part.split("=");
+    if (!key) return acc;
+    const value = valueParts.join("=").trim();
+    if (!value) return acc;
+    const cleanValue = value.replace(/^"/, "").replace(/"$/, "");
+    acc[key.trim()] = cleanValue;
+    return acc;
+  }, {});
+};
+
+const timingSafeEqual = (a: string, b: string) => {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+};
+
+const verifySignature = ({
+  topic,
+  resourceId,
+  headers,
+}: VerifyWebhookSecurityInput) => {
+  const signatureHeader = headerValueToString(headers["x-signature"]);
+  const secret = process.env.MP_WEBHOOK_SECRET?.trim();
+  if (!signatureHeader || !secret) {
+    return false;
+  }
+
+  const parsed = parseSignatureHeader(signatureHeader);
+  const signature = parsed.sha256?.toLowerCase();
+  const ts = parsed.ts;
+  const headerId = parsed.id || resourceId;
+  const headerTopic = parsed.topic || topic;
+  const requestId = headerValueToString(headers["x-request-id"])?.trim();
+
+  if (!signature || !ts || !requestId) {
+    throw new UnauthorizedError("missing webhook signature metadata");
+  }
+
+  const message = `${headerId}:${headerTopic}:${requestId}:${ts}`;
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(message)
+    .digest("hex");
+
+  if (!timingSafeEqual(expected, signature)) {
+    throw new UnauthorizedError("invalid webhook signature");
+  }
+
+  return true;
+};
+
+const verifyToken = (headers: HeaderDictionary) => {
+  const token = process.env.MP_WEBHOOK_TOKEN?.trim();
+  if (!token) return false;
+
+  const headerToken = headerValueToString(headers["x-token"])?.trim();
+  if (!headerToken || !timingSafeEqual(headerToken, token)) {
+    throw new UnauthorizedError("invalid webhook token");
+  }
+
+  return true;
+};
+
+export function verifyWebhookSecurity(input: VerifyWebhookSecurityInput) {
+  const verifiedBySignature = verifySignature(input);
+  if (verifiedBySignature) {
+    return;
+  }
+
+  const verifiedByToken = verifyToken(input.headers);
+  if (verifiedByToken) {
+    return;
+  }
+
+  throw new ValidationError("webhook security configuration is missing");
 }
