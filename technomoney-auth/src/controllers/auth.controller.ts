@@ -1,7 +1,7 @@
 import { RequestHandler } from "express";
 import jwt from "jsonwebtoken";
 import { buildRefreshCookie } from "../utils/cookie.util";
-import { AuthService } from "../services/auth.service";
+import type { AuthService } from "../services/auth.service";
 import { logger } from "../utils/log/logger";
 import {
   deriveSid,
@@ -11,10 +11,69 @@ import {
   clearSessionSchedules,
 } from "../ws";
 import { getTrustedDevice } from "../services/trusted-device.service";
-import { TotpService } from "../services/totp.service";
+import type { TotpService } from "../services/totp.service";
 
-const authService = new AuthService();
-const totpService = new TotpService();
+type AuthServiceContract = Pick<
+  AuthService,
+  "register" | "login" | "logout" | "refresh"
+>;
+type TotpServiceContract = Pick<TotpService, "status">;
+type TrustedDeviceFn = typeof getTrustedDevice;
+
+const loadAuthService = (): AuthServiceContract => {
+  const mod = require("../services/auth.service") as typeof import("../services/auth.service");
+  return new mod.AuthService();
+};
+
+const loadTotpService = (): TotpServiceContract => {
+  const mod = require("../services/totp.service") as typeof import("../services/totp.service");
+  return new mod.TotpService();
+};
+
+const fallbackAuthService: AuthServiceContract = {
+  async register() {
+    throw new Error("authService not initialized");
+  },
+  async login() {
+    throw new Error("authService not initialized");
+  },
+  async logout() {},
+  async refresh() {
+    throw new Error("authService not initialized");
+  },
+};
+
+const fallbackTotpService: TotpServiceContract = {
+  async status() {
+    throw new Error("totpService not initialized");
+  },
+};
+
+const shouldSkipDefaults = process.env.AUTH_CONTROLLER_SKIP_DEFAULT === "1";
+
+let authService: AuthServiceContract = shouldSkipDefaults
+  ? fallbackAuthService
+  : loadAuthService();
+let totpService: TotpServiceContract = shouldSkipDefaults
+  ? fallbackTotpService
+  : loadTotpService();
+let getTrustedDeviceImpl: TrustedDeviceFn = getTrustedDevice;
+
+export const __setAuthControllerDeps = (deps: {
+  authService?: AuthServiceContract;
+  totpService?: TotpServiceContract;
+  getTrustedDevice?: TrustedDeviceFn;
+}): void => {
+  if (deps.authService) authService = deps.authService;
+  if (deps.totpService) totpService = deps.totpService;
+  if (deps.getTrustedDevice) getTrustedDeviceImpl = deps.getTrustedDevice;
+};
+
+export const __resetAuthControllerDeps = (): void => {
+  authService = shouldSkipDefaults ? fallbackAuthService : loadAuthService();
+  totpService = shouldSkipDefaults ? fallbackTotpService : loadTotpService();
+  getTrustedDeviceImpl = getTrustedDevice;
+};
 const cookieOpts = buildRefreshCookie();
 
 const decodeExp = (token: string) => {
@@ -78,16 +137,17 @@ export const login: RequestHandler = async (req, res) => {
       res.status(401).json({ message: "Credenciais inválidas" });
       return;
     }
-    const td = await getTrustedDevice(req);
+    const td = await getTrustedDeviceImpl(req);
     const isTrusted = !!td && td.userId === userId;
     if (!isTrusted) {
       const enrolled = await totpService.status(userId);
       await authService.logout(refresh);
+      const payload = { token: access, username };
       if (!enrolled) {
-        res.status(401).json({ stepUp: "enroll_totp" });
+        res.status(401).json({ stepUp: "enroll_totp", ...payload });
         return;
       }
-      res.status(401).json({ stepUp: "totp" });
+      res.status(401).json({ stepUp: "totp", ...payload });
       return;
     }
     const sid = deriveSid(refresh);
