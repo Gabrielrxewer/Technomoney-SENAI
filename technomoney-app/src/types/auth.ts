@@ -3,6 +3,12 @@ export interface AuthResponse {
   username: string | null;
 }
 
+export interface StepUpRequirement {
+  type: "totp";
+  acr?: string | null;
+  source?: "login" | "register" | "websocket" | string;
+}
+
 export interface LoginVars {
   email: string;
   password: string;
@@ -44,4 +50,6 @@ export interface AuthContextType {
   connectEvents: (currentToken?: string) => Promise<void>;
   webauthnRegister: () => Promise<boolean>;
   webauthnAuthenticate: () => Promise<boolean>;
+  stepUpRequirement: StepUpRequirement | null;
+  setStepUpRequirement?: (value: StepUpRequirement | null) => void;
 }
