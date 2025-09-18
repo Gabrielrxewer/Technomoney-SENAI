@@ -53,14 +53,13 @@ const Register: React.FC = () => {
     return () => clearTimeout(timer);
   }, [retryAfter]);
 
-  const attemptLogin = async (captchaOverride?: string) => {
-    if (!executeRecaptcha && !captchaOverride) {
+  const attemptLogin = async () => {
+    if (!executeRecaptcha) {
       const err: any = new Error("recaptcha_unavailable");
       err.code = "recaptcha_unavailable";
       throw err;
     }
-    const captchaToken =
-      captchaOverride || (await executeRecaptcha!("login"));
+    const captchaToken = await executeRecaptcha!("login");
     const { data: csrf } = await authApi.get("auth/csrf", {
       withCredentials: true,
     });
@@ -108,10 +107,10 @@ const Register: React.FC = () => {
     }
   };
 
-  const performLogin = async (captchaOverride?: string) => {
+  const performLogin = async () => {
     setLoading(true);
     try {
-      const data = await attemptLogin(captchaOverride);
+      const data = await attemptLogin();
       await login(data.token, data.username);
       setStepUp(null);
       navigate("/dashboard");
@@ -154,7 +153,7 @@ const Register: React.FC = () => {
     setLoading(true);
     setError("");
     try {
-      const captchaToken = await executeRecaptcha("login");
+      const captchaToken = await executeRecaptcha("register");
       const { data: csrf } = await authApi.get("auth/csrf", {
         withCredentials: true,
       });
@@ -165,7 +164,7 @@ const Register: React.FC = () => {
         { username, email, password, recaptchaToken: captchaToken },
         { withCredentials: true }
       );
-      await performLogin(captchaToken);
+      await performLogin();
     } catch (err: any) {
       const status = err.response?.status;
       const msg =
