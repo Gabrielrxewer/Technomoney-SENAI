@@ -27,7 +27,7 @@ const TotpEnrollment: React.FC<TotpEnrollmentProps> = ({
   const fetchStatus = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetchWithAuth("/api/auth/totp/status");
+      const res = await fetchWithAuth("/totp/status");
       setEnrolled(!!res.data?.enrolled);
     } catch (err: any) {
       const msg =
@@ -51,7 +51,7 @@ const TotpEnrollment: React.FC<TotpEnrollmentProps> = ({
     setCode("");
     try {
       setStarting(true);
-      const res = await fetchWithAuth("/api/auth/totp/setup/start", {
+      const res = await fetchWithAuth("/totp/setup/start", {
         method: "POST",
       });
       setQrDataUrl(res.data?.qrDataUrl || null);
@@ -72,7 +72,7 @@ const TotpEnrollment: React.FC<TotpEnrollmentProps> = ({
     setError("");
     try {
       setVerifying(true);
-      await fetchWithAuth("/api/auth/totp/setup/verify", {
+      await fetchWithAuth("/totp/setup/verify", {
         method: "POST",
         data: { code },
       });
@@ -137,7 +137,7 @@ const TotpEnrollment: React.FC<TotpEnrollmentProps> = ({
               <input
                 id="totp-code"
                 inputMode="numeric"
-                pattern="\\d{6}"
+                pattern="^[0-9]{6}$"
                 maxLength={6}
                 placeholder="000000"
                 value={code}

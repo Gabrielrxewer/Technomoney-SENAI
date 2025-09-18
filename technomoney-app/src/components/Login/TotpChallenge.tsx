@@ -2,9 +2,10 @@ import React, { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 
 type TotpChallengeProps = {
-  onSuccess?: (
-    result: { token: string; acr?: string | null }
-  ) => void | Promise<void>;
+  onSuccess?: (result: {
+    token: string;
+    acr?: string | null;
+  }) => void | Promise<void>;
   onCancel?: () => void;
   title?: string;
   message?: React.ReactNode;
@@ -33,7 +34,7 @@ const TotpChallenge: React.FC<TotpChallengeProps> = ({
     setError("");
     try {
       setLoading(true);
-      const res = await fetchWithAuth("/api/auth/totp/challenge/verify", {
+      const res = await fetchWithAuth("/totp/challenge/verify", {
         method: "POST",
         data: { code },
       });
@@ -46,8 +47,7 @@ const TotpChallenge: React.FC<TotpChallengeProps> = ({
       if (onSuccess) await onSuccess(data);
     } catch (err: any) {
       const msg =
-        err?.response?.data?.message ||
-        "Código inválido. Tente novamente.";
+        err?.response?.data?.message || "Código inválido. Tente novamente.";
       setError(msg);
     } finally {
       setLoading(false);
@@ -77,7 +77,7 @@ const TotpChallenge: React.FC<TotpChallengeProps> = ({
         <input
           id="totp-challenge-code"
           inputMode="numeric"
-          pattern="\\d{6}"
+          pattern="^[0-9]{6}$"
           maxLength={6}
           placeholder="000000"
           value={code}
