@@ -8,7 +8,7 @@ import React, {
   useCallback,
 } from "react";
 import type { AxiosRequestConfig, AxiosResponse } from "axios";
-import { authApi } from "../services/http";
+import { authApi, setAuthTokenGetter } from "../services/http";
 import type {
   AuthContextType,
   AuthEvent,
@@ -38,9 +38,13 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [token, setToken] = useState<string | null>(
-    localStorage.getItem("access") || null
-  );
+  const tokenRef = useRef<string | null>(null);
+  const [tokenState, setTokenState] = useState<string | null>(null);
+  const setToken = useCallback((value: string | null) => {
+    tokenRef.current = value;
+    setTokenState(value);
+  }, []);
+  const token = tokenState;
   const [username, setUsername] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -58,16 +62,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       );
       const newToken = r.data.token;
       setToken(newToken);
-      localStorage.setItem("access", newToken);
       setIsAuthenticated(true);
       return newToken;
     } catch {
       setToken(null);
-      localStorage.removeItem("access");
       setIsAuthenticated(false);
       return null;
     }
-  }, []);
+  }, [setToken]);
 
   const getMe = useCallback(
     async (currentToken: string): Promise<MeResponse | null> => {
@@ -97,13 +99,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setToken(null);
     setUsername(null);
     setIsAuthenticated(false);
-    localStorage.removeItem("access");
-  }, []);
+  }, [setToken]);
 
   const connectEvents = useCallback(
     async (currentToken?: string) => {
       try {
-        const bearer = currentToken || token;
+        let bearer = currentToken || tokenRef.current;
+        if (!bearer) bearer = await refreshToken();
         if (!bearer) return;
         const r = await authApi.post<{
           ticket: string;
@@ -158,20 +160,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             }
           } catch {}
         };
-      } catch {}
+      } catch (e: any) {
+        if (e?.response?.status === 401 || e?.response?.status === 403) {
+          const nt = await refreshToken();
+          if (nt && nt !== currentToken) {
+            await connectEvents(nt);
+            return;
+          }
+          await logout();
+        }
+      }
     },
-    [token, refreshToken, logout]
+    [refreshToken, logout]
   );
 
   const loginFn = useCallback(
     async (newToken: string, name: string | null) => {
       setToken(newToken);
       if (name) setUsername(name);
-      localStorage.setItem("access", newToken);
       setIsAuthenticated(true);
       await connectEvents(newToken);
     },
-    [connectEvents]
+    [connectEvents, setToken]
   );
 
   const fetchWithAuth = useCallback(
@@ -179,7 +189,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       input: string,
       config?: AxiosRequestConfig
     ): Promise<AxiosResponse> => {
-      const bearer = token || (await refreshToken());
+      const bearer = tokenRef.current || (await refreshToken());
       if (!bearer) throw new Error("unauthenticated");
       try {
         const r = await authApi.request({
@@ -202,11 +212,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         throw e;
       }
     },
-    [token, refreshToken]
+    [refreshToken]
   );
 
   const webauthnRegister = useCallback(async (): Promise<boolean> => {
-    const t = token || (await refreshToken());
+    const t = tokenRef.current || (await refreshToken());
     if (!t) return false;
     const start = await authApi.post<any>(
       "/webauthn/register/start",
@@ -239,10 +249,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       headers: { Authorization: `Bearer ${t}` },
     });
     return true;
-  }, [token, refreshToken]);
+  }, [refreshToken]);
 
   const webauthnAuthenticate = useCallback(async (): Promise<boolean> => {
-    const t = token || (await refreshToken());
+    const t = tokenRef.current || (await refreshToken());
     if (!t) return false;
     const start = await authApi.post<any>(
       "/webauthn/authenticate/start",
@@ -276,17 +286,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       headers: { Authorization: `Bearer ${t}` },
     });
     return true;
-  }, [token, refreshToken]);
+  }, [refreshToken]);
 
   const bootstrap = useCallback(async () => {
-    let t = token;
+    let t = tokenRef.current;
     if (!t) t = await refreshToken();
     if (t) {
       await getMe(t);
       await connectEvents(t);
     }
     setLoading(false);
-  }, [token, refreshToken, getMe, connectEvents]);
+  }, [refreshToken, getMe, connectEvents]);
 
   useEffect(() => {
     bootstrap();
@@ -296,6 +306,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       } catch {}
     };
   }, [bootstrap]);
+
+  useEffect(() => {
+    setAuthTokenGetter(() => tokenRef.current);
+    return () => {
+      setAuthTokenGetter(null);
+    };
+  }, []);
 
   const value = useMemo<AuthContextType>(
     () => ({

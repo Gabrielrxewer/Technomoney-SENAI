@@ -4,9 +4,6 @@ const CSRF_COOKIE = (import.meta.env.VITE_CSRF_COOKIE_NAME as string) || "csrf";
 const CSRF_HEADER =
   (import.meta.env.VITE_CSRF_HEADER_NAME as string) || "x-csrf-token";
 const CSRF_PATH = (import.meta.env.VITE_CSRF_PATH as string) || "/auth/csrf";
-const AUTH_TOKEN_KEY =
-  (import.meta.env.VITE_AUTH_TOKEN_STORAGE_KEY as string) || "access";
-
 const inflightByBase = new Map<string, Promise<void>>();
 
 function readCookie(name: string): string | null {
@@ -38,13 +35,21 @@ async function ensureCsrf(
   return p;
 }
 
+type AuthTokenGetter = () => string | null;
+
+let authTokenGetter: AuthTokenGetter | null = null;
+
+export function setAuthTokenGetter(getter: AuthTokenGetter | null): void {
+  authTokenGetter = getter;
+}
+
 function getAuthToken(): string | null {
-  const a =
-    typeof window !== "undefined" ? localStorage.getItem(AUTH_TOKEN_KEY) : null;
-  if (a) return a;
-  const legacy =
-    typeof window !== "undefined" ? localStorage.getItem("token") : null;
-  return legacy;
+  if (!authTokenGetter) return null;
+  try {
+    return authTokenGetter();
+  } catch {
+    return null;
+  }
 }
 
 function createApi(rawBaseURL: string): AxiosInstance {
