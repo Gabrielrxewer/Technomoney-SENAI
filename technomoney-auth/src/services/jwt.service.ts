@@ -9,6 +9,7 @@ import { mask, maskJti, safeErr } from "../utils/log/log.helpers";
 type AccessData = {
   id: string;
   jti: string;
+  sid?: string;
   scope?: unknown;
   acr?: unknown;
   amr?: unknown;
@@ -207,6 +208,7 @@ export class JwtService {
       return {
         id: d.id,
         jti: d.jti,
+        sid: typeof (d as any).sid === "string" ? (d as any).sid : undefined,
         scope: d.scope,
         acr: d.acr,
         amr: d.amr,

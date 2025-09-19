@@ -5,6 +5,7 @@ import {
   parHandler,
   authorizeHandler,
   tokenHandler,
+  introspectHandler,
   userinfoHandler,
 } from "../controllers/oidc.controller";
 
@@ -18,6 +19,7 @@ router.get(
   authorizeHandler
 );
 router.post("/oauth2/token", tokenHandler);
+router.post("/oauth2/introspect", introspectHandler);
 router.get("/oauth2/userinfo", userinfoHandler);
 
 export default router;

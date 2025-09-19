@@ -10,3 +10,30 @@ números e símbolos. Um exemplo de configuração pode ser encontrado em
 [`technomoney-auth/.env.example`](technomoney-auth/.env.example). Substitua esse
 valor por outro gerado especificamente para o seu ambiente antes de ir para
 produção.
+
+## `technomoney-auth`
+
+- Cada refresh token passa a representar uma sessão (`sid`) persistida na tabela
+  `sessions`. Sempre que o refresh for revogado, a sessão é marcada como
+  revogada e tokens de acesso associados passam a ser considerados inativos na
+  introspecção.
+- Configure os novos segredos de introspecção:
+  - `INTROSPECTION_CLIENTS`: lista separada por vírgula no formato
+    `clientId:clientSecret`. Utilize senhas fortes por cliente que precise
+    consultar o endpoint `/oauth2/introspect`.
+  - `INTROSPECTION_MTLS_ALLOWED_CNS`: lista (opcional) de valores `CN` aceitos
+    para certificados cliente quando a introspecção for protegida por mTLS.
+- Sempre rotacione as credenciais de introspecção ao expor o serviço para outros
+  consumidores internos.
+
+## `technomoney-payment-api`
+
+- Todas as chamadas autenticadas agora validam o token de acesso via o endpoint
+  `/oauth2/introspect` do autenticador. Tokens revogados ou expirados retornam
+  `401 Unauthorized`.
+- Defina as novas variáveis de ambiente para introspecção segura:
+  - `AUTH_INTROSPECTION_URL`: URL completa do endpoint de introspecção.
+  - `AUTH_INTROSPECTION_CLIENT_ID` e `AUTH_INTROSPECTION_CLIENT_SECRET`:
+    credenciais usadas na autenticação HTTP Basic.
+- Garanta que essas credenciais sejam armazenadas com o mesmo rigor dos demais
+  segredos da aplicação e rotacione-as periodicamente.

@@ -24,6 +24,9 @@ processar notificações de pagamento.
 | `DB_HOST` | Sim | Host do banco de dados. |
 | `DB_DRIVER` | Sim | Dialeto suportado pelo Sequelize (ex.: `postgres`). |
 | `NODE_ENV` | Não | Ambiente de execução (`development`, `production`, etc.). |
+| `AUTH_INTROSPECTION_URL` | Sim | Endpoint do serviço de autenticação utilizado para validar tokens de acesso. |
+| `AUTH_INTROSPECTION_CLIENT_ID` | Sim | Identificador do cliente autorizado a consultar o endpoint de introspecção. |
+| `AUTH_INTROSPECTION_CLIENT_SECRET` | Sim | Segredo usado na autenticação HTTP Basic ao consultar o endpoint de introspecção. |
 
 > Pelo menos uma das variáveis `MP_WEBHOOK_SECRET` ou `MP_WEBHOOK_TOKEN` deve
 > estar definida para que o webhook seja aceito.
@@ -37,6 +40,9 @@ processar notificações de pagamento.
   `X-Token` com o valor definido em `MP_WEBHOOK_TOKEN`.
 - Requisições que não atenderem a nenhum desses mecanismos serão rejeitadas
   com `401 Unauthorized`.
+- Para garantir o princípio de privilégio mínimo, armazene as credenciais de
+  introspecção (`AUTH_INTROSPECTION_CLIENT_*`) em um cofre de segredos e
+  rotacione-as com frequência.
 
 ## Execução local
 

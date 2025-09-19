@@ -11,6 +11,7 @@ import { hashPassword, comparePassword } from "../utils/password.util";
 import { UserRepository } from "../repositories/user.repository";
 import { JwtService } from "./jwt.service";
 import { TokenService } from "./token.service";
+import { SessionService } from "./session.service";
 import {
   AuthTokensDto,
   RefreshTokensDto,
@@ -45,6 +46,7 @@ export class AuthService {
   private users = new UserRepository();
   private jwt = new JwtService();
   private tokens = new TokenService();
+  private sessions = new SessionService();
 
   private log(bindings?: Record<string, unknown>) {
     return getLogger({
@@ -127,6 +129,7 @@ export class AuthService {
       if (stillValid) {
         try {
           await this.tokens.revoke(oldToken);
+          await this.sessions.revokeByRefreshToken(oldToken);
         } catch (err) {
           log.debug({ evt: "auth.refresh.revoke_failed", err: safeErr(err) });
         }
@@ -139,6 +142,7 @@ export class AuthService {
       const issued = await this.tokens.wasIssued(oldToken);
       if (issued && id) {
         log.warn({ evt: "auth.refresh.reuse_detected", userId: mask(id) });
+        await this.sessions.revokeAllForUser(id);
         await this.tokens.revokeAllForUser(id);
         throw new DomainError("REFRESH_REUSE_DETECTED", 403);
       }
@@ -149,9 +153,11 @@ export class AuthService {
     let refresh = "";
     await sequelize.transaction(async (tx) => {
       refresh = this.jwt.signRefresh(id);
+      const sid = await this.sessions.start(id, refresh, tx);
       await this.tokens.save(refresh, id, tx);
+      await this.sessions.revokeByRefreshToken(oldToken, tx);
       await this.tokens.revoke(oldToken, tx);
-      access = this.jwt.signAccess(id);
+      access = this.jwt.signAccess(id, { sid });
     });
     log.debug({
       evt: "auth.refresh.ok",
@@ -165,6 +171,7 @@ export class AuthService {
   async logout(refreshToken: string): Promise<void> {
     const log = this.log();
     log.debug({ evt: "auth.logout.start" });
+    await this.sessions.revokeByRefreshToken(refreshToken);
     await this.tokens.revoke(refreshToken);
     log.debug({ evt: "auth.logout.ok" });
   }
@@ -183,9 +190,13 @@ export class AuthService {
         payload.username = username;
         payload.preferred_username = username;
       }
-      const access = this.jwt.signAccess(id, payload);
       const refresh = this.jwt.signRefresh(id);
-      await this.tokens.save(refresh, id);
+      let sid = "";
+      await sequelize.transaction(async (tx) => {
+        sid = await this.sessions.start(id, refresh, tx);
+        await this.tokens.save(refresh, id, tx);
+      });
+      const access = this.jwt.signAccess(id, { ...payload, sid });
       log.debug({ evt: "auth.issue_tokens.ok", kid, alg });
       return { access, refresh, username };
     } catch (e: any) {

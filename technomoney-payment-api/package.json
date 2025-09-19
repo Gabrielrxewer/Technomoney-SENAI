@@ -5,7 +5,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
-    "dev": "nodemon"
+    "dev": "nodemon",
+    "test": "node --test src/**/__tests__/*.spec.js"
   },
   "keywords": [],
   "author": "",
