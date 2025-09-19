@@ -7,6 +7,7 @@ const postMock = jest.fn();
 const getMock = jest.fn();
 const requestMock = jest.fn();
 const setAuthTokenGetterMock = jest.fn();
+const setAuthRefreshHandlerMock = jest.fn();
 
 jest.mock("../services/http", () => ({
   authApi: {
@@ -16,6 +17,7 @@ jest.mock("../services/http", () => ({
     defaults: { headers: { common: {} } },
   },
   setAuthTokenGetter: setAuthTokenGetterMock,
+  setAuthRefreshHandler: setAuthRefreshHandlerMock,
 }));
 
 class MockWebSocket {
@@ -45,6 +47,7 @@ const Consumer: React.FC<{ onReady: (ctx: AuthContextType) => void }> = ({
 describe("AuthContext", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    setAuthRefreshHandlerMock.mockClear();
     postMock.mockImplementation((url: string) => {
       if (url === "/auth/refresh") {
         return Promise.reject({ response: { status: 401 } });
@@ -71,6 +74,9 @@ describe("AuthContext", () => {
       </AuthProvider>
     );
 
+    await waitFor(() => {
+      expect(setAuthRefreshHandlerMock).toHaveBeenCalled();
+    });
     await waitFor(() => {
       expect(onReady).toHaveBeenCalled();
       expect(latestContext).not.toBeNull();

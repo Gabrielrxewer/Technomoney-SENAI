@@ -1,6 +1,7 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "../../services/http";
+import { useAuth } from "../../context/AuthContext";
+import { fetchApiWithAuth } from "../../services/http";
 import RealTimeActions from "../Dashboard/RealTimeActions/RealTimeActions";
 import ActionsTable from "../Dashboard/ActionsTable/ActionsTable";
 import ActionsAnalysis from "../Dashboard/ActionsAnalysis/ActionsAnalysis";
@@ -33,9 +34,9 @@ async function fetchAssets({
 }: {
   signal?: AbortSignal;
 }): Promise<AssetsResult> {
-  const token = localStorage.getItem("access");
-  if (!token) throw new Error("Token não encontrado. Faça login.");
-  const { data } = await api.get<Acao[]>("/assets/sorted/price", { signal });
+  const { data } = await fetchApiWithAuth<Acao[]>("/assets/sorted/price", {
+    signal,
+  });
   const acoes = Array.isArray(data) ? data : [];
   const maiorPreco = acoes.length ? acoes[0] : null;
   const menorPreco = acoes.length ? acoes[acoes.length - 1] : null;
@@ -46,8 +47,7 @@ async function fetchAssets({
 }
 
 const Dashboard: React.FC = () => {
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("access") : null;
+  const { token } = useAuth();
 
   const { data, isLoading, error } = useQuery<AssetsResult, Error>({
     queryKey: ["assetsSortedByPrice", token],

@@ -1,4 +1,9 @@
-import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
+import axios, {
+  AxiosError,
+  AxiosInstance,
+  AxiosRequestConfig,
+  AxiosResponse,
+} from "axios";
 
 const CSRF_COOKIE = (import.meta.env.VITE_CSRF_COOKIE_NAME as string) || "csrf";
 const CSRF_HEADER =
@@ -38,9 +43,18 @@ async function ensureCsrf(
 type AuthTokenGetter = () => string | null;
 
 let authTokenGetter: AuthTokenGetter | null = null;
+type AuthRefreshHandler = () => Promise<string | null>;
+let authRefreshHandler: AuthRefreshHandler | null = null;
+let refreshPromise: Promise<string | null> | null = null;
 
 export function setAuthTokenGetter(getter: AuthTokenGetter | null): void {
   authTokenGetter = getter;
+}
+
+export function setAuthRefreshHandler(
+  handler: AuthRefreshHandler | null
+): void {
+  authRefreshHandler = handler;
 }
 
 function getAuthToken(): string | null {
@@ -52,7 +66,28 @@ function getAuthToken(): string | null {
   }
 }
 
-function createApi(rawBaseURL: string): AxiosInstance {
+async function refreshAuthToken(): Promise<string | null> {
+  if (!authRefreshHandler) return null;
+  if (!refreshPromise) {
+    refreshPromise = authRefreshHandler()
+      .catch((error) => {
+        throw error;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
+}
+
+interface CreateApiOptions {
+  enableAuthRefresh?: boolean;
+}
+
+function createApi(
+  rawBaseURL: string,
+  { enableAuthRefresh = true }: CreateApiOptions = {}
+): AxiosInstance {
   const baseURL = rawBaseURL.replace(/\/+$/, "");
   const instance = axios.create({
     baseURL,
@@ -86,6 +121,37 @@ function createApi(rawBaseURL: string): AxiosInstance {
     return config;
   });
 
+  if (enableAuthRefresh) {
+    instance.interceptors.response.use(
+      (response) => response,
+      async (error: AxiosError) => {
+        const status = error.response?.status;
+        const originalConfig = error.config as (AxiosRequestConfig & {
+          __isRetry?: boolean;
+        }) | null;
+
+        if (!originalConfig || originalConfig.__isRetry || status !== 401) {
+          throw error;
+        }
+
+        try {
+          const token = await refreshAuthToken();
+          if (!token) throw error;
+
+          originalConfig.__isRetry = true;
+          originalConfig.headers = {
+            ...(originalConfig.headers as Record<string, unknown>),
+            Authorization: `Bearer ${token}`,
+          };
+
+          return await instance.request(originalConfig);
+        } catch (refreshError) {
+          throw refreshError;
+        }
+      }
+    );
+  }
+
   return instance;
 }
 
@@ -93,7 +159,18 @@ export const api = createApi(import.meta.env.VITE_API_URL as string);
 export const paymentsApi = createApi(
   import.meta.env.VITE_PAYMENTS_API_URL as string
 );
-export const authApi = createApi(import.meta.env.VITE_AUTH_API_URL as string);
+export const authApi = createApi(import.meta.env.VITE_AUTH_API_URL as string, {
+  enableAuthRefresh: false,
+});
+export async function fetchApiWithAuth<T = unknown>(
+  url: string,
+  config?: AxiosRequestConfig
+): Promise<AxiosResponse<T>> {
+  return api.request<T>({
+    url,
+    ...config,
+  });
+}
 export function getTokenForQueryKey(): string | null {
   return getAuthToken();
 }
