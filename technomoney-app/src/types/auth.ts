@@ -37,10 +37,17 @@ export interface MeResponse {
   exp: number;
 }
 
+export interface LoginOptions {
+  stepUp?: boolean;
+  acr?: string | null;
+  scope?: string[] | null;
+  source?: StepUpRequirement["source"];
+}
+
 export interface AuthContextType {
   token: string | null;
   username: string | null;
-  login: (token: string, username: string | null) => Promise<void>;
+  login: (token: string, username: string | null, options?: LoginOptions) => Promise<void>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   loading: boolean;

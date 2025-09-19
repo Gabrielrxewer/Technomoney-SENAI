@@ -63,6 +63,7 @@ describe("Login step-up handling", () => {
           stepUp: "enroll_totp",
           token: "jwt-token",
           username: "Neo",
+          acr: "step-up",
         },
       },
     };
@@ -85,7 +86,11 @@ describe("Login step-up handling", () => {
     fireEvent.click(screen.getByRole("button", { name: /Entrar/i }));
 
     await waitFor(() => {
-      expect(loginFn).toHaveBeenCalledWith("jwt-token", "Neo");
+      expect(loginFn).toHaveBeenCalledWith("jwt-token", "Neo", {
+        stepUp: true,
+        acr: "step-up",
+        source: "login",
+      });
     });
 
     expect(
@@ -102,6 +107,7 @@ describe("Login step-up handling", () => {
           stepUp: "totp",
           token: "jwt-token",
           username: "Trinity",
+          acr: "step-up",
         },
       },
     };
@@ -124,7 +130,11 @@ describe("Login step-up handling", () => {
     fireEvent.click(screen.getByRole("button", { name: /Entrar/i }));
 
     await waitFor(() => {
-      expect(loginFn).toHaveBeenCalledWith("jwt-token", "Trinity");
+      expect(loginFn).toHaveBeenCalledWith("jwt-token", "Trinity", {
+        stepUp: true,
+        acr: "step-up",
+        source: "login",
+      });
     });
 
     expect(

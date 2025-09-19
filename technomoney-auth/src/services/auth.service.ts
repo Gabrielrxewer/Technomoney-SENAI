@@ -11,7 +11,12 @@ import { hashPassword, comparePassword } from "../utils/password.util";
 import { UserRepository } from "../repositories/user.repository";
 import { JwtService } from "./jwt.service";
 import { TokenService } from "./token.service";
-import { AuthTokensDto, RefreshTokensDto } from "../types/auth.dto";
+import {
+  AuthTokensDto,
+  RefreshTokensDto,
+  StepUpTokenDto,
+  LoginResult,
+} from "../types/auth.dto";
 import { sequelize } from "../models";
 import { keysService } from "./keys.service";
 
@@ -80,10 +85,10 @@ export class AuthService {
       userId: mask(user.id),
       username: user.username,
     });
-    return this.issueTokens(user.id, user.username ?? null);
+    return this.createSession(user.id, user.username ?? null);
   }
 
-  async login(email: string, password: string): Promise<AuthTokensDto> {
+  async login(email: string, password: string): Promise<LoginResult> {
     const log = this.log();
     log.debug({ evt: "auth.login.start", email: maskEmail(email) });
     const user = (await this.users.findByEmail(email)) as IUser | null;
@@ -107,7 +112,7 @@ export class AuthService {
       userId: mask(user.id),
       username: user.username,
     });
-    return this.issueTokens(user.id, user.username ?? null);
+    return { id: user.id, username: user.username ?? null };
   }
 
   async refresh(oldToken: string): Promise<RefreshTokensDto> {
@@ -164,21 +169,55 @@ export class AuthService {
     log.debug({ evt: "auth.logout.ok" });
   }
 
-  private async issueTokens(
+  async createSession(
     id: string,
-    username: string | null
+    username: string | null,
+    extra: Record<string, unknown> = {}
   ): Promise<AuthTokensDto> {
     const log = this.log({ userId: mask(id) });
     try {
       const { kid, alg } = keysService.getActive();
       log.debug({ evt: "auth.issue_tokens.start", kid, alg });
-      const access = this.jwt.signAccess(id);
+      const payload: Record<string, unknown> = { ...extra };
+      if (typeof username === "string" && username.length > 0) {
+        payload.username = username;
+        payload.preferred_username = username;
+      }
+      const access = this.jwt.signAccess(id, payload);
       const refresh = this.jwt.signRefresh(id);
       await this.tokens.save(refresh, id);
       log.debug({ evt: "auth.issue_tokens.ok", kid, alg });
       return { access, refresh, username };
     } catch (e: any) {
       log.error({ evt: "auth.issue_tokens.failed", err: safeErr(e) });
+      throw new DomainError("ISSUE_TOKENS_FAILED", 500);
+    }
+  }
+
+  async issueStepUpToken(
+    id: string,
+    username: string | null,
+    extra: Record<string, unknown> = {}
+  ): Promise<StepUpTokenDto> {
+    const log = this.log({ userId: mask(id) });
+    try {
+      const { kid, alg } = keysService.getActive();
+      log.debug({ evt: "auth.issue_stepup.start", kid, alg });
+      const payload: Record<string, unknown> = {
+        scope: ["auth:stepup"],
+        acr: "step-up",
+        amr: ["pwd"],
+        ...extra,
+      };
+      if (typeof username === "string" && username.length > 0) {
+        payload.username = username;
+        payload.preferred_username = username;
+      }
+      const token = this.jwt.signAccess(id, payload);
+      log.debug({ evt: "auth.issue_stepup.ok", kid, alg });
+      return { token, acr: "step-up", scope: ["auth:stepup"], username };
+    } catch (e: any) {
+      log.error({ evt: "auth.issue_stepup.failed", err: safeErr(e) });
       throw new DomainError("ISSUE_TOKENS_FAILED", 500);
     }
   }

@@ -15,6 +15,7 @@ import type {
   AuthResponse,
   MeResponse,
   StepUpRequirement,
+  LoginOptions,
 } from "../types/auth";
 
 function b64urlToBuffer(b64url: string): ArrayBuffer {
@@ -72,7 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setIsAuthenticated(false);
       return null;
     }
-  }, [setToken]);
+  }, [setToken, setStepUpRequirement]);
 
   const getMe = useCallback(
     async (currentToken: string): Promise<MeResponse | null> => {
@@ -102,6 +103,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setToken(null);
     setUsername(null);
     setIsAuthenticated(false);
+    setStepUpRequirement(null);
   }, [setToken]);
 
   const connectEvents = useCallback(
@@ -183,13 +185,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const loginFn = useCallback(
-    async (newToken: string, name: string | null) => {
+    async (newToken: string, name: string | null, options?: LoginOptions) => {
       setToken(newToken);
-      if (name) setUsername(name);
+      if (typeof name === "string") setUsername(name);
+      if (options?.stepUp) {
+        setIsAuthenticated(false);
+        setStepUpRequirement({
+          type: "totp",
+          acr: options.acr ?? null,
+          source: options.source ?? "login",
+        });
+        return;
+      }
       setIsAuthenticated(true);
+      setStepUpRequirement(null);
       await connectEvents(newToken);
     },
-    [connectEvents, setToken]
+    [connectEvents, setToken, setStepUpRequirement]
   );
 
   const fetchWithAuth = useCallback(

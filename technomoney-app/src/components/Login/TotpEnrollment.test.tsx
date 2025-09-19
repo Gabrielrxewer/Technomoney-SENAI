@@ -43,14 +43,14 @@ describe("TotpEnrollment", () => {
     render(<TotpEnrollment onCompleted={onCompleted} />);
 
     await waitFor(() => {
-      expect(fetchWithAuth).toHaveBeenCalledWith("/api/auth/totp/status");
+      expect(fetchWithAuth).toHaveBeenCalledWith("/totp/status");
     });
 
     fireEvent.click(screen.getByRole("button", { name: /Gerar QR Code/i }));
 
     await waitFor(() => {
       expect(fetchWithAuth).toHaveBeenCalledWith(
-        "/api/auth/totp/setup/start",
+        "/totp/setup/start",
         expect.objectContaining({ method: "POST" })
       );
     });
@@ -64,7 +64,7 @@ describe("TotpEnrollment", () => {
 
     await waitFor(() => {
       expect(fetchWithAuth).toHaveBeenCalledWith(
-        "/api/auth/totp/setup/verify",
+        "/totp/setup/verify",
         expect.objectContaining({
           method: "POST",
           data: { code: "123456" },

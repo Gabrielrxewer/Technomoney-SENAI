@@ -1,11 +1,14 @@
 import React, { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 
+type TotpChallengeResult = {
+  token: string;
+  acr?: string | null;
+  username?: string | null;
+};
+
 type TotpChallengeProps = {
-  onSuccess?: (result: {
-    token: string;
-    acr?: string | null;
-  }) => void | Promise<void>;
+  onSuccess?: (result: TotpChallengeResult) => void | Promise<void>;
   onCancel?: () => void;
   title?: string;
   message?: React.ReactNode;
@@ -38,9 +41,11 @@ const TotpChallenge: React.FC<TotpChallengeProps> = ({
         method: "POST",
         data: { code },
       });
-      const data = res.data as { token: string; acr?: string | null };
+      const data = res.data as TotpChallengeResult;
+      const nextUsername =
+        typeof data?.username === "string" ? data.username : username;
       if (data?.token) {
-        await login(data.token, username);
+        await login(data.token, nextUsername ?? null);
       }
       setCode("");
       if (setStepUpRequirement) setStepUpRequirement(null);

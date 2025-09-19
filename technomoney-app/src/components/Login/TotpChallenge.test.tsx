@@ -46,7 +46,7 @@ describe("TotpChallenge", () => {
 
     await waitFor(() => {
       expect(fetchWithAuth).toHaveBeenCalledWith(
-        "/api/auth/totp/challenge/verify",
+        "/totp/challenge/verify",
         expect.objectContaining({
           method: "POST",
           data: { code: "654321" },
@@ -56,6 +56,8 @@ describe("TotpChallenge", () => {
 
     expect(login).toHaveBeenCalledWith("new-token", "Neo");
     expect(setStepUpRequirement).toHaveBeenCalledWith(null);
-    expect(onSuccess).toHaveBeenCalledWith({ token: "new-token", acr: "aal2" });
+    expect(onSuccess).toHaveBeenCalledWith(
+      expect.objectContaining({ token: "new-token", acr: "aal2" })
+    );
   });
 });
