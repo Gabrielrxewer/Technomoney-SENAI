@@ -1,8 +1,10 @@
+import type { NextFunction, Request, Response } from "express";
 import { JwtVerifierService } from "../services/jwt-verifier.service";
 import { logger } from "../utils/logger";
+
 const verifier = new JwtVerifierService();
 
-const normalizeScope = (scope: string[] | string): string[] => {
+const normalizeScope = (scope: string[] | string | undefined | null): string[] => {
   if (Array.isArray(scope)) return scope;
   return String(scope || "")
     .split(" ")
@@ -10,7 +12,15 @@ const normalizeScope = (scope: string[] | string): string[] => {
     .filter(Boolean);
 };
 
-export const authenticate = async (req: any, res: any, next: any) => {
+const maskToken = (token: string) =>
+  !token ? "" : token.length <= 10 ? "***" : `${token.slice(0, 4)}...${token.slice(-4)}`;
+
+export const authenticate = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  let tokenForLog = "";
   try {
     const h = String(req.headers.authorization || "");
     const token = h.startsWith("Bearer ")
@@ -22,9 +32,23 @@ export const authenticate = async (req: any, res: any, next: any) => {
       res.status(401).json({ message: "Unauthorized" });
       return;
     }
-    const { id, jti, scope, payload } = await verifier.verifyAccess(token);
-    const scopeList = normalizeScope(scope);
-    const acr = typeof (payload as any).acr === "string" ? (payload as any).acr : undefined;
+
+    tokenForLog = token;
+    const introspection = await verifier.verifyAccess(token);
+
+    if (!introspection.active) {
+      res.setHeader(
+        "WWW-Authenticate",
+        'Bearer realm="api", error="invalid_token", error_description="Token is inactive"'
+      );
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    const scopeList = normalizeScope(introspection.scope);
+    const acr =
+      typeof introspection.acr === "string" ? introspection.acr : undefined;
+
     if (acr === "step-up" || scopeList.includes("auth:stepup")) {
       res.setHeader(
         "WWW-Authenticate",
@@ -33,25 +57,27 @@ export const authenticate = async (req: any, res: any, next: any) => {
       res.status(401).json({ message: "Step-up token requires MFA" });
       return;
     }
+
     const username =
-      typeof (payload as any).username === "string"
-        ? (payload as any).username
-        : typeof (payload as any).preferred_username === "string"
-        ? (payload as any).preferred_username
+      typeof introspection.username === "string"
+        ? introspection.username
+        : typeof introspection.preferred_username === "string"
+        ? introspection.preferred_username
         : undefined;
-    req.user = {
-      id,
-      jti,
+
+    (req as any).user = {
+      id: typeof introspection.sub === "string" ? introspection.sub : "",
+      jti: typeof introspection.jti === "string" ? introspection.jti : "",
       token,
       scope: scopeList,
-      payload,
+      payload: introspection,
       acr,
       username,
-      exp: typeof (payload as any).exp === "number" ? (payload as any).exp : undefined,
+      exp: typeof introspection.exp === "number" ? introspection.exp : undefined,
     };
     next();
   } catch (e: any) {
-    logger.debug({ err: String(e) }, "auth.middleware.denied");
+    logger.debug({ err: String(e), token: maskToken(tokenForLog) }, "auth.middleware.denied");
     res.setHeader(
       "WWW-Authenticate",
       'Bearer realm="api", error="invalid_token", error_description="Missing or invalid token"'

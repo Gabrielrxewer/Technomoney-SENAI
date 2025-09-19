@@ -8,7 +8,8 @@
     "start": "node dist/server.js",
     "dev": "nodemon",
     "migrate": "sequelize-cli db:migrate",
-    "migrate:undo": "sequelize-cli db:migrate:undo"
+    "migrate:undo": "sequelize-cli db:migrate:undo",
+    "test": "node --require ts-node/register --test src/**/__tests__/*.spec.ts"
   },
   "keywords": [],
   "author": "",
