@@ -260,3 +260,45 @@ test("login returns totp step-up with issued token", async (t) => {
     acr: "step-up",
   });
 });
+
+test("login returns 401 when auth service rejects with invalid credentials", async (t) => {
+  process.env.AUTH_CONTROLLER_SKIP_DEFAULT = "1";
+  const controller = await import("../auth.controller");
+  const authService = createAuthServiceStub({ id: "", username: null });
+  authService.login = async (email: string, password: string) => {
+    authService.loginCalls.push([email, password]);
+    const err = new Error("INVALID_CREDENTIALS") as Error & {
+      code: string;
+      status: number;
+    };
+    err.code = "INVALID_CREDENTIALS";
+    err.status = 401;
+    throw err;
+  };
+  const totpService = createTotpServiceStub(false);
+  const trustedDevice = createTrustedDeviceStub(null);
+  controller.__setAuthControllerDeps({
+    authService,
+    totpService,
+    getTrustedDevice: trustedDevice,
+  });
+  t.after(() => {
+    controller.__resetAuthControllerDeps();
+  });
+  const req = {
+    body: { email: "user@example.com", password: "secret" },
+  } as Request;
+  const res = makeResponse();
+
+  await controller.login(req, res as Response, (() => {}) as any);
+
+  assert.strictEqual(authService.loginCalls.length, 1);
+  assert.strictEqual(totpService.statusCalls.length, 0);
+  assert.strictEqual(authService.issueStepUpCalls.length, 0);
+  assert.strictEqual(res.statusCalls.length, 1);
+  assert.deepStrictEqual(res.statusCalls[0], [401]);
+  assert.strictEqual(res.jsonCalls.length, 1);
+  assert.deepStrictEqual(res.jsonCalls[0][0], {
+    message: "Credenciais inválidas",
+  });
+});

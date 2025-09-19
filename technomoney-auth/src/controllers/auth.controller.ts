@@ -125,8 +125,12 @@ export const register: RequestHandler = async (req, res) => {
       JWT_CONFIG_INVALID: [500, "Configuração de JWT ausente"],
       ISSUE_TOKENS_FAILED: [500, "Falha ao emitir tokens"],
     };
-    const [code, msg] = map[e.message] || [500, "Erro interno"];
-    res.status(code).json({ message: msg });
+    const key = typeof e?.code === "string" ? e.code : e?.message;
+    const match = key ? map[key] : undefined;
+    const status =
+      (typeof e?.status === "number" && e.status) || match?.[0] || 500;
+    const message = match?.[1] || "Erro interno";
+    res.status(status).json({ message });
   }
 };
 
@@ -163,13 +167,16 @@ export const login: RequestHandler = async (req, res) => {
       .json({ token: access, username });
   } catch (e: any) {
     const map: Record<string, [number, string]> = {
-      NOT_FOUND: [401, "Credenciais inválidas"],
-      INVALID_PASSWORD: [401, "Credenciais inválidas"],
+      INVALID_CREDENTIALS: [401, "Credenciais inválidas"],
       JWT_CONFIG_INVALID: [500, "Configuração de JWT ausente"],
       ISSUE_TOKENS_FAILED: [500, "Falha ao emitir tokens"],
     };
-    const [code, msg] = map[e.message] || [500, "Erro interno"];
-    res.status(code).json({ message: msg });
+    const key = typeof e?.code === "string" ? e.code : e?.message;
+    const match = key ? map[key] : undefined;
+    const status =
+      (typeof e?.status === "number" && e.status) || match?.[0] || 500;
+    const message = match?.[1] || "Erro interno";
+    res.status(status).json({ message });
   }
 };
 
@@ -189,17 +196,21 @@ export const refresh: RequestHandler = async (req, res) => {
     res.cookie("refreshToken", refresh, cookieOpts).json({ token: access });
   } catch (e: any) {
     const map: Record<string, [number, string]> = {
-      REFRESH_REUSE_DETECTED: [401, "Sessão comprometida"],
-      INVALID_REFRESH: [403, "Refresh token revogado ou inválido"],
+      REFRESH_REUSE_DETECTED: [403, "Sessão comprometida"],
+      INVALID_REFRESH: [401, "Refresh token revogado ou inválido"],
     };
-    if (e && e.message === "REFRESH_REUSE_DETECTED") {
+    const key = typeof e?.code === "string" ? e.code : e?.message;
+    if (key === "REFRESH_REUSE_DETECTED") {
       try {
         const u = (req as any).user as { id: string } | undefined;
         if (u?.id) publishToUser(u.id, { type: "session.compromised" });
       } catch {}
     }
-    const [code, msg] = map[e.message] || [500, "Erro interno"];
-    res.status(code).json({ message: msg });
+    const match = key ? map[key] : undefined;
+    const status =
+      (typeof e?.status === "number" && e.status) || match?.[0] || 500;
+    const message = match?.[1] || "Erro interno";
+    res.status(status).json({ message });
   }
 };
 
