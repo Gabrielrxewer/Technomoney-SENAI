@@ -43,7 +43,14 @@ produção.
 - O middleware de autenticação agora usa somente o fluxo de introspecção via
   `AUTH_INTROSPECTION_URL`, rejeitando sessões inativas imediatamente para
   reduzir superfícies de abuso.
-- Configure as novas variáveis de ambiente antes de subir o serviço:
+- Configure as variáveis de ambiente antes de subir o serviço:
+  - `AUTH_JWKS_URL`, `AUTH_ISSUER` e `AUTH_AUDIENCE`: defina o endpoint HTTPS
+    do JWKS público e os metadados de emissor/audiência esperados para os
+    tokens. Nunca aponte para origens sem TLS.
+  - `AUTH_CLOCK_TOLERANCE`, `AUTH_ACCEPTED_ALGORITHMS` e `AUTH_STATIC_JWKS`
+    (opcionais): ajuste a tolerância de relógio em segundos, a lista de
+    algoritmos permitidos e, se necessário, um JWKS estático armazenado com o
+    mesmo rigor de outros segredos e rotacionado com frequência.
   - `AUTH_INTROSPECTION_URL`: endereço HTTPS do endpoint `/oauth2/introspect`.
   - `AUTH_INTROSPECTION_CLIENT_ID` e `AUTH_INTROSPECTION_CLIENT_SECRET`:
     credenciais usadas na chamada autenticada.
