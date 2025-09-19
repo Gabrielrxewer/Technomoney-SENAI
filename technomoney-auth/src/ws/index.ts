@@ -1,6 +1,7 @@
-import { createHash, randomBytes } from "crypto";
+import { randomBytes } from "crypto";
 import http from "http";
 import { WebSocketServer, WebSocket } from "ws";
+import { deriveSid } from "../utils/session.util";
 
 type Ticket = { userId: string; sid: string; exp: number };
 type Msg = Record<string, any>;
@@ -18,11 +19,7 @@ function b64url(buf: Buffer) {
     .replace(/=+$/, "");
 }
 
-export function deriveSid(refreshToken: string) {
-  return createHash("sha256")
-    .update(String(refreshToken || ""))
-    .digest("hex");
-}
+export { deriveSid };
 
 export function issueTicket(userId: string, sid: string) {
   const ticket = b64url(randomBytes(24));

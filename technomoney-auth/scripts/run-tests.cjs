@@ -1,4 +1,5 @@
 const { spawn } = require("child_process");
+const path = require("path");
 
 function run(command, args, options = {}) {
   return new Promise((resolve, reject) => {
@@ -23,9 +24,16 @@ function run(command, args, options = {}) {
 }
 
 (async () => {
+  const stubPath = path.resolve(__dirname, "../test-shims/node_modules");
+  const existingNodePath = process.env.NODE_PATH || "";
+  const nodePath = existingNodePath
+    ? `${stubPath}${path.delimiter}${existingNodePath}`
+    : stubPath;
   const env = {
     TS_NODE_TRANSPILE_ONLY: "1",
     TS_NODE_FILES: "1",
+    NODE_PATH: nodePath,
+    JOSE_STUB: "1",
   };
   await run(
     "node",
@@ -34,6 +42,7 @@ function run(command, args, options = {}) {
       "-r",
       "ts-node/register",
       "src/controllers/__tests__/auth.controller.spec.ts",
+      "src/controllers/__tests__/oidc.introspect.spec.ts",
       "src/middlewares/__tests__/dpop.middleware.spec.ts",
     ],
     {

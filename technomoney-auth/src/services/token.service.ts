@@ -1,25 +1,22 @@
-import crypto from "crypto";
 import { Transaction } from "sequelize";
 import { RefreshTokenRepository } from "../repositories/refresh-token.repository";
 import { logger } from "../utils/log/logger";
+import { hashRefreshToken } from "../utils/session.util";
 
 const mask = (s?: string) =>
   !s ? "" : s.length <= 8 ? "***" : `${s.slice(0, 4)}...${s.slice(-4)}`;
-const hashRt = (t: string) =>
-  crypto.createHash("sha256").update(t).digest("hex");
-
 export class TokenService {
   private repo = new RefreshTokenRepository();
 
   async save(token: string, userId: string, tx?: Transaction) {
-    const h = hashRt(token);
+    const h = hashRefreshToken(token);
     logger.debug({ userId: mask(userId) }, "token.save.start");
     await this.repo.save(h, userId, tx);
     logger.debug({ userId: mask(userId) }, "token.save.ok");
   }
 
   async revoke(token: string, tx?: Transaction) {
-    const h = hashRt(token);
+    const h = hashRefreshToken(token);
     logger.debug({}, "token.revoke.start");
     await this.repo.revoke(h, tx);
     logger.debug({}, "token.revoke.ok");
@@ -32,7 +29,7 @@ export class TokenService {
   }
 
   async isValid(token: string) {
-    const h = hashRt(token);
+    const h = hashRefreshToken(token);
     logger.debug({}, "token.is_valid.start");
     const ok = !!(await this.repo.isValid(h));
     logger.debug({ ok, hashed: true }, "token.is_valid.result");
@@ -40,7 +37,7 @@ export class TokenService {
   }
 
   async wasIssued(token: string) {
-    const h = hashRt(token);
+    const h = hashRefreshToken(token);
     const a = await this.repo.wasIssued(h);
     return !!a;
   }
