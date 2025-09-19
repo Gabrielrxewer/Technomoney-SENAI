@@ -8,7 +8,7 @@ import React, {
   useCallback,
 } from "react";
 import type { AxiosRequestConfig, AxiosResponse } from "axios";
-import { authApi, setAuthTokenGetter } from "../services/http";
+import { authApi, setAuthRefreshHandler, setAuthTokenGetter } from "../services/http";
 import type {
   AuthContextType,
   AuthEvent,
@@ -321,6 +321,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setAuthTokenGetter(null);
     };
   }, []);
+
+  useEffect(() => {
+    setAuthRefreshHandler(refreshToken);
+    return () => {
+      setAuthRefreshHandler(null);
+    };
+  }, [refreshToken]);
 
   const value = useMemo<AuthContextType>(
     () => ({
