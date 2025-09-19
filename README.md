@@ -37,3 +37,15 @@ produção.
     credenciais usadas na autenticação HTTP Basic.
 - Garanta que essas credenciais sejam armazenadas com o mesmo rigor dos demais
   segredos da aplicação e rotacione-as periodicamente.
+
+## `technomoney-api`
+
+- O middleware de autenticação agora usa somente o fluxo de introspecção via
+  `AUTH_INTROSPECTION_URL`, rejeitando sessões inativas imediatamente para
+  reduzir superfícies de abuso.
+- Configure as novas variáveis de ambiente antes de subir o serviço:
+  - `AUTH_INTROSPECTION_URL`: endereço HTTPS do endpoint `/oauth2/introspect`.
+  - `AUTH_INTROSPECTION_CLIENT_ID` e `AUTH_INTROSPECTION_CLIENT_SECRET`:
+    credenciais usadas na chamada autenticada.
+- Limite o acesso a essas credenciais apenas para serviços autorizados e
+  monitore logs de introspecção para detectar tentativas suspeitas.
