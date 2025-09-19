@@ -42,6 +42,7 @@ export const authenticate = async (req: any, res: any, next: any) => {
     req.user = {
       id,
       jti,
+      token,
       scope: scopeList,
       payload,
       acr,
