@@ -77,7 +77,11 @@ const Login: React.FC = () => {
     if (step !== "enroll_totp" && step !== "totp") return;
     const usernameHint = data?.username ?? null;
     if (data?.token) {
-      await login(data.token, usernameHint);
+      await login(data.token, usernameHint, {
+        stepUp: true,
+        acr: data?.acr ?? null,
+        source: "login",
+      });
     }
     setStepUp({ mode: step, usernameHint });
     setError("");
@@ -147,20 +151,20 @@ const Login: React.FC = () => {
   };
 
   const handleChallengeSuccess = async () => {
+    setStepUpProcessing(true);
     try {
-      setStepUpProcessing(true);
-      await performLogin();
+      setStepUp(null);
+      navigate("/dashboard");
     } finally {
       setStepUpProcessing(false);
     }
   };
 
-  const handleEnrollmentCompleted = async () => {
+  const handleEnrollmentCompleted = () => {
     setStepUp((prev) => ({
       mode: "totp",
       usernameHint: prev?.usernameHint ?? null,
     }));
-    await handleChallengeSuccess();
   };
 
   if (loadingSpinner) return <Spinner />;

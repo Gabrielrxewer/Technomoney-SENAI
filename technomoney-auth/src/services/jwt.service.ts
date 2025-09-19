@@ -12,6 +12,9 @@ type AccessData = {
   scope?: unknown;
   acr?: unknown;
   amr?: unknown;
+  username?: unknown;
+  email?: unknown;
+  exp?: number;
 };
 type RefreshData = { id: string; jti: string };
 
@@ -191,7 +194,26 @@ export class JwtService {
         sub: mask(sub),
         jti: maskJti(String(d.jti || "")),
       });
-      return { id: d.id, jti: d.jti, scope: d.scope, acr: d.acr, amr: d.amr };
+      const username =
+        typeof (d as any).username === "string"
+          ? (d as any).username
+          : typeof (d as any).preferred_username === "string"
+          ? (d as any).preferred_username
+          : undefined;
+      const email =
+        typeof (d as any).email === "string"
+          ? (d as any).email
+          : undefined;
+      return {
+        id: d.id,
+        jti: d.jti,
+        scope: d.scope,
+        acr: d.acr,
+        amr: d.amr,
+        username,
+        email,
+        exp: typeof d.exp === "number" ? d.exp : undefined,
+      };
     } catch (e: any) {
       this.log.warn({
         evt: "jwt.verify.access.fail",

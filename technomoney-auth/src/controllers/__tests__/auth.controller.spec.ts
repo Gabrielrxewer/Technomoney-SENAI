@@ -39,9 +39,15 @@ type MockResponse = Response & {
 };
 
 type LoginResult = {
-  access: string;
-  refresh: string;
-  username?: string | null;
+  id: string;
+  username: string | null;
+};
+
+type StepUpResult = {
+  token: string;
+  acr: string;
+  scope: string[];
+  username: string | null;
 };
 
 const createJwt = (payload: Record<string, unknown>): string => {
@@ -76,10 +82,23 @@ const makeResponse = (): MockResponse => {
 type AuthServiceStub = {
   loginCalls: Array<[string, string]>;
   logoutCalls: Array<[string]>;
+  createSessionCalls: Array<[string, string | null]>;
+  issueStepUpCalls: Array<[string, string | null]>;
   loginResult: LoginResult;
+  createSessionResult: LoginResult & { access: string; refresh: string };
+  issueStepUpResult: StepUpResult;
 } & {
   login(email: string, password: string): Promise<LoginResult>;
   logout(refresh: string): Promise<void>;
+  createSession(id: string, username: string | null): Promise<{
+    access: string;
+    refresh: string;
+    username: string | null;
+  }>;
+  issueStepUpToken(
+    id: string,
+    username: string | null
+  ): Promise<StepUpResult>;
   register(): Promise<never>;
   refresh(): Promise<never>;
 };
@@ -100,13 +119,38 @@ const createAuthServiceStub = (result: LoginResult): AuthServiceStub => {
   const stub: AuthServiceStub = {
     loginCalls: [],
     logoutCalls: [],
+    createSessionCalls: [],
+    issueStepUpCalls: [],
     loginResult: result,
+    createSessionResult: {
+      ...result,
+      access: createJwt({ sub: result.id, exp: Math.floor(Date.now() / 1000) + 3600 }),
+      refresh: "refresh-token",
+    },
+    issueStepUpResult: {
+      token: createJwt({ sub: result.id, scope: ["auth:stepup"], acr: "step-up" }),
+      acr: "step-up",
+      scope: ["auth:stepup"],
+      username: result.username,
+    },
     async login(email: string, password: string) {
       stub.loginCalls.push([email, password]);
       return stub.loginResult;
     },
     async logout(refresh: string) {
       stub.logoutCalls.push([refresh]);
+    },
+    async createSession(id: string, username: string | null) {
+      stub.createSessionCalls.push([id, username]);
+      return {
+        access: stub.createSessionResult.access,
+        refresh: stub.createSessionResult.refresh,
+        username,
+      };
+    },
+    async issueStepUpToken(id: string, username: string | null) {
+      stub.issueStepUpCalls.push([id, username]);
+      return stub.issueStepUpResult;
     },
     async register() {
       throw new Error("not used");
@@ -144,11 +188,7 @@ test("login returns enroll_totp step-up with issued token", async (t) => {
   process.env.AUTH_CONTROLLER_SKIP_DEFAULT = "1";
   const controller = await import("../auth.controller");
   const authService = createAuthServiceStub({
-    access: createJwt({
-      sub: "user-123",
-      exp: Math.floor(Date.now() / 1000) + 3600,
-    }),
-    refresh: "refresh-token",
+    id: "user-123",
     username: "Neo",
   });
   const totpService = createTotpServiceStub(false);
@@ -169,30 +209,25 @@ test("login returns enroll_totp step-up with issued token", async (t) => {
   await controller.login(req, res as Response, (() => {}) as any);
 
   assert.strictEqual(authService.loginCalls.length, 1);
-  assert.strictEqual(authService.logoutCalls.length, 1);
-  assert.deepStrictEqual(authService.logoutCalls[0], ["refresh-token"]);
+  assert.strictEqual(authService.logoutCalls.length, 0);
   assert.strictEqual(totpService.statusCalls.length, 1);
+  assert.strictEqual(authService.issueStepUpCalls.length, 1);
+  assert.deepStrictEqual(authService.issueStepUpCalls[0], ["user-123", "Neo"]);
   assert.strictEqual(res.statusCalls.length, 1);
   assert.deepStrictEqual(res.statusCalls[0], [401]);
   assert.strictEqual(res.jsonCalls.length, 1);
   assert.deepStrictEqual(res.jsonCalls[0][0], {
     stepUp: "enroll_totp",
-    token: authService.loginResult.access,
+    token: authService.issueStepUpResult.token,
     username: "Neo",
+    acr: "step-up",
   });
 });
 
 test("login returns totp step-up with issued token", async (t) => {
   process.env.AUTH_CONTROLLER_SKIP_DEFAULT = "1";
   const controller = await import("../auth.controller");
-  const authService = createAuthServiceStub({
-    access: createJwt({
-      sub: "user-123",
-      exp: Math.floor(Date.now() / 1000) + 3600,
-    }),
-    refresh: "refresh-token",
-    username: "Trinity",
-  });
+  const authService = createAuthServiceStub({ id: "user-123", username: "Trinity" });
   const totpService = createTotpServiceStub(true);
   const trustedDevice = createTrustedDeviceStub(null);
   controller.__setAuthControllerDeps({
@@ -211,15 +246,17 @@ test("login returns totp step-up with issued token", async (t) => {
   await controller.login(req, res as Response, (() => {}) as any);
 
   assert.strictEqual(authService.loginCalls.length, 1);
-  assert.strictEqual(authService.logoutCalls.length, 1);
-  assert.deepStrictEqual(authService.logoutCalls[0], ["refresh-token"]);
+  assert.strictEqual(authService.logoutCalls.length, 0);
   assert.strictEqual(totpService.statusCalls.length, 1);
+  assert.strictEqual(authService.issueStepUpCalls.length, 1);
+  assert.deepStrictEqual(authService.issueStepUpCalls[0], ["user-123", "Trinity"]);
   assert.strictEqual(res.statusCalls.length, 1);
   assert.deepStrictEqual(res.statusCalls[0], [401]);
   assert.strictEqual(res.jsonCalls.length, 1);
   assert.deepStrictEqual(res.jsonCalls[0][0], {
     stepUp: "totp",
-    token: authService.loginResult.access,
+    token: authService.issueStepUpResult.token,
     username: "Trinity",
+    acr: "step-up",
   });
 });

@@ -12,7 +12,7 @@ import {
   refresh,
   logout,
 } from "../controllers/auth.controller";
-import { authenticate } from "../middlewares/auth.middleware";
+import { authenticate, requireFullSession } from "../middlewares/auth.middleware";
 import { enforcePasswordPolicy } from "../middlewares/passwordPolicy.middleware";
 import { csrfProtection } from "../middlewares/csrf.middleware";
 import { wsTicket } from "../controllers/ws.controller";
@@ -37,7 +37,7 @@ router.post(
 );
 router.post("/refresh", csrfProtection, refresh);
 router.post("/logout", csrfProtection, logout);
-router.post("/ws-ticket", authenticate, wsTicket);
+router.post("/ws-ticket", authenticate, requireFullSession, wsTicket);
 
 const csrfGet: RequestHandler = (req: any, res) => {
   const token = typeof req.csrfToken === "function" ? req.csrfToken() : "";
@@ -51,6 +51,6 @@ const csrfGet: RequestHandler = (req: any, res) => {
 };
 router.get("/csrf", csrfProtection, csrfGet);
 
-router.get("/me", authenticate, me);
+router.get("/me", authenticate, requireFullSession, me);
 
 export default router;

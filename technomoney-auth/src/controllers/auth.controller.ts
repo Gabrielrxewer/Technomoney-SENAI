@@ -15,7 +15,7 @@ import type { TotpService } from "../services/totp.service";
 
 type AuthServiceContract = Pick<
   AuthService,
-  "register" | "login" | "logout" | "refresh"
+  "register" | "login" | "logout" | "refresh" | "createSession" | "issueStepUpToken"
 >;
 type TotpServiceContract = Pick<TotpService, "status">;
 type TrustedDeviceFn = typeof getTrustedDevice;
@@ -39,6 +39,12 @@ const fallbackAuthService: AuthServiceContract = {
   },
   async logout() {},
   async refresh() {
+    throw new Error("authService not initialized");
+  },
+  async createSession() {
+    throw new Error("authService not initialized");
+  },
+  async issueStepUpToken() {
     throw new Error("authService not initialized");
   },
 };
@@ -127,13 +133,8 @@ export const register: RequestHandler = async (req, res) => {
 export const login: RequestHandler = async (req, res) => {
   try {
     const { email, password } = req.body as { email: string; password: string };
-    const { access, refresh, username } = await authService.login(
-      email,
-      password
-    );
-    const userId = decodeUserId(access);
+    const { id: userId, username } = await authService.login(email, password);
     if (!userId) {
-      await authService.logout(refresh);
       res.status(401).json({ message: "Credenciais inválidas" });
       return;
     }
@@ -141,8 +142,8 @@ export const login: RequestHandler = async (req, res) => {
     const isTrusted = !!td && td.userId === userId;
     if (!isTrusted) {
       const enrolled = await totpService.status(userId);
-      await authService.logout(refresh);
-      const payload = { token: access, username };
+      const stepUp = await authService.issueStepUpToken(userId, username ?? null);
+      const payload = { token: stepUp.token, username, acr: stepUp.acr };
       if (!enrolled) {
         res.status(401).json({ stepUp: "enroll_totp", ...payload });
         return;
@@ -150,6 +151,10 @@ export const login: RequestHandler = async (req, res) => {
       res.status(401).json({ stepUp: "totp", ...payload });
       return;
     }
+    const { access, refresh } = await authService.createSession(
+      userId,
+      username ?? null
+    );
     const sid = deriveSid(refresh);
     const exp = decodeExp(access);
     scheduleTokenExpiringSoon(sid, exp);
