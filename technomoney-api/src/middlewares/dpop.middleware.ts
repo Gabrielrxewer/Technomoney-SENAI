@@ -1,3 +1,4 @@
+import { createHash } from "crypto";
 import { calculateJwkThumbprint, importJWK, jwtVerify, JWK } from "jose";
 
 const seen = new Map<string, number>();
@@ -12,6 +13,7 @@ export async function requireDPoPIfBound(req: any, res: any, next: any) {
   if (!cnf?.jkt) return next();
   const proof = String(req.headers["dpop"] || "");
   if (!proof) return res.status(401).json({ message: "DPoP required" });
+  const token = typeof req.user?.token === "string" ? req.user.token : undefined;
   try {
     const { payload, protectedHeader } = await jwtVerify(
       proof,
@@ -21,6 +23,8 @@ export async function requireDPoPIfBound(req: any, res: any, next: any) {
       },
       { clockTolerance: 5 }
     );
+    if (!token)
+      return res.status(401).json({ message: "invalid dpop ath" });
     const htm = String(payload.htm || "").toUpperCase();
     const htu = String(payload.htu || "");
     const iat = Number(payload.iat || 0);
@@ -32,6 +36,10 @@ export async function requireDPoPIfBound(req: any, res: any, next: any) {
     if (!iat || Math.abs(now() - iat) > 300)
       return res.status(401).json({ message: "invalid dpop iat" });
     if (!jti) return res.status(401).json({ message: "invalid dpop jti" });
+    const expectedAth = createHash("sha256").update(token).digest("base64");
+    const normalizedAth = expectedAth.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+    if (typeof payload.ath !== "string" || payload.ath !== normalizedAth)
+      return res.status(401).json({ message: "invalid dpop ath" });
     const exp = seen.get(jti);
     if (exp && exp > now()) return res.status(401).json({ message: "replay" });
     seen.set(jti, now() + 600);

@@ -27,7 +27,17 @@ function run(command, args, options = {}) {
     TS_NODE_TRANSPILE_ONLY: "1",
     TS_NODE_FILES: "1",
   };
-  await run("node", ["--test", "-r", "ts-node/register", "src/controllers/__tests__/auth.controller.spec.ts"], {
-    env,
-  });
+  await run(
+    "node",
+    [
+      "--test",
+      "-r",
+      "ts-node/register",
+      "src/controllers/__tests__/auth.controller.spec.ts",
+      "src/middlewares/__tests__/dpop.middleware.spec.ts",
+    ],
+    {
+      env,
+    }
+  );
 })();
