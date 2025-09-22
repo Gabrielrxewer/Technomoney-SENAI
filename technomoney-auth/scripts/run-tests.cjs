@@ -44,6 +44,7 @@ function run(command, args, options = {}) {
       "src/controllers/__tests__/auth.controller.spec.ts",
       "src/controllers/__tests__/oidc.introspect.spec.ts",
       "src/middlewares/__tests__/dpop.middleware.spec.ts",
+      "src/config/__tests__/config.bridge.spec.ts",
     ],
     {
       env,
