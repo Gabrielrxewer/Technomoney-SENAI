@@ -30,6 +30,10 @@ type ClientAuthResult =
   | { ok: true; clientId: string; method: "basic" | "mtls" }
   | { ok: false; status: number; error: string };
 
+const isAuthError = (
+  auth: ClientAuthResult
+): auth is Extract<ClientAuthResult, { ok: false }> => auth.ok === false;
+
 function parseBasicAuth(header: string) {
   if (!header.startsWith("Basic ")) return null;
   try {
@@ -277,9 +281,10 @@ const normalizeScope = (scope: unknown) => {
 
 export const introspectHandler: RequestHandler = async (req, res) => {
   const auth = authenticateClient(req);
-  if (!auth.ok) {
+  if (isAuthError(auth)) {
     log.warn({ evt: "oidc.introspect.unauthorized" });
-    res.status(auth.status).json({ error: auth.error });
+    const errorAuth = auth;
+    res.status(errorAuth.status).json({ error: errorAuth.error });
     return;
   }
   const token = String((req.body as any)?.token || "");

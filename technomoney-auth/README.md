@@ -13,3 +13,7 @@ Serviço responsável por autenticação, emissão de tokens e suporte a fluxos 
 > Gere segredos exclusivos por cliente e mantenha-os em um cofre seguro. Tokens
 > de acesso só são considerados ativos se a sessão (`sid`) correspondente estiver
 > marcada como não revogada na tabela `sessions`.
+
+## Boas práticas de segurança
+
+* Rejeitamos clientes não autenticados na introspecção com respostas sanitizadas e status HTTP adequado, evitando vazamento de detalhes de implementação e reduzindo vetores de enumeração.

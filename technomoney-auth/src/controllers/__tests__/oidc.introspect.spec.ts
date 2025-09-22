@@ -31,6 +31,23 @@ stubModule("../../utils/log/logger", {
   logger: noopLogger,
 });
 
+stubModule("../../oidc/store", {
+  genCode: () => "stub-code",
+  getPAR: async () => null,
+  saveCode: async () => undefined,
+  savePAR: async () => ({ request_uri: "urn:stub", expires_in: 300 }),
+  takeCode: async () => null,
+});
+
+stubModule("../../oidc/keys", {
+  signAccess: async () => "access-token",
+  signIdToken: async () => "id-token",
+});
+
+stubModule("../../oidc/dpop", {
+  verifyDPoP: async () => ({ jkt: "stub-jkt" }),
+});
+
 let verifyAccessResult: any;
 let sessionIsActive = true;
 
@@ -140,4 +157,25 @@ test("introspect returns active=false when session was revoked", async () => {
   assert.equal(res.jsonCalls.length, 1);
   const payload = res.jsonCalls[0][0] as Record<string, unknown>;
   assert.equal(payload.active, false);
+});
+
+test("introspect rejects unauthorized clients with sanitized error payload", async () => {
+  process.env.INTROSPECTION_CLIENTS = "payments:secret";
+  const controllerModulePath = require.resolve("../oidc.controller");
+  delete require.cache[controllerModulePath];
+  const { introspectHandler } = await import("../oidc.controller");
+
+  const req = {
+    headers: { authorization: "Basic invalid" },
+    body: { token: "access-token" },
+    socket: {},
+  } as unknown as Request;
+  const res = makeResponse();
+
+  await introspectHandler(req, res, () => {});
+
+  assert.equal(res.statusCalls.length, 1);
+  assert.deepEqual(res.statusCalls[0], [401]);
+  assert.equal(res.jsonCalls.length, 1);
+  assert.deepEqual(res.jsonCalls[0][0], { error: "invalid_client" });
 });
