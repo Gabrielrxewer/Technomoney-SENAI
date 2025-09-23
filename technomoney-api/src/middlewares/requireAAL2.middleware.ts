@@ -1,8 +1,14 @@
 import type { Request, Response, NextFunction } from "express";
 
-export const requireAAL2 = (req: Request, res: Response, next: NextFunction) => {
-  const user = req.user as { acr?: string } | undefined;
-  if (user?.acr === "aal2") {
+type RequestWithUser = Request & { user?: { acr?: string } };
+
+export const requireAAL2 = (
+  req: RequestWithUser,
+  res: Response,
+  next: NextFunction
+) => {
+  const acr = req.user?.acr;
+  if (acr === "aal2") {
     next();
     return;
   }
