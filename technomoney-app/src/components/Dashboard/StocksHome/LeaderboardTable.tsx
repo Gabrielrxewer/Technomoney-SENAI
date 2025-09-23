@@ -37,9 +37,6 @@ export default function LeaderboardTable({ items, onAdd }: Props) {
 
   return (
     <div className="card table-card">
-      <div className="table-head">
-        <div className="section-sub">Clique nos cabeçalhos para ordenar</div>
-      </div>
       <div className="table-wrap">
         <table className="table">
           <thead>
