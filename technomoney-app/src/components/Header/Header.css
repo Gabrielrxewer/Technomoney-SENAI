@@ -1,3 +1,37 @@
+:root {
+  --color-primary: #0cb3a8;
+  --color-primary-dark: #08a295;
+  --color-bg: #0d1821;
+  --color-card-bg: #112933;
+  --color-text-main: #f0f0f0;
+  --color-text-secondary: #cde6e1;
+  --shadow-primary: rgba(12, 179, 168, 0.15);
+  --shadow-hover: rgba(12, 179, 168, 0.2);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--color-primary);
+  border-radius: 4px;
+}
+
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text-main);
+  line-height: 1.6;
+  min-height: 100vh;
+  padding-top: 0; 
+}
+
 .header {
   display: flex;
   justify-content: space-between;
@@ -12,10 +46,6 @@
   left: 0;
   right: 0;
   z-index: 1000;
-}
-
-body {
-  padding-top: 40px;
 }
 
 .menu-icon,
