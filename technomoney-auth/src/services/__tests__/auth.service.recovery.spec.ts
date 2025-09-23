@@ -235,6 +235,65 @@ test("requestEmailVerification envia link seguro", async () => {
   assert.ok(await comparePassword(secret, created[0].tokenHash));
 });
 
+test("login rejeita usuário não verificado quando AUTH_REQUIRE_VERIFIED_EMAIL=true", async () => {
+  const original = process.env.AUTH_REQUIRE_VERIFIED_EMAIL;
+  process.env.AUTH_REQUIRE_VERIFIED_EMAIL = "true";
+  const password = "SenhaForte!123";
+  const user = {
+    id: randomUUID(),
+    email: "unverified@example.com",
+    username: "seguranca",
+    password_hash: await hashPassword(password),
+    email_verified: false,
+  };
+  const service = new AuthService({
+    userRepository: {
+      async findByEmail(email: string) {
+        assert.equal(email, user.email);
+        return user;
+      },
+    } as any,
+  });
+
+  try {
+    await assert.rejects(
+      () => service.login(user.email, password),
+      (err: any) => err?.code === "EMAIL_NOT_VERIFIED"
+    );
+  } finally {
+    process.env.AUTH_REQUIRE_VERIFIED_EMAIL = original;
+  }
+});
+
+test("login permite usuário não verificado quando AUTH_REQUIRE_VERIFIED_EMAIL=false", async () => {
+  const original = process.env.AUTH_REQUIRE_VERIFIED_EMAIL;
+  process.env.AUTH_REQUIRE_VERIFIED_EMAIL = "false";
+  const password = "SenhaForte!123";
+  const user = {
+    id: randomUUID(),
+    email: "flex@example.com",
+    username: null,
+    password_hash: await hashPassword(password),
+    email_verified: false,
+  };
+  const service = new AuthService({
+    userRepository: {
+      async findByEmail(email: string) {
+        assert.equal(email, user.email);
+        return user;
+      },
+    } as any,
+  });
+
+  try {
+    const result = await service.login(user.email, password);
+    assert.equal(result.id, user.id);
+    assert.equal(result.username, null);
+  } finally {
+    process.env.AUTH_REQUIRE_VERIFIED_EMAIL = original;
+  }
+});
+
 test("verifyEmail falha com token inválido", async () => {
   const service = new AuthService({
     emailVerificationRepository: {

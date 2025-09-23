@@ -15,7 +15,7 @@ Serviço responsável por autenticação, emissão de tokens e suporte a fluxos 
 | `DB_HOST` | Sim | Host do servidor de banco de dados acessível somente pela rede interna confiável. |
 | `DB_PORT` | Sim | Porta do banco (ex.: `5432` para PostgreSQL). |
 | `DB_DRIVER` | Sim | Dialeto suportado pelo Sequelize (ex.: `postgres`). |
-| `AUTH_REQUIRE_VERIFIED_EMAIL` | Não | Quando `true`, bloqueia login até que o usuário confirme o e-mail recebido via link único. |
+| `AUTH_REQUIRE_VERIFIED_EMAIL` | Não | Quando definido como `true`, `1`, `yes` ou `on` (case-insensitive), bloqueia login até que o usuário confirme o e-mail recebido via link único. |
 | `RESET_TOKEN_TTL` | Não | TTL em segundos (máx. 3600) do token de redefinição de senha emitido via `/recover`. |
 | `EMAIL_VERIFICATION_TOKEN_TTL` | Não | TTL em segundos (máx. 3600) do token de verificação enviado por `/verify-email`. |
 | `PASSWORD_RESET_URL` | Sim | URL base da aplicação cliente que receberá o token de redefinição (`?token=<id>.<segredo>`). |
