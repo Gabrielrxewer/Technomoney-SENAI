@@ -17,6 +17,7 @@ Serviço responsável por autenticação, emissão de tokens e suporte a fluxos 
 | `DB_PORT` | Sim | Porta do banco (ex.: `5432` para PostgreSQL). |
 | `DB_DRIVER` | Sim | Dialeto suportado pelo Sequelize (ex.: `postgres`). |
 | `AUTH_REQUIRE_VERIFIED_EMAIL` | Não | Quando definido como `true`, `1`, `yes` ou `on` (case-insensitive), bloqueia login até que o usuário confirme o e-mail recebido via link único. |
+| `AUTH_VERBOSE_ERRORS` | Não | Habilita stack trace sanitizada e detalhes de causa nos logs estruturados e respostas internas apenas para correlação com `requestId`. Use somente em ambientes seguros de diagnóstico. |
 | `RESET_TOKEN_TTL` | Não | TTL em segundos (máx. 3600) do token de redefinição de senha emitido via `/recover`. |
 | `EMAIL_VERIFICATION_TOKEN_TTL` | Não | TTL em segundos (máx. 3600) do token de verificação enviado por `/verify-email`. |
 | `PASSWORD_RESET_URL` | Sim | URL base da aplicação cliente que receberá o token de redefinição (`?token=<id>.<segredo>`). |
@@ -55,3 +56,9 @@ Serviço responsável por autenticação, emissão de tokens e suporte a fluxos 
 4. **Confirmação de e-mail** (`POST /verify-email/confirm`): após validar o token, a flag `email_verified` é ativada. Quando `AUTH_REQUIRE_VERIFIED_EMAIL=true`, o login permanece bloqueado até essa confirmação.
 
 > Garanta que os links sejam entregues via canal TLS confiável e revogue tokens antigos sempre que suspeitar de comprometimento. As variáveis de TTL permitem ajustar a janela de exposição mantendo o limite inferior a 1 hora conforme ASVS V2.2.3.
+
+## Observabilidade segura dos erros
+
+* Com `AUTH_VERBOSE_ERRORS` ativo (ou em ambientes não produtivos) o `safeErr` registra stack trace, causa e `originalError` em formato sanitizado, preservando `requestId` para correlação sem expor segredos de produção.
+* Em produção, mantenha a flag desativada para que apenas `code`/`message` mínimos sejam retornados ao cliente. O stack completo fica restrito aos logs Pino com acesso controlado, atendendo aos requisitos de auditoria e segurança de incidentes.
+* Sempre associe alertas automáticos aos eventos `auth.issue_tokens.failed` para investigar potenciais falhas de infraestrutura ou tentativas de abuso sem comprometer dados sensíveis.
