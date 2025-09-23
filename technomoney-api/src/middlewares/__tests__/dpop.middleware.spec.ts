@@ -33,6 +33,47 @@ test("requireDPoPIfBound allows requests with matching ath", async () => {
   assert.equal(flags.calledNext, true);
 });
 
+test("requireDPoPIfBound rejects bound tokens without proof header", async () => {
+  const token = "token-value";
+  const method = "GET";
+  const host = "api.example.com";
+  const path = "/resource";
+  const req: Req = {
+    protocol: "https",
+    method,
+    originalUrl: `${path}?foo=bar`,
+    headers: {},
+    get: (name: string) => {
+      if (name.toLowerCase() === "host") return host;
+      throw new Error(`unexpected header ${name}`);
+    },
+    user: {
+      token,
+      payload: { cnf: { jkt: "thumb" } },
+    },
+  };
+  const res: Res = {
+    status(code: number) {
+      this.statusCode = code;
+      return this;
+    },
+    json(body: any) {
+      this.body = body;
+      return this;
+    },
+  };
+  const flags = { calledNext: false };
+  const next = () => {
+    flags.calledNext = true;
+  };
+
+  await requireDPoPIfBound(req, res, next);
+
+  assert.equal(flags.calledNext, false);
+  assert.equal(res.statusCode, 401);
+  assert.deepEqual(res.body, { message: "DPoP required" });
+});
+
 test("requireDPoPIfBound rejects requests with mismatching ath", async () => {
   const token = "token-value";
   const { req, res, next, flags } = await setup(token, false);

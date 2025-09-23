@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, test } from "node:test";
-import { authenticate } from "../auth.middleware";
 
 type FetchMock = (
   input: unknown,
@@ -33,6 +32,13 @@ class MockResponse {
 
 const originalFetch = global.fetch;
 
+async function loadAuthenticate() {
+  const modulePath = require.resolve("../auth.middleware");
+  delete require.cache[modulePath];
+  const mod = await import("../auth.middleware");
+  return mod.authenticate;
+}
+
 beforeEach(() => {
   process.env.AUTH_INTROSPECTION_URL = "https://auth.local/oauth2/introspect";
   process.env.AUTH_INTROSPECTION_CLIENT_ID = "client";
@@ -43,8 +49,7 @@ afterEach(() => {
   if (originalFetch) {
     global.fetch = originalFetch;
   } else {
-    // @ts-expect-error -- clean up fetch mock for environments without native fetch
-    delete global.fetch;
+    delete (globalThis as { fetch?: typeof global.fetch }).fetch;
   }
   delete process.env.AUTH_INTROSPECTION_URL;
   delete process.env.AUTH_INTROSPECTION_CLIENT_ID;
@@ -74,6 +79,8 @@ test("authenticate allows active tokens", async () => {
   });
 
   global.fetch = fetchMock as any;
+
+  const authenticate = await loadAuthenticate();
 
   await authenticate(req, res as any, () => {
     nextCalled = true;
@@ -107,6 +114,8 @@ test("authenticate rejects inactive tokens", async () => {
 
   global.fetch = fetchMock as any;
 
+  const authenticate = await loadAuthenticate();
+
   await authenticate(req, res as any, () => {
     nextCalled = true;
   });
@@ -137,6 +146,8 @@ test("authenticate responds with 401 when introspection fails", async () => {
   });
 
   global.fetch = fetchMock as any;
+
+  const authenticate = await loadAuthenticate();
 
   await authenticate(req, res as any, () => {
     nextCalled = true;

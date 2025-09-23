@@ -349,6 +349,8 @@ export const introspectHandler: RequestHandler = async (req, res) => {
   if (typeof data.exp === "number") body.exp = data.exp;
   if (data.acr) body.acr = data.acr;
   if (data.amr) body.amr = data.amr;
+  if (data.cnf && typeof data.cnf.jkt === "string")
+    body.cnf = { jkt: data.cnf.jkt };
   res.json(body);
 };
 

@@ -17,6 +17,9 @@ produção.
   `sessions`. Sempre que o refresh for revogado, a sessão é marcada como
   revogada e tokens de acesso associados passam a ser considerados inativos na
   introspecção.
+- Tokens de acesso assinados com DPoP agora carregam `cnf.jkt` no resultado da
+  introspecção. Somente objetos simples com `jkt` em formato de string são
+  expostos para evitar poluição do contrato.
 - Configure os novos segredos de introspecção:
   - `INTROSPECTION_CLIENTS`: lista separada por vírgula no formato
     `clientId:clientSecret`. Utilize senhas fortes por cliente que precise
@@ -43,6 +46,9 @@ produção.
 - O middleware de autenticação agora usa somente o fluxo de introspecção via
   `AUTH_INTROSPECTION_URL`, rejeitando sessões inativas imediatamente para
   reduzir superfícies de abuso.
+- Quando a introspecção retornar `cnf.jkt`, o middleware passa a exigir o
+  cabeçalho DPoP para cada requisição e verifica a prova contra o hash do token,
+  bloqueando tentativas sem comprovação criptográfica.
 - Configure as variáveis de ambiente antes de subir o serviço:
   - `AUTH_JWKS_URL`, `AUTH_ISSUER` e `AUTH_AUDIENCE`: defina o endpoint HTTPS
     do JWKS público e os metadados de emissor/audiência esperados para os

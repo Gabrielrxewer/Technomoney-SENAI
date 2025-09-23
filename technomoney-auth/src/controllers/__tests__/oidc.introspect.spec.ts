@@ -130,6 +130,37 @@ test("introspect returns active=true when session is active", async () => {
   assert.equal(payload.scope, "payments:write");
 });
 
+test("introspect forwards cnf.jkt when access token is DPoP-bound", async () => {
+  const basic = Buffer.from("payments:secret").toString("base64");
+  process.env.INTROSPECTION_CLIENTS = "payments:secret";
+  verifyAccessResult = {
+    id: "user-1",
+    jti: "jti-1",
+    sid: "sid-123",
+    cnf: { jkt: "stub-thumb" },
+    exp: Math.floor(Date.now() / 1000) + 3600,
+  };
+  sessionIsActive = true;
+  const controllerModulePath = require.resolve("../oidc.controller");
+  delete require.cache[controllerModulePath];
+  const { introspectHandler } = await import("../oidc.controller");
+
+  const req = {
+    headers: { authorization: `Basic ${basic}` },
+    body: { token: "access-token" },
+    socket: {},
+  } as unknown as Request;
+  const res = makeResponse();
+
+  await introspectHandler(req, res, () => {});
+
+  assert.equal(res.statusCalls.length, 0);
+  assert.equal(res.jsonCalls.length, 1);
+  const payload = res.jsonCalls[0][0] as Record<string, unknown>;
+  assert.equal(payload.active, true);
+  assert.deepEqual(payload.cnf, { jkt: "stub-thumb" });
+});
+
 test("introspect returns active=false when session was revoked", async () => {
   const basic = Buffer.from("payments:secret").toString("base64");
   process.env.INTROSPECTION_CLIENTS = "payments:secret";
