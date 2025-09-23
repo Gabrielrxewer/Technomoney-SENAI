@@ -6,6 +6,12 @@ import { keysService } from "./keys.service";
 import { getLogger } from "../utils/log/logger";
 import { mask, maskJti, safeErr } from "../utils/log/log.helpers";
 
+const isPlainObject = (value: unknown): value is Record<string, unknown> => {
+  if (typeof value !== "object" || value === null) return false;
+  const proto = Object.getPrototypeOf(value);
+  return proto === null || proto === Object.prototype;
+};
+
 type AccessData = {
   id: string;
   jti: string;
@@ -16,6 +22,7 @@ type AccessData = {
   username?: unknown;
   email?: unknown;
   exp?: number;
+  cnf?: { jkt?: string };
 };
 type RefreshData = { id: string; jti: string };
 
@@ -205,6 +212,11 @@ export class JwtService {
         typeof (d as any).email === "string"
           ? (d as any).email
           : undefined;
+      const rawCnf = (d as any).cnf;
+      const cnf =
+        isPlainObject(rawCnf) && typeof rawCnf.jkt === "string"
+          ? { jkt: rawCnf.jkt }
+          : undefined;
       return {
         id: d.id,
         jti: d.jti,
@@ -215,6 +227,7 @@ export class JwtService {
         username,
         email,
         exp: typeof d.exp === "number" ? d.exp : undefined,
+        cnf,
       };
     } catch (e: any) {
       this.log.warn({
