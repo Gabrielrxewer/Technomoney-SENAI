@@ -1,9 +1,18 @@
+import type { Request, Response, NextFunction } from "express";
+import type { TechnomoneyAuthenticatedUser } from "@technomoney/types/express";
+
 import { TotpService } from "../services/totp.service";
+
+type RequestWithUser = Request & { user?: TechnomoneyAuthenticatedUser };
 
 const totp = new TotpService();
 
-export const requireAAL2 = async (req: any, res: any, next: any) => {
-  const u = req.user as { id?: string; acr?: string } | undefined;
+export const requireAAL2 = async (
+  req: RequestWithUser,
+  res: Response,
+  next: NextFunction,
+) => {
+  const u = req.user;
   if (u && u.acr === "aal2") {
     next();
     return;
