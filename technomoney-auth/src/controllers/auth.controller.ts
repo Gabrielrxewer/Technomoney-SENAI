@@ -1,8 +1,9 @@
-import { RequestHandler } from "express";
+import { RequestHandler, Response } from "express";
 import jwt from "jsonwebtoken";
 import { buildRefreshCookie } from "../utils/cookie.util";
 import type { AuthService } from "../services/auth.service";
 import { logger } from "../utils/log/logger";
+import { getLogContext } from "../utils/log/logging-context";
 import {
   deriveSid,
   publishToSid,
@@ -121,6 +122,22 @@ const decodeUserId = (token: string) => {
   }
 };
 
+const respondWithMessage = (
+  res: Response,
+  status: number,
+  message: string,
+  includeRequestId = false
+) => {
+  const body: Record<string, unknown> = { message };
+  if (includeRequestId) {
+    const { requestId } = getLogContext();
+    if (requestId) {
+      body.requestId = requestId;
+    }
+  }
+  res.status(status).json(body);
+};
+
 export const register: RequestHandler = async (req, res) => {
   try {
     const { email, password, username } = req.body as {
@@ -151,7 +168,7 @@ export const register: RequestHandler = async (req, res) => {
     const status =
       (typeof e?.status === "number" && e.status) || match?.[0] || 500;
     const message = match?.[1] || "Erro interno";
-    res.status(status).json({ message });
+    respondWithMessage(res, status, message, key === "ISSUE_TOKENS_FAILED");
   }
 };
 
@@ -198,7 +215,7 @@ export const login: RequestHandler = async (req, res) => {
     const status =
       (typeof e?.status === "number" && e.status) || match?.[0] || 500;
     const message = match?.[1] || "Erro interno";
-    res.status(status).json({ message });
+    respondWithMessage(res, status, message, key === "ISSUE_TOKENS_FAILED");
   }
 };
 

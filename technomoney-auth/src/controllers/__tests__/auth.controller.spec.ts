@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { Request, Response } from "express";
+import { runWithLogContext } from "../../utils/log/logging-context";
 
 const stubModule = (specifier: string, exports: unknown) => {
   const resolved = require.resolve(specifier);
@@ -317,4 +318,47 @@ test("login returns 401 when auth service rejects with invalid credentials", asy
   assert.deepStrictEqual(res.jsonCalls[0][0], {
     message: "Credenciais inválidas",
   });
+});
+
+test("login inclui requestId quando emissão de sessão falha", async (t) => {
+  process.env.AUTH_CONTROLLER_SKIP_DEFAULT = "1";
+  const controller = await import("../auth.controller");
+  const authService = createAuthServiceStub({ id: "user-123", username: "Neo" });
+  authService.createSession = async (id: string, username: string | null) => {
+    authService.createSessionCalls.push([id, username]);
+    const err = new Error("ISSUE_TOKENS_FAILED") as Error & {
+      code: string;
+      status: number;
+    };
+    err.code = "ISSUE_TOKENS_FAILED";
+    err.status = 500;
+    throw err;
+  };
+  const totpService = createTotpServiceStub(true);
+  const trustedDevice = createTrustedDeviceStub({ userId: "user-123" });
+  controller.__setAuthControllerDeps({
+    authService,
+    totpService,
+    getTrustedDevice: trustedDevice,
+  });
+  t.after(() => {
+    controller.__resetAuthControllerDeps();
+  });
+  const req = {
+    body: { email: "user@example.com", password: "secret" },
+  } as Request;
+  const res = makeResponse();
+
+  await runWithLogContext({ requestId: "req-123" }, async () => {
+    await controller.login(req, res as Response, (() => {}) as any);
+  });
+
+  assert.strictEqual(res.statusCalls.length, 1);
+  assert.deepStrictEqual(res.statusCalls[0], [500]);
+  assert.strictEqual(res.jsonCalls.length, 1);
+  assert.deepStrictEqual(res.jsonCalls[0][0], {
+    message: "Falha ao emitir tokens",
+    requestId: "req-123",
+  });
+  assert.strictEqual(authService.createSessionCalls.length, 1);
 });

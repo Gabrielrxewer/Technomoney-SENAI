@@ -437,7 +437,7 @@ export class AuthService {
       log.debug({ evt: "auth.issue_tokens.ok", kid, alg });
       return { access, refresh, username };
     } catch (e: any) {
-      log.error({ evt: "auth.issue_tokens.failed", err: safeErr(e) });
+      log.error(e, { evt: "auth.issue_tokens.failed", err: safeErr(e) });
       throw new DomainError("ISSUE_TOKENS_FAILED", 500);
     }
   }
@@ -465,7 +465,7 @@ export class AuthService {
       log.debug({ evt: "auth.issue_stepup.ok", kid, alg });
       return { token, acr: "step-up", scope: ["auth:stepup"], username };
     } catch (e: any) {
-      log.error({ evt: "auth.issue_stepup.failed", err: safeErr(e) });
+      log.error(e, { evt: "auth.issue_stepup.failed", err: safeErr(e) });
       throw new DomainError("ISSUE_TOKENS_FAILED", 500);
     }
   }

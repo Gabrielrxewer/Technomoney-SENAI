@@ -49,6 +49,7 @@ function run(command, args, options = {}) {
       "src/services/__tests__/auth.service.recovery.spec.ts",
       "src/services/__tests__/auth.service.refresh.spec.ts",
       "src/services/__tests__/totp.service.spec.ts",
+      "src/utils/log/__tests__/log.helpers.spec.ts",
       "src/ws/__tests__/ws.spec.ts",
     ],
     {
