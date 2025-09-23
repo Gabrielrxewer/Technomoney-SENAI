@@ -7,10 +7,51 @@ import jwt from "jsonwebtoken";
 import { AuthService } from "../services/auth.service";
 import { buildRefreshCookie } from "../utils/cookie.util";
 import { deriveSid, scheduleTokenExpiringSoon } from "../ws";
+import { logger } from "../utils/log/logger";
+import { mask } from "../utils/log/log.helpers";
 
-const svc = new TotpService();
-const auth = new AuthService();
-const cookieOpts = buildRefreshCookie();
+type TotpServiceContract = Pick<
+  TotpService,
+  "status" | "setupStart" | "setupVerify" | "challengeVerify"
+>;
+type AuthServiceContract = Pick<AuthService, "createSession">;
+
+let svc: TotpServiceContract = new TotpService();
+let auth: AuthServiceContract = new AuthService();
+let cookieOpts = buildRefreshCookie();
+let setTrustedDeviceImpl = setTrustedDevice;
+let resetTotpLimiterImpl = resetTotpLimiter;
+let deriveSidImpl = deriveSid;
+let scheduleTokenExpiringSoonImpl = scheduleTokenExpiringSoon;
+
+export const __setTotpControllerDeps = (deps: {
+  totpService?: TotpServiceContract;
+  authService?: AuthServiceContract;
+  cookieOptions?: ReturnType<typeof buildRefreshCookie>;
+  setTrustedDevice?: typeof setTrustedDevice;
+  resetTotpLimiter?: typeof resetTotpLimiter;
+  deriveSid?: typeof deriveSid;
+  scheduleTokenExpiringSoon?: typeof scheduleTokenExpiringSoon;
+}) => {
+  if (deps.totpService) svc = deps.totpService;
+  if (deps.authService) auth = deps.authService;
+  if (deps.cookieOptions) cookieOpts = deps.cookieOptions;
+  if (deps.setTrustedDevice) setTrustedDeviceImpl = deps.setTrustedDevice;
+  if (deps.resetTotpLimiter) resetTotpLimiterImpl = deps.resetTotpLimiter;
+  if (deps.deriveSid) deriveSidImpl = deps.deriveSid;
+  if (deps.scheduleTokenExpiringSoon)
+    scheduleTokenExpiringSoonImpl = deps.scheduleTokenExpiringSoon;
+};
+
+export const __resetTotpControllerDeps = () => {
+  svc = new TotpService();
+  auth = new AuthService();
+  cookieOpts = buildRefreshCookie();
+  setTrustedDeviceImpl = setTrustedDevice;
+  resetTotpLimiterImpl = resetTotpLimiter;
+  deriveSidImpl = deriveSid;
+  scheduleTokenExpiringSoonImpl = scheduleTokenExpiringSoon;
+};
 
 export const status: RequestHandler = async (req: any, res) => {
   const u = req.user as { id: string; acr?: string; scope?: string[] } | undefined;
@@ -56,9 +97,23 @@ export const setupVerify: RequestHandler = async (req: any, res) => {
   const code = String(req.body?.code || "");
   const r = await svc.setupVerify(u.id, code);
   if (!r.enrolled) {
+    logger.warn(
+      {
+        requestId: req.requestId,
+        userId: mask(u.id),
+      },
+      "mfa.enroll.fail"
+    );
     res.status(400).json({ message: "Invalid code" });
     return;
   }
+  logger.info(
+    {
+      requestId: req.requestId,
+      userId: mask(u.id),
+    },
+    "mfa.enroll.success"
+  );
   res.json({ enrolled: true });
 };
 
@@ -71,19 +126,34 @@ export const challengeVerify: RequestHandler = async (req: any, res) => {
   const code = String(req.body?.code || "");
   const r = await svc.challengeVerify(u.id, code);
   if (!r.verified) {
+    logger.warn(
+      {
+        requestId: req.requestId,
+        userId: mask(u.id),
+        reason: r.reason || "invalid",
+      },
+      "mfa.challenge.fail"
+    );
     res.status(400).json({ message: "Invalid code" });
     return;
   }
-  await resetTotpLimiter(res);
-  await setTrustedDevice(res, u.id);
+  logger.info(
+    {
+      requestId: req.requestId,
+      userId: mask(u.id),
+    },
+    "mfa.challenge.success"
+  );
+  await resetTotpLimiterImpl(res);
+  await setTrustedDeviceImpl(res, u.id);
   const username = extractUsername((u as any)?.token);
   const session = await auth.createSession(u.id, username, {
     acr: "aal2",
     amr: ["pwd", "otp"],
   });
-  const sid = deriveSid(session.refresh);
+  const sid = deriveSidImpl(session.refresh);
   const exp = decodeExp(session.access);
-  scheduleTokenExpiringSoon(sid, exp);
+  scheduleTokenExpiringSoonImpl(sid, exp);
   res
     .cookie("refreshToken", session.refresh, cookieOpts)
     .json({ token: session.access, acr: "aal2", username });

@@ -7,6 +7,7 @@ Serviço responsável por autenticação, emissão de tokens e suporte a fluxos 
 | Variável | Obrigatória | Descrição |
 | --- | --- | --- |
 | `TOTP_ENC_KEY` | Sim | Chave forte (>= 32 caracteres) para criptografar segredos TOTP. |
+| `TOTP_REPLAY_TTL` | Não | TTL (60–3600s, padrão 300) para reter o último counter TOTP e bloquear replays na mesma janela. |
 | `INTROSPECTION_CLIENTS` | Sim | Lista separada por vírgula no formato `clientId:clientSecret` autorizada a consultar `/oauth2/introspect`. |
 | `INTROSPECTION_MTLS_ALLOWED_CNS` | Não | Lista opcional de valores `CN` aceitos para clientes autenticados via mTLS. |
 | `DB_USERNAME` | Sim | Usuário dedicado do banco de dados. Garanta privilégios mínimos para reduzir impacto em caso de comprometimento. |
@@ -38,6 +39,13 @@ Serviço responsável por autenticação, emissão de tokens e suporte a fluxos 
 * Rejeitamos clientes não autenticados na introspecção com respostas sanitizadas e status HTTP adequado, evitando vazamento de detalhes de implementação e reduzindo vetores de enumeração.
 * Tokens de recuperação e verificação são de uso único, armazenados apenas como hash Argon2 e expiram em menos de uma hora, reduzindo o impacto de vazamentos de banco.
 * O rate-limit dedicado (`/recover`, `/verify-email`) impede abuso automatizado e combina-se com proteção CSRF em todas as rotas sensíveis.
+* Validamos códigos TOTP apenas uma vez por janela de 30s e guardamos o último counter por até `TOTP_REPLAY_TTL` segundos, mitigando reutilização maliciosa mesmo em cenários de desvio do front-end.
+
+## Monitoramento e retenção de logs
+
+* Eventos `mfa.enroll.*`, `mfa.challenge.*`, `ws.connection.*` e `auth.refresh.*` são enviados ao pipeline central de observabilidade com retenção mínima de 180 dias. Eles incluem `requestId`, `userId` mascarado e, quando aplicável, identificadores de sessão.
+* O serviço rejeita códigos TOTP repetidos dentro da janela de tolerância e registra falhas com nível `warn`/`error` para alimentar dashboards de tentativa de fraude. Ajuste `TOTP_REPLAY_TTL` para alinhar com a retenção de tickets no Redis (valor padrão cobre três ciclos de 30s com folga).
+* Eventos de reuse de refresh token (`auth.refresh.reuse_detected`) são logados como erro e também enviados ao canal de auditoria (`channel: audit`), permitindo alertas e trilhas de investigação independentes do log aplicativo.
 
 ## Fluxos de recuperação de credenciais e verificação de e-mail
 

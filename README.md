@@ -28,6 +28,10 @@ produção.
     para certificados cliente quando a introspecção for protegida por mTLS.
 - Sempre rotacione as credenciais de introspecção ao expor o serviço para outros
   consumidores internos.
+- Ativamos anti-replay nativo para TOTP guardando o último counter por `TOTP_REPLAY_TTL`
+  segundos (padrão 300). Logs `mfa.enroll.*`, `mfa.challenge.*`, `ws.connection.*`
+  e `auth.refresh.*` incluem `requestId`, identificadores mascarados e são
+  retidos por, no mínimo, 180 dias para auditoria.
 
 ## `technomoney-payment-api`
 

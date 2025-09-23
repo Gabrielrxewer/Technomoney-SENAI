@@ -2,6 +2,8 @@ import { randomBytes } from "crypto";
 import http from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { deriveSid } from "../utils/session.util";
+import { logger } from "../utils/log/logger";
+import { mask } from "../utils/log/log.helpers";
 
 type Ticket = { userId: string; sid: string; exp: number };
 type Msg = Record<string, any>;
@@ -101,20 +103,42 @@ export function attachWs(server: http.Server) {
     }
   );
   server.on("upgrade", (req, socket, head) => {
+    const requestId = String(req.headers["x-request-id"] || "");
+    const upgradeLog = logger.child({
+      svc: "ws",
+      requestId,
+      ip: req.socket?.remoteAddress,
+    });
     const url = String(req.url || "");
-    if (!url.startsWith("/api/auth/events")) return socket.destroy();
+    if (!url.startsWith("/api/auth/events")) {
+      upgradeLog.warn({ path: url }, "ws.connection.rejected");
+      return socket.destroy();
+    }
     const protoRaw = String(req.headers["sec-websocket-protocol"] || "");
     const protos = protoRaw.split(",").map((s) => s.trim());
     const ticketProto = protos.find((s) => s.startsWith("tm.auth.ticket."));
-    if (!ticketProto) return socket.destroy();
+    if (!ticketProto) {
+      upgradeLog.warn({ path: url }, "ws.connection.rejected");
+      return socket.destroy();
+    }
     const ticket = ticketProto.replace("tm.auth.ticket.", "");
     const entry = TICKETS.get(ticket);
-    if (!entry) return socket.destroy();
-    if (entry.exp < Math.floor(Date.now() / 1000)) return socket.destroy();
+    if (!entry) {
+      upgradeLog.warn({ path: url }, "ws.connection.rejected");
+      return socket.destroy();
+    }
+    if (entry.exp < Math.floor(Date.now() / 1000)) {
+      upgradeLog.warn({ path: url, reason: "expired" }, "ws.connection.rejected");
+      return socket.destroy();
+    }
     TICKETS.delete(ticket);
-    wss.handleUpgrade(req, socket, head, (ws) =>
-      wss.emit("connection", ws, req, { userId: entry.userId, sid: entry.sid })
-    );
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      upgradeLog.info(
+        { userId: mask(entry.userId), sid: mask(entry.sid) },
+        "ws.connection.accepted"
+      );
+      wss.emit("connection", ws, req, { userId: entry.userId, sid: entry.sid });
+    });
   });
   setInterval(() => {
     for (const ws of wss.clients as any) {
