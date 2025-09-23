@@ -55,6 +55,10 @@ const sanitizeValue = (
     return toSafeError(value, verbose, seen);
   }
   if (Array.isArray(value)) {
+    if (seen.has(value)) {
+      return "[Circular]";
+    }
+    seen.add(value);
     return value.map((item) => sanitizeValue(item, verbose, seen));
   }
   if (typeof value === "object") {
