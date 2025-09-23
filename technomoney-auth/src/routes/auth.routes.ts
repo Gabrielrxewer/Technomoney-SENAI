@@ -1,5 +1,5 @@
 import { Router, type RequestHandler } from "express";
-import { loginLimiter } from "../middlewares/rateLimit.middleware";
+import { loginLimiter, recoveryLimiter } from "../middlewares/rateLimit.middleware";
 import { loginByEmailLimiter } from "../middlewares/rateLimitByEmail.middleware";
 import {
   recaptchaFor,
@@ -11,6 +11,10 @@ import {
   me,
   refresh,
   logout,
+  requestPasswordReset,
+  confirmPasswordReset,
+  requestEmailVerification,
+  confirmEmailVerification,
 } from "../controllers/auth.controller";
 import { authenticate, requireFullSession } from "../middlewares/auth.middleware";
 import { enforcePasswordPolicy } from "../middlewares/passwordPolicy.middleware";
@@ -38,6 +42,26 @@ router.post(
 router.post("/refresh", csrfProtection, refresh);
 router.post("/logout", csrfProtection, logout);
 router.post("/ws-ticket", authenticate, requireFullSession, wsTicket);
+router.post("/recover", recoveryLimiter, csrfProtection, requestPasswordReset);
+router.post(
+  "/recover/confirm",
+  recoveryLimiter,
+  enforcePasswordPolicy,
+  csrfProtection,
+  confirmPasswordReset
+);
+router.post(
+  "/verify-email",
+  recoveryLimiter,
+  csrfProtection,
+  requestEmailVerification
+);
+router.post(
+  "/verify-email/confirm",
+  recoveryLimiter,
+  csrfProtection,
+  confirmEmailVerification
+);
 
 const csrfGet: RequestHandler = (req: any, res) => {
   const token = typeof req.csrfToken === "function" ? req.csrfToken() : "";

@@ -23,3 +23,25 @@ export const loginLimiter = rateLimit({
   },
   store: makeRateLimitStore("rl:ip:"),
 });
+
+export const recoveryLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 50,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req: any, res: any) => {
+    const resetTime = (req as any).rateLimit.resetTime as Date | undefined;
+    const now = new Date();
+    const secs = resetTime
+      ? Math.ceil((resetTime.getTime() - now.getTime()) / 1000)
+      : 300;
+    logger.warn({ path: req.path, secs }, "rate_limit_recover.blocked");
+    res
+      .status(429)
+      .json({
+        message: `Muitas solicitações. Aguarde ${secs} segundos antes de tentar novamente.`,
+        retryAfter: secs,
+      });
+  },
+  store: makeRateLimitStore("rl:recover:"),
+});

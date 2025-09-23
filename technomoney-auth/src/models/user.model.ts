@@ -5,14 +5,14 @@ export interface UserAttributes {
   email: string;
   username: string | null;
   password_hash: string;
-  is_email_verified: boolean;
+  email_verified: boolean;
   created_at: Date;
   updated_at: Date;
 }
 
 export type UserCreationAttributes = Optional<
   UserAttributes,
-  "id" | "username" | "is_email_verified" | "created_at" | "updated_at"
+  "id" | "username" | "email_verified" | "created_at" | "updated_at"
 >;
 
 export class User
@@ -23,7 +23,7 @@ export class User
   public email!: string;
   public username!: string | null;
   public password_hash!: string;
-  public is_email_verified!: boolean;
+  public email_verified!: boolean;
   public created_at!: Date;
   public updated_at!: Date;
   static associate(_: any): void {}
@@ -52,7 +52,7 @@ export function initUserModel(sequelize: Sequelize): typeof User {
         type: DataTypes.STRING(255),
         allowNull: false,
       },
-      is_email_verified: {
+      email_verified: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,

@@ -1,3 +1,4 @@
+import { Transaction } from "sequelize";
 import { User } from "../models";
 
 export class UserRepository {
@@ -19,5 +20,23 @@ export class UserRepository {
       username: data.username ?? null,
       password_hash: data.password,
     });
+  }
+
+  updatePassword(
+    id: string,
+    passwordHash: string,
+    tx?: Transaction
+  ): Promise<[number]> {
+    return User.update(
+      { password_hash: passwordHash },
+      { where: { id }, transaction: tx }
+    );
+  }
+
+  markEmailVerified(id: string, tx?: Transaction): Promise<[number]> {
+    return User.update(
+      { email_verified: true },
+      { where: { id }, transaction: tx }
+    );
   }
 }
