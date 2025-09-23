@@ -15,7 +15,16 @@ import type { TotpService } from "../services/totp.service";
 
 type AuthServiceContract = Pick<
   AuthService,
-  "register" | "login" | "logout" | "refresh" | "createSession" | "issueStepUpToken"
+  | "register"
+  | "login"
+  | "logout"
+  | "refresh"
+  | "createSession"
+  | "issueStepUpToken"
+  | "requestPasswordReset"
+  | "resetPassword"
+  | "requestEmailVerification"
+  | "verifyEmail"
 >;
 type TotpServiceContract = Pick<TotpService, "status">;
 type TrustedDeviceFn = typeof getTrustedDevice;
@@ -45,6 +54,18 @@ const fallbackAuthService: AuthServiceContract = {
     throw new Error("authService not initialized");
   },
   async issueStepUpToken() {
+    throw new Error("authService not initialized");
+  },
+  async requestPasswordReset() {
+    throw new Error("authService not initialized");
+  },
+  async resetPassword() {
+    throw new Error("authService not initialized");
+  },
+  async requestEmailVerification() {
+    throw new Error("authService not initialized");
+  },
+  async verifyEmail() {
     throw new Error("authService not initialized");
   },
 };
@@ -168,6 +189,7 @@ export const login: RequestHandler = async (req, res) => {
   } catch (e: any) {
     const map: Record<string, [number, string]> = {
       INVALID_CREDENTIALS: [401, "Credenciais inválidas"],
+      EMAIL_NOT_VERIFIED: [403, "Confirme seu e-mail para continuar"],
       JWT_CONFIG_INVALID: [500, "Configuração de JWT ausente"],
       ISSUE_TOKENS_FAILED: [500, "Falha ao emitir tokens"],
     };
@@ -206,6 +228,96 @@ export const refresh: RequestHandler = async (req, res) => {
         if (u?.id) publishToUser(u.id, { type: "session.compromised" });
       } catch {}
     }
+    const match = key ? map[key] : undefined;
+    const status =
+      (typeof e?.status === "number" && e.status) || match?.[0] || 500;
+    const message = match?.[1] || "Erro interno";
+    res.status(status).json({ message });
+  }
+};
+
+export const requestPasswordReset: RequestHandler = async (req, res) => {
+  const { email } = req.body as { email?: string };
+  if (typeof email !== "string" || email.trim().length === 0) {
+    res.status(400).json({ message: "Requisição inválida" });
+    return;
+  }
+  try {
+    await authService.requestPasswordReset(email.trim());
+    res
+      .status(202)
+      .json({ message: "Se o e-mail existir, enviaremos instruções." });
+  } catch (e: any) {
+    const status = typeof e?.status === "number" ? e.status : 500;
+    res.status(status).json({ message: "Erro interno" });
+  }
+};
+
+export const confirmPasswordReset: RequestHandler = async (req, res) => {
+  const { token, password } = req.body as {
+    token?: string;
+    password?: string;
+  };
+  if (
+    typeof token !== "string" ||
+    token.trim().length === 0 ||
+    typeof password !== "string" ||
+    password.length === 0
+  ) {
+    res.status(400).json({ message: "Requisição inválida" });
+    return;
+  }
+  try {
+    await authService.resetPassword(token.trim(), password);
+    res.status(204).send();
+  } catch (e: any) {
+    const map: Record<string, [number, string]> = {
+      INVALID_TOKEN: [400, "Token inválido"],
+      TOKEN_ALREADY_USED: [400, "Token inválido"],
+      TOKEN_EXPIRED: [400, "Token expirado"],
+    };
+    const key = typeof e?.code === "string" ? e.code : e?.message;
+    const match = key ? map[key] : undefined;
+    const status =
+      (typeof e?.status === "number" && e.status) || match?.[0] || 500;
+    const message = match?.[1] || "Erro interno";
+    res.status(status).json({ message });
+  }
+};
+
+export const requestEmailVerification: RequestHandler = async (req, res) => {
+  const { email } = req.body as { email?: string };
+  if (typeof email !== "string" || email.trim().length === 0) {
+    res.status(400).json({ message: "Requisição inválida" });
+    return;
+  }
+  try {
+    await authService.requestEmailVerification(email.trim());
+    res
+      .status(202)
+      .json({ message: "Se o e-mail existir, enviaremos instruções." });
+  } catch (e: any) {
+    const status = typeof e?.status === "number" ? e.status : 500;
+    res.status(status).json({ message: "Erro interno" });
+  }
+};
+
+export const confirmEmailVerification: RequestHandler = async (req, res) => {
+  const { token } = req.body as { token?: string };
+  if (typeof token !== "string" || token.trim().length === 0) {
+    res.status(400).json({ message: "Requisição inválida" });
+    return;
+  }
+  try {
+    await authService.verifyEmail(token.trim());
+    res.status(204).send();
+  } catch (e: any) {
+    const map: Record<string, [number, string]> = {
+      INVALID_TOKEN: [400, "Token inválido"],
+      TOKEN_ALREADY_USED: [400, "Token inválido"],
+      TOKEN_EXPIRED: [400, "Token expirado"],
+    };
+    const key = typeof e?.code === "string" ? e.code : e?.message;
     const match = key ? map[key] : undefined;
     const status =
       (typeof e?.status === "number" && e.status) || match?.[0] || 500;

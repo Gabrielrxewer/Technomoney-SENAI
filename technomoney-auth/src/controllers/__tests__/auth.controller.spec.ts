@@ -101,6 +101,10 @@ type AuthServiceStub = {
   ): Promise<StepUpResult>;
   register(): Promise<never>;
   refresh(): Promise<never>;
+  requestPasswordReset(): Promise<never>;
+  resetPassword(): Promise<never>;
+  requestEmailVerification(): Promise<never>;
+  verifyEmail(): Promise<never>;
 };
 
 type TotpServiceStub = {
@@ -156,6 +160,18 @@ const createAuthServiceStub = (result: LoginResult): AuthServiceStub => {
       throw new Error("not used");
     },
     async refresh() {
+      throw new Error("not used");
+    },
+    async requestPasswordReset() {
+      throw new Error("not used");
+    },
+    async resetPassword() {
+      throw new Error("not used");
+    },
+    async requestEmailVerification() {
+      throw new Error("not used");
+    },
+    async verifyEmail() {
       throw new Error("not used");
     },
   } as AuthServiceStub;
