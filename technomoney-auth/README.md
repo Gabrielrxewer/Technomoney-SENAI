@@ -62,3 +62,4 @@ Serviço responsável por autenticação, emissão de tokens e suporte a fluxos 
 * Com `AUTH_VERBOSE_ERRORS` ativo (ou em ambientes não produtivos) o `safeErr` registra stack trace, causa e `originalError` em formato sanitizado, preservando `requestId` para correlação sem expor segredos de produção.
 * Em produção, mantenha a flag desativada para que apenas `code`/`message` mínimos sejam retornados ao cliente. O stack completo fica restrito aos logs Pino com acesso controlado, atendendo aos requisitos de auditoria e segurança de incidentes.
 * Sempre associe alertas automáticos aos eventos `auth.issue_tokens.failed` para investigar potenciais falhas de infraestrutura ou tentativas de abuso sem comprometer dados sensíveis.
+* O sanitizador de logs identifica referências circulares inclusive em arrays dentro de `metadata`, substituindo-as por marcadores finitos (`[Circular]`) para impedir loops recursivos e preservar a disponibilidade do pipeline de observabilidade.

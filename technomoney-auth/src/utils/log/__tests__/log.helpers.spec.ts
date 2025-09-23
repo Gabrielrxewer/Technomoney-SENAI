@@ -67,3 +67,19 @@ test("safeErr surfaces stack automatically in non-production", (t) => {
   assert.equal(payload.message, "non prod boom");
   assert.equal(typeof payload.stack, "string");
 });
+
+test("safeErr sanitizes circular metadata arrays", (t) => {
+  process.env.NODE_ENV = "development";
+  delete process.env.AUTH_VERBOSE_ERRORS;
+  t.after(restoreEnv);
+
+  const err = new Error("array loop");
+  const metadata: unknown[] = [];
+  metadata.push(metadata);
+  (err as Error & { metadata?: unknown }).metadata = metadata;
+
+  const payload = safeErr(err);
+
+  assert.ok(Array.isArray(payload.metadata));
+  assert.equal((payload.metadata as unknown[])[0], "[Circular]");
+});
