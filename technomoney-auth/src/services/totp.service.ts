@@ -128,7 +128,7 @@ const verifyTotp = (
       } as const;
     }
   }
-  return { ok: false as const, counter: null as const };
+  return { ok: false, counter: null } as const;
 };
 
 const keyFromEnv = () =>
@@ -298,7 +298,10 @@ export class TotpService {
   async challengeVerify(
     userId: string,
     code: string
-  ): Promise<{ verified: boolean; reason?: "missing_secret" | "invalid" | "replay" }> {
+  ): Promise<{
+    verified: boolean;
+    reason?: "missing_secret" | "invalid" | "replay";
+  }> {
     const log = this.log({ userId: mask(userId) });
     const r: any = await getRedis();
     const kActive = this.activeKey(userId);
