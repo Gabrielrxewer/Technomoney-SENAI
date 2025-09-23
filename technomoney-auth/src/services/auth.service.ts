@@ -8,6 +8,7 @@ import {
   safeErr,
 } from "../utils/log/log.helpers";
 import { getLogContext } from "../utils/log/logging-context";
+import { audit } from "../utils/log/audit-logger";
 import { hashPassword, comparePassword } from "../utils/password.util";
 import { UserRepository } from "../repositories/user.repository";
 import { PasswordResetRepository } from "../repositories/password-reset.repository";
@@ -371,7 +372,11 @@ export class AuthService {
     if (!valid) {
       const issued = await this.tokens.wasIssued(oldToken);
       if (issued && id) {
-        log.warn({ evt: "auth.refresh.reuse_detected", userId: mask(id) });
+        log.error({ evt: "auth.refresh.reuse_detected", userId: mask(id) });
+        audit({ userId: mask(id) }).error({
+          evt: "auth.refresh.reuse_detected",
+          oldJti: maskJti(getJti(oldToken)),
+        });
         await this.sessions.revokeAllForUser(id);
         await this.tokens.revokeAllForUser(id);
         throw new DomainError("REFRESH_REUSE_DETECTED", 403);
@@ -389,12 +394,14 @@ export class AuthService {
       await this.tokens.revoke(oldToken, tx);
       access = this.jwt.signAccess(id, { sid });
     });
-    log.debug({
+    const bindings = {
       evt: "auth.refresh.ok",
       userId: mask(id),
       oldJti: maskJti(getJti(oldToken)),
       newJti: maskJti(getJti(refresh)),
-    });
+    };
+    log.info(bindings);
+    audit({ userId: mask(id) }).info(bindings);
     return { access, refresh };
   }
 

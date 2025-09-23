@@ -43,9 +43,13 @@ function run(command, args, options = {}) {
       "ts-node/register",
       "src/controllers/__tests__/auth.controller.spec.ts",
       "src/controllers/__tests__/oidc.introspect.spec.ts",
+      "src/controllers/__tests__/totp.controller.spec.ts",
       "src/middlewares/__tests__/dpop.middleware.spec.ts",
       "src/config/__tests__/config.bridge.spec.ts",
       "src/services/__tests__/auth.service.recovery.spec.ts",
+      "src/services/__tests__/auth.service.refresh.spec.ts",
+      "src/services/__tests__/totp.service.spec.ts",
+      "src/ws/__tests__/ws.spec.ts",
     ],
     {
       env,
