@@ -112,7 +112,15 @@ export class AuthService {
   }
 
   private requireEmailVerification(): boolean {
-    return (process.env.AUTH_REQUIRE_VERIFIED_EMAIL || "0") === "1";
+    const raw = process.env.AUTH_REQUIRE_VERIFIED_EMAIL;
+    if (typeof raw !== "string") {
+      return false;
+    }
+    const normalized = raw.trim().toLowerCase();
+    if (!normalized) {
+      return false;
+    }
+    return ["1", "true", "yes", "on"].includes(normalized);
   }
 
   private buildActionLink(base: string | undefined, token: string): string {
