@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 
-import "./Home.css";
-import "./Modal.css";
-
+import "../Home/Home.css";
+import "../Popups/CSSPopup/Modal.css";
 import AboutSection from "./sections/AboutSection";
 import ServicesSection from "./sections/ServicesSection";
 import PricingSection from "./sections/PricingSection";
@@ -11,7 +10,6 @@ import ContactSection from "./sections/ContactSection";
 import BlogSection from "./sections/BlogSection";
 import FaqSection from "./sections/FaqSection";
 import Spinner from "../Spinner/Spinner";
-
 
 interface InfoCard {
   title: string;
@@ -102,7 +100,6 @@ const Home: React.FC = () => {
   const scrollToPrecos = () => {
     const section = document.getElementById("precos");
     if (section) section.scrollIntoView({ behavior: "smooth" });
-
   };
 
   if (loading) {
@@ -118,7 +115,6 @@ const Home: React.FC = () => {
           Transforme seu futuro financeiro conosco.
         </p>
         <button onClick={scrollToPrecos} className="btn_home btn--primary_home">
-
           Saiba mais
         </button>
       </header>
@@ -161,7 +157,7 @@ const Home: React.FC = () => {
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-title"
-          onClick={() => setActiveCard(null)}
+          onClick={() => setActiveCard(null)} // Fechar ao clicar no fundo
         >
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <button
