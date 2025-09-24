@@ -384,18 +384,15 @@ export class AuthService {
       log.warn({ evt: "auth.refresh.invalid" });
       throw new DomainError("INVALID_REFRESH", 401);
     }
-    const sessionAal =
-      (await this.sessions.getAalByRefreshToken(oldToken))?.toLowerCase() || "aal1";
     let access = "";
     let refresh = "";
     await sequelize.transaction(async (tx) => {
       refresh = this.jwt.signRefresh(id);
-      const sid = await this.sessions.start(id, refresh, tx, sessionAal);
+      const sid = await this.sessions.start(id, refresh, tx);
       await this.tokens.save(refresh, id, tx);
       await this.sessions.revokeByRefreshToken(oldToken, tx);
       await this.tokens.revoke(oldToken, tx);
-      const amr = sessionAal === "aal2" ? ["pwd", "otp"] : ["pwd"];
-      access = this.jwt.signAccess(id, { sid, acr: sessionAal, amr });
+      access = this.jwt.signAccess(id, { sid });
     });
     const bindings = {
       evt: "auth.refresh.ok",
@@ -425,8 +422,7 @@ export class AuthService {
     try {
       const { kid, alg } = keysService.getActive();
       log.debug({ evt: "auth.issue_tokens.start", kid, alg });
-      const acr = typeof extra.acr === "string" ? extra.acr.toLowerCase() : "aal1";
-      const payload: Record<string, unknown> = { ...extra, acr };
+      const payload: Record<string, unknown> = { ...extra };
       if (typeof username === "string" && username.length > 0) {
         payload.username = username;
         payload.preferred_username = username;
@@ -434,7 +430,7 @@ export class AuthService {
       const refresh = this.jwt.signRefresh(id);
       let sid = "";
       await sequelize.transaction(async (tx) => {
-        sid = await this.sessions.start(id, refresh, tx, acr);
+        sid = await this.sessions.start(id, refresh, tx);
         await this.tokens.save(refresh, id, tx);
       });
       const access = this.jwt.signAccess(id, { ...payload, sid });
