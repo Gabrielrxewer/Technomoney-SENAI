@@ -70,3 +70,17 @@ produção.
     credenciais usadas na chamada autenticada.
 - Limite o acesso a essas credenciais apenas para serviços autorizados e
   monitore logs de introspecção para detectar tentativas suspeitas.
+
+## `technomoney-app`
+
+- O dashboard e a carteira deixam de usar mocks e consomem `GET /assets` e
+  `GET /assets/:tag` da API principal, reutilizando o cache seguro do React
+  Query e respeitando o fluxo de refresh de tokens com AAL2.
+- Toda requisição passa pelo `fetchApiWithAuth`, que injeta o Bearer atual e
+  executa um único refresh em caso de `401`, mantendo o rigor de segurança do
+  backend.
+- Configure `VITE_API_URL`, `VITE_AUTH_API_URL`, `VITE_RECAPTCHA_SITEKEY` e os
+  parâmetros de CSRF (`VITE_CSRF_*`) antes de executar; o front exige HTTPS e
+  `withCredentials=true` para operar com o autenticador.
+- Em caso de falhas na API de mercado, a interface apresenta mensagens de erro
+  com ação de retry sem expor detalhes sensíveis ao usuário final.

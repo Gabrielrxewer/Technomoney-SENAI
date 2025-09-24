@@ -70,3 +70,14 @@
   max-width: 100vw;
   overflow: visible;
 }
+
+.portfolio-page.error-state,
+.portfolio-page .error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  min-height: 60vh;
+  text-align: center;
+}

@@ -4,7 +4,7 @@ type Facts = {
   setor: string;
   industria: string;
   sede: string;
-  fundacao: number;
+  fundacao: number | string;
   empregados: string;
 };
 
