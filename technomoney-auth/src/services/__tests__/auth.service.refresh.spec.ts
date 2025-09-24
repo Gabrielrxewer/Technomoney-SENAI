@@ -99,8 +99,9 @@ stubModule("../../models", {
 
 const okToken = "old-token";
 
-const makeAuthService = () => {
+const makeAuthService = (options: { sessionAal?: string } = {}) => {
   const { AuthService } = require("../auth.service");
+  const state: any = { signAccessPayloads: [], startCalls: [] };
   const service = new AuthService({
     jwtService: {
       verifyRefresh() {
@@ -109,7 +110,8 @@ const makeAuthService = () => {
       signRefresh() {
         return "new-refresh";
       },
-      signAccess() {
+      signAccess(_: string, payload: any) {
+        state.signAccessPayloads.push(payload);
         return "new-access";
       },
     } as any,
@@ -125,19 +127,23 @@ const makeAuthService = () => {
       async revokeAllForUser() {},
     } as any,
     sessionService: {
-      async start() {
+      async start(_: string, __: string, ___: unknown, aal?: string) {
+        state.startCalls.push(aal);
         return "sid-1";
       },
       async revokeByRefreshToken() {},
       async revokeAllForUser() {},
+      async getAalByRefreshToken() {
+        return options.sessionAal ?? "aal1";
+      },
     } as any,
   });
-  return service;
+  return { service, state };
 };
 
 test("refresh registra sucesso em log e audit", async () => {
   (globalThis as any).__logRecords = [];
-  const service = makeAuthService();
+  const { service, state } = makeAuthService();
   const tokens = await service.refresh(okToken);
   assert.equal(tokens.refresh, "new-refresh");
   const records: any[] = (globalThis as any).__logRecords;
@@ -149,6 +155,22 @@ test("refresh registra sucesso em log e audit", async () => {
     (r) => r.bindings?.channel === "audit" && r.payload?.evt === "auth.refresh.ok"
   );
   assert.ok(auditLog, "audit deve registrar sucesso");
+  assert.deepEqual(state.startCalls, ["aal1"], "refresh padrão deve manter AAL1");
+  assert.equal(state.signAccessPayloads.length, 1);
+  assert.equal(state.signAccessPayloads[0].acr, "aal1");
+  assert.deepEqual(state.signAccessPayloads[0].amr, ["pwd"]);
+  assert.ok(state.signAccessPayloads[0].sid, "payload deve carregar sid");
+});
+
+test("refresh mantém acr=aal2 após step-up", async () => {
+  (globalThis as any).__logRecords = [];
+  const { service, state } = makeAuthService({ sessionAal: "aal2" });
+  const tokens = await service.refresh(okToken);
+  assert.equal(tokens.refresh, "new-refresh");
+  assert.deepEqual(state.startCalls, ["aal2"], "sessão deve continuar marcada como AAL2");
+  assert.equal(state.signAccessPayloads.length, 1);
+  assert.equal(state.signAccessPayloads[0].acr, "aal2");
+  assert.deepEqual(state.signAccessPayloads[0].amr, ["pwd", "otp"]);
 });
 
 test("refresh detecta reuse e loga com severidade", async () => {
@@ -183,6 +205,9 @@ test("refresh detecta reuse e loga com severidade", async () => {
       },
       async revokeByRefreshToken() {},
       async revokeAllForUser() {},
+      async getAalByRefreshToken() {
+        return "aal1";
+      },
     } as any,
   });
   await assert.rejects(() => service.refresh("compromised"), (err: any) => {

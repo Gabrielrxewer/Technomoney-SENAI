@@ -47,7 +47,9 @@ export const authenticate = async (
 
     const scopeList = normalizeScope(introspection.scope);
     const acr =
-      typeof introspection.acr === "string" ? introspection.acr : undefined;
+      typeof introspection.acr === "string"
+        ? introspection.acr.trim().toLowerCase()
+        : undefined;
 
     if (acr === "step-up" || scopeList.includes("auth:stepup")) {
       res.setHeader(
