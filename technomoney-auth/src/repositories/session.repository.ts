@@ -6,26 +6,18 @@ export class SessionRepository {
     sid: string,
     userId: string,
     refreshTokenHash: string,
-    tx?: Transaction,
-    aal = "aal1"
+    tx?: Transaction
   ) {
     return Session.upsert(
       {
         sid: sid.trim(),
         user_id: userId,
         refresh_token_hash: refreshTokenHash.trim(),
-        aal: aal.trim() || "aal1",
         revoked: false,
         revoked_at: null,
       },
       { transaction: tx }
     );
-  }
-
-  async findByRefreshHash(refreshTokenHash: string) {
-    return Session.findOne({
-      where: { refresh_token_hash: refreshTokenHash.trim() },
-    });
   }
 
   revokeByRefreshHash(refreshTokenHash: string, tx?: Transaction) {

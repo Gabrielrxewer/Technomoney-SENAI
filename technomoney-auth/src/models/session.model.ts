@@ -4,7 +4,6 @@ export interface SessionAttributes {
   sid: string;
   user_id: string;
   refresh_token_hash: string;
-  aal: string;
   revoked: boolean;
   created_at: Date;
   revoked_at?: Date | null;
@@ -12,7 +11,7 @@ export interface SessionAttributes {
 
 export type SessionCreationAttributes = Optional<
   SessionAttributes,
-  "revoked" | "created_at" | "revoked_at" | "aal"
+  "revoked" | "created_at" | "revoked_at"
 >;
 
 export class Session
@@ -22,7 +21,6 @@ export class Session
   public sid!: string;
   public user_id!: string;
   public refresh_token_hash!: string;
-  public aal!: string;
   public revoked!: boolean;
   public created_at!: Date;
   public revoked_at?: Date | null;
@@ -46,11 +44,6 @@ export function initSessionModel(sequelize: Sequelize): typeof Session {
         type: DataTypes.STRING(128),
         allowNull: false,
         unique: true,
-      },
-      aal: {
-        type: DataTypes.STRING(16),
-        allowNull: false,
-        defaultValue: "aal1",
       },
       revoked: {
         type: DataTypes.BOOLEAN,
