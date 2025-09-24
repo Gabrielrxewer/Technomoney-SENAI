@@ -79,3 +79,76 @@ A Technomoney API expõe endpoints responsáveis por orquestrar dados de mercado
 - **Rotina de rotação**: defina cronogramas para troca de segredos do cliente, certificados TLS e chaves privadas DPoP.
 - **Revisão de dependências**: mantenha `npm audit` parte do pipeline e aplique patches rapidamente.
 - **Backups criptografados**: armazene backups do banco com criptografia e testes de restauração periódicos.
+
+
+## Endpoints de ativos e formato de dados
+- **Proteção AAL2 obrigatória:** todas as rotas sob `/assets` executam `authenticate` + `requireAAL2`. Tokens com `acr` diferente de `aal2` recebem `401` com `WWW-Authenticate: error="insufficient_aal"` para induzir o fluxo de MFA.
+- **Normalização com Zod:** as respostas da Fake API de mercado são validadas contra um schema rígido antes de chegar às camadas de serviço.
+
+### `GET /assets`
+Retorna um array com o resumo diário das ações cadastradas:
+```json
+[
+  {
+    "id": 1,
+    "tag": "PETR4",
+    "nome": "Petrobras PN",
+    "setor": "Energia",
+    "preco": 42.5,
+    "variacao": 1.7,
+    "volume": 12500000,
+    "fundamentals": {
+      "dy": 15.1,
+      "roe": 22.4,
+      "pl": 3.5,
+      "margem": 35.7,
+      "ev_ebit": 2.8,
+      "liquidez": 12500000,
+      "score": 84
+    }
+  }
+]
+```
+Valores de `variacao` são sempre percentuais e seguem o padrão de duas casas decimais.
+
+### `GET /assets/:tag`
+Retorna o detalhamento completo da ação (indicadores fundamentais, texto analítico, notícias e série histórica usada pela carteira):
+```json
+{
+  "id": 1,
+  "tag": "PETR4",
+  "nome": "Petrobras PN",
+  "setor": "Energia",
+  "preco": 42.5,
+  "variacao": 1.7,
+  "volume": 12500000,
+  "fundamentals": {
+    "dy": 15.1,
+    "roe": 22.4,
+    "pl": 3.5,
+    "margem": 35.7,
+    "ev_ebit": 2.8,
+    "liquidez": 12500000,
+    "score": 84
+  },
+  "marketCap": 320000000000,
+  "dividendYield": 0.151,
+  "recomendacao": "Comprar",
+  "analise": "Fluxo de caixa forte e política de dividendos agressiva.",
+  "bio": "Companhia integrada de energia.",
+  "noticias": [
+    "Petrobras expande CAPEX em projetos do pré-sal.",
+    "Conselho aprova distribuição extraordinária de dividendos."
+  ],
+  "grafico": [40, 41, 42, 43],
+  "sede": "Rio de Janeiro, RJ",
+  "industria": "Energia",
+  "fundacao": 1953,
+  "empregados": 45000
+}
+```
+
+### Integração com a Fake API de mercado
+- A variável `MARKET_API_BASE_URL` deve apontar para uma instância compatível com o novo contrato (`ticker`, métricas fundamentais, textos descritivos e série histórica).
+- Os dados são revalidados a cada requisição. Quaisquer campos faltantes disparam `502` e impedem gravações inconsistentes no banco.
+- O serviço persiste `price`, `variation` (em %) e `volume` na tabela `asset_records`; demais campos vêm somente da API de mercado em tempo real.

@@ -47,6 +47,10 @@ produção.
 
 ## `technomoney-api`
 
+
+- As rotas `/assets` agora expõem dados enriquecidos (`fundamentals`, `marketCap`, textos analíticos) e validam a resposta externa com Zod antes de persistir preços/volumes.
+- Todas as requisições ao domínio de ativos exigem tokens com `acr=aal2`; em caso de ausência o middleware retorna `WWW-Authenticate: error="insufficient_aal"` para forçar MFA.
+- A Fake Market API fornece o novo contrato e deve ser configurada em `MARKET_API_BASE_URL` via HTTPS em produção.
 - O middleware de autenticação agora usa somente o fluxo de introspecção via
   `AUTH_INTROSPECTION_URL`, rejeitando sessões inativas imediatamente para
   reduzir superfícies de abuso.
