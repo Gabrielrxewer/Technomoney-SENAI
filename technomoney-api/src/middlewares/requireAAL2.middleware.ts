@@ -8,8 +8,7 @@ export const requireAAL2 = (
   res: Response,
   next: NextFunction
 ) => {
-  const acr =
-    typeof req.user?.acr === "string" ? req.user.acr.trim().toLowerCase() : undefined;
+  const acr = req.user?.acr;
   if (acr === "aal2") {
     next();
     return;

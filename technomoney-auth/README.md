@@ -20,9 +20,8 @@ restritivo, cookies seguros e forçamento de HTTPS).
   `bcrypt`, gera hashes Argon2 para resets/confirmações e emite tokens com chaves
   assimétricas gerenciadas pelo `keys.service`.
 - **Sessões persistentes**: cada refresh token origina um `sid` hash de SHA-256
-  persistido. Além do hash, armazenamos o nível de autenticação (`aal`) vigente,
-  permitindo que renovações mantenham acessos de `aal2` após MFA. A introspecção
-  e o WebSocket usam esse identificador para saber se a sessão continua ativa.
+  persistido. A introspecção e o WebSocket usam esse identificador para saber se
+  a sessão continua ativa.
 - **MFA TOTP com antifraude**: segredos TOTP são criptografados com AES-256-GCM
   usando `TOTP_ENC_KEY`; códigos são válidos uma vez por janela e o último
   contador fica retido por `TOTP_REPLAY_TTL` segundos para mitigar replay.
@@ -57,9 +56,8 @@ restritivo, cookies seguros e forçamento de HTTPS).
 
 #### Renovação e revogação
 - `POST /api/auth/refresh` valida token de atualização, verifica se o `sid`
-  continua ativo e retorna tokens novos preservando o `acr/aal` mais alto já
-  conquistado pela sessão (ex.: após step-up TOTP). Tentativas de reuse geram log
-  de auditoria `auth.refresh.reuse_detected` e revogam a sessão.
+  continua ativo e retorna tokens novos. Tentativas de reuse geram log de auditoria
+  `auth.refresh.reuse_detected` e revogam a sessão.
 - `POST /api/auth/logout` e `AuthService.resetPassword` revogam todos os refresh
   tokens ativos do usuário.
 
