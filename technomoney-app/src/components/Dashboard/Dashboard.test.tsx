@@ -61,9 +61,19 @@ describe("Dashboard", () => {
           id: 1,
           tag: "ABC",
           nome: "Acao ABC",
+          setor: "Setor",
           preco: 10,
           variacao: 1,
           volume: 100,
+          fundamentals: {
+            dy: 2,
+            roe: 3,
+            pl: 4,
+            margem: 5,
+            ev_ebit: 6,
+            liquidez: 1000000,
+            score: 90,
+          },
         },
       ],
     });
@@ -83,7 +93,9 @@ describe("Dashboard", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText("Total de Ações")).toBeInTheDocument();
+      expect(
+        screen.getByText("Descubra as melhores ações")
+      ).toBeInTheDocument();
     });
 
     expect(requestMock).toHaveBeenCalledTimes(2);

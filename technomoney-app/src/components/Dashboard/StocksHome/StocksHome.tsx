@@ -2,52 +2,62 @@ import React, { useMemo, useState } from "react";
 import { FaSearch, FaTimes } from "react-icons/fa"; 
 import { useNavigate } from "react-router-dom"; 
 import "./StocksHome.css";
-import { stocks as base, Stock } from "./data";
 import StockCard from "./StockCard";
 import LeaderboardTable from "./LeaderboardTable";
 import MetricPill from "./MetricPill";
 import Heatmap from "./Heatmap";
+import type { AssetSummary } from "../../../types/assets";
 
 const MAX_FIELD = 100; 
 
-type Props = { onOpenCarteira?: () => void };
+type Props = { items: AssetSummary[]; onOpenCarteira?: () => void };
 
 const WALLET_ROUTE = "/portfolio";
 const STOCK_DETAIL_ROUTE = "/stock-detail"; 
 
-export default function StocksHome({ onOpenCarteira }: Props) {
+export default function StocksHome({ items, onOpenCarteira }: Props) {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
+  const base = useMemo(() => items ?? [], [items]);
   const filtered = useMemo(() => {
     if (!query.trim()) return base;
     const q = query.toLowerCase();
     return base.filter(
       (s) =>
-        s.ticker.toLowerCase().includes(q) ||
+        s.tag.toLowerCase().includes(q) ||
         s.nome.toLowerCase().includes(q) ||
         s.setor.toLowerCase().includes(q)
     );
-  }, [query]);
+  }, [query, base]);
 
   const topByScore = useMemo(
-    () => [...filtered].sort((a, b) => b.score - a.score).slice(0, 6),
+    () =>
+      [...filtered]
+        .sort((a, b) => b.fundamentals.score - a.fundamentals.score)
+        .slice(0, 6),
     [filtered]
   );
 
   const topDividend = useMemo(
-    () => [...filtered].sort((a, b) => b.dy - a.dy).slice(0, 6),
+    () =>
+      [...filtered]
+        .sort((a, b) => b.fundamentals.dy - a.fundamentals.dy)
+        .slice(0, 6),
     [filtered]
   );
 
   const overview = useMemo(() => {
-    const n = filtered.length || 1;
-    const avg = (k: keyof (typeof filtered)[number]) =>
-      filtered.reduce((acc, s) => acc + (s[k] as unknown as number), 0) / n;
+    const count = filtered.length;
+    if (!count) {
+      return { mediaROE: 0, mediaDY: 0, mediaPL: 0, setores: 0 };
+    }
+    const avg = (selector: (item: AssetSummary) => number) =>
+      filtered.reduce((acc, s) => acc + selector(s), 0) / count;
     const setores = Array.from(new Set(filtered.map((s) => s.setor))).length;
     return {
-      mediaROE: avg("roe"),
-      mediaDY: avg("dy"),
-      mediaPL: avg("pl"),
+      mediaROE: avg((s) => s.fundamentals.roe),
+      mediaDY: avg((s) => s.fundamentals.dy),
+      mediaPL: avg((s) => s.fundamentals.pl),
       setores,
     };
   }, [filtered]);
@@ -57,12 +67,12 @@ export default function StocksHome({ onOpenCarteira }: Props) {
     else navigate(WALLET_ROUTE);
   };
 
-  const handleAdd = (s: Stock) => {
+  const handleAdd = (s: AssetSummary) => {
     navigate(WALLET_ROUTE, { state: { add: s } });
   };
 
-  const handleStockClick = (stock: Stock) => {
-    navigate(STOCK_DETAIL_ROUTE, { state: { stock } }); 
+  const handleStockClick = (stock: AssetSummary) => {
+    navigate(STOCK_DETAIL_ROUTE, { state: { stock } });
   };
 
   return (
@@ -107,14 +117,8 @@ export default function StocksHome({ onOpenCarteira }: Props) {
         <div className="card p-4">
           <div className="card-grid">
             {topByScore.map((s) => (
-              <div
-                key={s.ticker}
-                onClick={() => handleStockClick(s)}
-              >
-                <StockCard
-                  item={s}
-                  onAdd={handleAdd}
-                />
+              <div key={s.tag} onClick={() => handleStockClick(s)}>
+                <StockCard item={s} onAdd={handleAdd} />
               </div>
             ))}
           </div>
@@ -129,14 +133,8 @@ export default function StocksHome({ onOpenCarteira }: Props) {
         <div className="card p-4">
           <div className="card-grid">
             {topDividend.map((s) => (
-              <div
-                key={s.ticker}
-                onClick={() => handleStockClick(s)} 
-              >
-                <StockCard
-                  item={s}
-                  onAdd={handleAdd}
-                />
+              <div key={s.tag} onClick={() => handleStockClick(s)}>
+                <StockCard item={s} onAdd={handleAdd} />
               </div>
             ))}
           </div>

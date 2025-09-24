@@ -8,6 +8,7 @@ type Props = {
   volume: string;
   marketCap: string;
   dividendYield: string;
+  facts?: { label: string; value: string }[];
 };
 
 const SummaryStrip: React.FC<Props> = ({
@@ -17,6 +18,7 @@ const SummaryStrip: React.FC<Props> = ({
   volume,
   marketCap,
   dividendYield,
+  facts,
 }) => {
   const { variationClass, variationIcon, variationAria } = useMemo(() => {
     const raw = (variacao ?? "")
@@ -57,10 +59,7 @@ const SummaryStrip: React.FC<Props> = ({
           { label: "Volume", value: volume },
           { label: "Market Cap", value: marketCap },
           { label: "Dividend Yield", value: dividendYield },
-          { label: "Setor", value: "Minerais & Metais" },
-          { label: "P/L", value: "7,8" },
-          { label: "Beta (2y)", value: "1,12" },
-          { label: "Free Float", value: "82%" },
+          ...(facts ?? []),
         ].map((item) => (
           <div key={item.label} className="ss-item">
             <dt className="ss-label" title={item.label}>{item.label}</dt>
