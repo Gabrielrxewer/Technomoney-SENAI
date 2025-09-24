@@ -1,4 +1,24 @@
+version: "3.9"
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: technomoney-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: technomoney
+      POSTGRES_PASSWORD: technopass
+      POSTGRES_DB: technomoney_auth
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./technomoney-auth/docker/postgres/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL","pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   api:
     build:
       context: ./technomoney-api
@@ -15,6 +35,9 @@ services:
     restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   auth:
     build:
@@ -27,9 +50,25 @@ services:
       PORT: "4000"
       SWAGGER_FILE: /app/dist/openapi.yaml
       ENTRY_FILE: dist/server.js
+      TOTP_ENC_KEY: "${TOTP_ENC_KEY:-p9ZAq7xM4sN1vT8yR3bC6wH2kJ5fL0GdQzXeUiPoSrYtVh8L_c2BnEmWjRs9F!}"
+      DB_DRIVER: postgres
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USERNAME: technomoney
+      DB_PASSWORD: technopass
+      DB_DATABASE: technomoney_auth
     ports:
       - "4000:4000"
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -lc "
+      node -e \"require('child_process').execSync('npx sequelize-cli db:migrate',{stdio:'inherit'})\" &&
+      redis-server --save '' --appendonly no --daemonize yes &&
+      node ${ENTRY_FILE}
+      "
 
   payments:
     build:
@@ -40,9 +79,18 @@ services:
     environment:
       NODE_ENV: production
       PORT: "3001"
-      DB_HOST: "host.docker.internal"
+      DB_DRIVER: postgres
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USERNAME: technomoney
+      DB_PASSWORD: technopass
+      DB_DATABASE: technomoney_auth
     ports:
       - "3001:3001"
     restart: unless-stopped
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:

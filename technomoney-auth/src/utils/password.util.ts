@@ -1,9 +1,14 @@
-import bcrypt from "bcryptjs";
+import argon2 from "argon2";
 
-const PROD_ROUNDS = 13;
-const DEV_ROUNDS  = 10;
+export const hashPassword = (pwd: string) => {
+  return argon2.hash(pwd, {
+    type: argon2.argon2id,
+    memoryCost: 65536,
+    timeCost: 3,
+    parallelism: 1,
+  });
+};
 
-const ROUNDS = process.env.NODE_ENV === "production" ? PROD_ROUNDS : DEV_ROUNDS;
-
-export const hashPassword    = (plain: string)         => bcrypt.hash(plain, ROUNDS);
-export const comparePassword = (plain: string, hash: string) => bcrypt.compare(plain, hash);
+export const comparePassword = (pwd: string, hash: string) => {
+  return argon2.verify(hash, pwd);
+};

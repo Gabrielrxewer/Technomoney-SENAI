@@ -1,5 +1,6 @@
-import express from "express";
+import express, { NextFunction, Request, Response } from "express";
 import cors, { CorsOptions } from "cors";
+import helmet from "helmet";
 import dotenv from "dotenv";
 import paymentRoutes from "./routes/payment.routes";
 
@@ -34,6 +35,40 @@ const corsOptions: CorsOptions = {
   maxAge: 86400,
 };
 
+const forceHttps = (req: Request, res: Response, next: NextFunction) => {
+  const hostHeader = req.headers.host;
+  if (!hostHeader) {
+    return next();
+  }
+  const host = hostHeader.toLowerCase();
+  if (host.startsWith("localhost") || host.startsWith("127.0.0.1")) {
+    return next();
+  }
+  if (req.secure) {
+    return next();
+  }
+  return res.redirect(301, `https://${hostHeader}${req.originalUrl}`);
+};
+
+const cspDirectives = {
+  defaultSrc: ["'self'"],
+  scriptSrc: ["'self'"],
+  objectSrc: ["'none'"],
+  baseUri: ["'none'"],
+};
+
+app.set("trust proxy", 1);
+app.use(helmet());
+app.use(
+  helmet.contentSecurityPolicy({
+    directives: cspDirectives,
+  })
+);
+app.use(helmet.frameguard({ action: "deny" }));
+app.use(helmet.noSniff());
+app.use(helmet.referrerPolicy({ policy: "no-referrer" }));
+app.use(helmet.hsts({ maxAge: 15552000, includeSubDomains: true, preload: true }));
+app.use(forceHttps);
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use("/api", paymentRoutes);

@@ -8,6 +8,13 @@ import "./Auth.css";
 import Spinner from "../../components/Dashboard/Spinner/Spinner";
 import { authApi } from "../../services/http";
 import { useAuth } from "../../context/AuthContext";
+import TotpEnrollment from "./TotpEnrollment";
+import TotpChallenge from "./TotpChallenge";
+
+type StepUpState = {
+  mode: "enroll_totp" | "totp";
+  usernameHint?: string | null;
+};
 
 const MAX_FIELD = 50;
 const MAX_PASS = 50;
@@ -24,10 +31,11 @@ const Register: React.FC = () => {
   const [error, setError] = useState("");
   const [emailTaken, setEmailTaken] = useState(false);
   const [retryAfter, setRetryAfter] = useState<number | null>(null);
-
   const { executeRecaptcha } = useGoogleReCaptcha();
   const navigate = useNavigate();
   const { login } = useAuth();
+  const [stepUp, setStepUp] = useState<StepUpState | null>(null);
+  const [stepUpProcessing, setStepUpProcessing] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setLoadingSpinner(false), 100);
@@ -45,16 +53,86 @@ const Register: React.FC = () => {
     return () => clearTimeout(timer);
   }, [retryAfter]);
 
+  const attemptLogin = async () => {
+    if (!executeRecaptcha) {
+      const err: any = new Error("recaptcha_unavailable");
+      err.code = "recaptcha_unavailable";
+      throw err;
+    }
+    const captchaToken = await executeRecaptcha!("login");
+    const { data: csrf } = await authApi.get("auth/csrf", {
+      withCredentials: true,
+    });
+    if (csrf?.csrfToken)
+      authApi.defaults.headers.common["x-csrf-token"] = csrf.csrfToken;
+    const { data } = await authApi.post(
+      "auth/login",
+      { email, password, recaptchaToken: captchaToken },
+      { withCredentials: true }
+    );
+    return data as { token: string; username: string | null };
+  };
+
+  const handleStepUp = async (
+    step: string,
+    data: any | undefined
+  ): Promise<void> => {
+    if (step !== "enroll_totp" && step !== "totp") return;
+    const usernameHint = data?.username ?? null;
+    if (data?.token) {
+      await login(data.token, usernameHint);
+    }
+    setStepUp({ mode: step, usernameHint });
+    setError("");
+  };
+
+  const processLoginError = async (err: any) => {
+    const step = err?.response?.data?.stepUp;
+    if (step) {
+      await handleStepUp(step, err.response?.data);
+      return;
+    }
+    const status = err?.response?.status;
+    const msg =
+      err?.response?.data?.message ||
+      "O servidor não responde. Tente novamente.";
+    if (status === 429 && err?.response?.data?.retryAfter) {
+      setRetryAfter(err.response.data.retryAfter);
+      setError(msg);
+    } else {
+      if (msg.toLowerCase().includes("e-mail já está em uso")) {
+        setEmailTaken(true);
+      }
+      setError(msg);
+    }
+  };
+
+  const performLogin = async () => {
+    setLoading(true);
+    try {
+      const data = await attemptLogin();
+      await login(data.token, data.username);
+      setStepUp(null);
+      navigate("/dashboard");
+    } catch (err: any) {
+      if (err?.code === "recaptcha_unavailable") {
+        setError("reCAPTCHA não carregou. Atualize a página.");
+      } else {
+        await processLoginError(err);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading || retryAfter) return;
-
     const form = e.currentTarget as HTMLFormElement;
     if (!form.checkValidity()) {
       form.reportValidity();
       return;
     }
-
     if (
       username.length > MAX_FIELD ||
       email.length > MAX_FIELD ||
@@ -64,43 +142,35 @@ const Register: React.FC = () => {
       setError("Cada campo deve ter no máximo 50 caracteres.");
       return;
     }
-
     if (password !== confirm) {
       setError("As senhas não coincidem.");
       return;
     }
-
     if (!executeRecaptcha) {
       setError("reCAPTCHA não carregou. Atualize a página.");
       return;
     }
-
     setLoading(true);
     setError("");
-
     try {
       const captchaToken = await executeRecaptcha("register");
-      await authApi.get("auth/csrf");
-      await authApi.post("auth/register", {
-        username,
-        email,
-        password,
-        captchaToken,
+      const { data: csrf } = await authApi.get("auth/csrf", {
+        withCredentials: true,
       });
-      const { data } = await authApi.post("auth/login", {
-        email,
-        password,
-        captchaToken,
-      });
-      login(data.token, data.username);
-      navigate("/dashboard");
+      if (csrf?.csrfToken)
+        authApi.defaults.headers.common["x-csrf-token"] = csrf.csrfToken;
+      await authApi.post(
+        "auth/register",
+        { username, email, password, recaptchaToken: captchaToken },
+        { withCredentials: true }
+      );
+      await performLogin();
     } catch (err: any) {
       const status = err.response?.status;
       const msg =
         err.response?.data?.message ||
         "O servidor não responde. Tente novamente.";
-
-      if (status === 429 && err.response.data.retryAfter) {
+      if (status === 429 && err.response?.data?.retryAfter) {
         setRetryAfter(err.response.data.retryAfter);
         setError(msg);
       } else {
@@ -109,9 +179,25 @@ const Register: React.FC = () => {
         }
         setError(msg);
       }
-    } finally {
       setLoading(false);
     }
+  };
+
+  const handleChallengeSuccess = async () => {
+    try {
+      setStepUpProcessing(true);
+      await performLogin();
+    } finally {
+      setStepUpProcessing(false);
+    }
+  };
+
+  const handleEnrollmentCompleted = async () => {
+    setStepUp((prev) => ({
+      mode: "totp",
+      usernameHint: prev?.usernameHint ?? null,
+    }));
+    await handleChallengeSuccess();
   };
 
   if (loadingSpinner) return <Spinner />;
@@ -156,7 +242,6 @@ const Register: React.FC = () => {
                 data-max={MAX_FIELD}
               />
             </div>
-
             <div className="form-group">
               <label htmlFor="reg-email">E-mail</label>
               <input
@@ -178,7 +263,6 @@ const Register: React.FC = () => {
                 data-max={MAX_FIELD}
               />
             </div>
-
             <div className="form-group">
               <label htmlFor="reg-password">Senha</label>
               <div className="input-eye">
@@ -208,7 +292,6 @@ const Register: React.FC = () => {
                 data-max={MAX_PASS}
               />
             </div>
-
             <div className="form-group">
               <label htmlFor="reg-confirm">Confirmar senha</label>
               <div className="input-eye">
@@ -238,13 +321,20 @@ const Register: React.FC = () => {
                 data-max={MAX_PASS}
               />
             </div>
-
             <button className="auth-button" disabled={loading}>
               {loading ? "Enviando…" : "Registrar"}
             </button>
             {error && <p className="error-msg">{error}</p>}
           </form>
-
+          {stepUp?.mode === "enroll_totp" && (
+            <TotpEnrollment onCompleted={handleEnrollmentCompleted} />
+          )}
+          {stepUp?.mode === "totp" && (
+            <TotpChallenge
+              onSuccess={handleChallengeSuccess}
+              disabled={stepUpProcessing || loading}
+            />
+          )}
           <div className="auth-footer">
             <p>
               Já tem conta?{" "}
