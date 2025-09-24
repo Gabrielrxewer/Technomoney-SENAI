@@ -1,65 +1,149 @@
-# Technomoney Auth Service
+Protótipo da Technomoney destinada a avaliação do SENAI.
 
-Serviço responsável por autenticação, emissão de tokens e suporte a fluxos OIDC.
+## Visão geral do autenticador back-end
 
-## Variáveis de ambiente relevantes
+O serviço `technomoney-auth` concentra toda a autenticação da plataforma. Ele
+expõe uma API REST principal (`/api/auth`), fluxos de MFA TOTP (`/api/totp`),
+endpoints OIDC/OAuth 2.0 (`/oauth2/*`, `/.well-known/*`) e um canal WebSocket
+para notificar eventos de sessão. O processo roda em Node.js/Express com
+proteções de segurança defensivas habilitadas por padrão (Helmet, CORS
+restritivo, cookies seguros e forçamento de HTTPS).
 
-| Variável | Obrigatória | Descrição |
+### Componentes principais
+
+- **Gateway HTTP seguro**: aplica `helmet`, força HTTPS, gera `requestId`
+  correlacionável e protege JSON com tamanho máximo de 1 MB.
+- **Proteções antiabuso**: todos os POST críticos passam por CSRF token, limites
+  de taxa via Redis (`express-rate-limit` e `rate-limiter-flexible`) e, quando
+  aplicável, verificação reCAPTCHA v3.
+- **Serviço de autenticação**: registra usuários, valida credenciais com
+  `bcrypt`, gera hashes Argon2 para resets/confirmações e emite tokens com chaves
+  assimétricas gerenciadas pelo `keys.service`.
+- **Sessões persistentes**: cada refresh token origina um `sid` hash de SHA-256
+  persistido. A introspecção e o WebSocket usam esse identificador para saber se
+  a sessão continua ativa.
+- **MFA TOTP com antifraude**: segredos TOTP são criptografados com AES-256-GCM
+  usando `TOTP_ENC_KEY`; códigos são válidos uma vez por janela e o último
+  contador fica retido por `TOTP_REPLAY_TTL` segundos para mitigar replay.
+- **Trusted devices + Step-up**: dispositivos confiáveis ficam guardados em
+  Redis; logins fora da lista exigem step-up MFA (enrolamento ou desafio TOTP)
+  com emissão de token temporário.
+- **OIDC completo**: suporte a PAR + PKCE (code flow), ID Token assinado com as
+  mesmas chaves do acesso, opção de exigir DPoP (`REQUIRE_DPOP=true`) e
+  introspecção protegida por Basic ou mTLS (`INTROSPECTION_CLIENTS`,
+  `INTROSPECTION_MTLS_ALLOWED_CNS`).
+- **Canal em tempo real**: `/api/auth/ws-ticket` gera tickets efêmeros que
+  validam a conexão WebSocket. Eventos importantes incluem `token.expiring_soon`,
+  `jwks.rotated` e `stepup.required`.
+
+### Fluxos críticos
+
+#### Registro seguro
+1. `POST /api/auth/register` executa rate limit por IP + e-mail, valida força de
+   senha e reCAPTCHA dedicado.
+2. Credenciais são salvas com hash Argon2, `username` é checado para unicidade e
+   a sessão inicial é criada via `SessionService`.
+3. O cookie `refreshToken` recebe `httpOnly`, `sameSite=strict` e `secure=true`.
+
+#### Login com step-up
+1. `POST /api/auth/login` valida credenciais e aplica limites por IP/e-mail.
+2. Se não houver trusted device, o serviço consulta o status TOTP:
+   - Usuário sem MFA: resposta `401` com `stepUp="enroll_totp"` e token
+     temporário emitido por `AuthService.issueStepUpToken`.
+   - Usuário com MFA: resposta `401` com `stepUp="totp"` exigindo desafio.
+3. Trusted device válido → `AuthService.createSession` gera novo par
+   access/refresh; `scheduleTokenExpiringSoon` agenda aviso no WebSocket.
+
+#### Renovação e revogação
+- `POST /api/auth/refresh` valida token de atualização, verifica se o `sid`
+  continua ativo e retorna tokens novos. Tentativas de reuse geram log de auditoria
+  `auth.refresh.reuse_detected` e revogam a sessão.
+- `POST /api/auth/logout` e `AuthService.resetPassword` revogam todos os refresh
+  tokens ativos do usuário.
+
+#### Recuperação e verificação de e-mail
+- `/api/auth/recover` e `/api/auth/verify-email` usam rate limit dedicado, tokens
+  de uso único (hash Argon2) e links construídos com
+  `PASSWORD_RESET_URL`/`EMAIL_VERIFICATION_URL`.
+- Tokens expiram conforme `RESET_TOKEN_TTL` e `EMAIL_VERIFICATION_TOKEN_TTL`
+  (limitados a 3600 s), atendendo ASVS V2.
+
+#### Fluxos OAuth 2.0 / OIDC
+- `POST /oauth2/par` aceita somente `code` com PKCE S256, guarda o pedido por
+  5 min e retorna `request_uri` quando o cliente exige PAR.
+- `GET /oauth2/authorize` valida `request_uri`/PKCE, gera `code` efêmero ligado
+  ao usuário autenticado e marca `nonce` quando enviado.
+- `POST /oauth2/token` troca o código por tokens:
+  - Access token: assinado pelo `JwtService`, carrega `sid`, `acr`, `amr`,
+    `username`, `email` e, quando `REQUIRE_DPOP=true`, `cnf.jkt`.
+  - ID token: emitido por `signIdToken`, replicando `nonce`.
+- `POST /oauth2/introspect` restringe clientes a `INTROSPECTION_CLIENTS` ou
+  certificados válidos; respostas omitem detalhes quando inválido (`invalid_client`).
+
+### Controles de segurança adicionais
+
+- CSP rígido com nonce aleatório por resposta (`secureHeaders`).
+- Cookies CSRF somente leitura, com `secure` automático em produção.
+- Redis obrigatório em produção (`ensureRedis`), com política de reconexão
+  configurável via `REDIS_*`.
+- Logs estruturados Pino (`LOG_LEVEL`) com remoção de campos sensíveis; corrige
+  níveis de sucesso via `HTTP_SUCCESS_LOG_LEVEL`.
+- Sanitização de erros: somente mensagens mínimas são expostas; detalhes ficam
+  nos logs quando `AUTH_VERBOSE_ERRORS` está desabilitado.
+- Auditoria prolongada (`mfa.*`, `auth.refresh.*`, `ws.connection.*`) garantindo
+  retenção mínima de 180 dias.
+
+### Observabilidade e monitoramento
+
+- Cada requisição ganha `requestId` e IP/UA nos logs.
+- Eventos WebSocket permitem alertar expiração de tokens e rotação de chaves JWKS.
+- Falhas de reCAPTCHA, tentativas de MFA inválidas e bloqueios de rate limit são
+  registrados com severidade adequada (`warn`/`error`).
+
+### Variáveis de ambiente essenciais (`technomoney-auth/prod.env`)
+
+| Variável | Obrigatória | Finalidade |
 | --- | --- | --- |
-| `TOTP_ENC_KEY` | Sim | Chave forte (>= 32 caracteres) para criptografar segredos TOTP. |
-| `TOTP_REPLAY_TTL` | Não | TTL (60–3600s, padrão 300) para reter o último counter TOTP e bloquear replays na mesma janela. |
-| `INTROSPECTION_CLIENTS` | Sim | Lista separada por vírgula no formato `clientId:clientSecret` autorizada a consultar `/oauth2/introspect`. |
-| `INTROSPECTION_MTLS_ALLOWED_CNS` | Não | Lista opcional de valores `CN` aceitos para clientes autenticados via mTLS. |
-| `DB_USERNAME` | Sim | Usuário dedicado do banco de dados. Garanta privilégios mínimos para reduzir impacto em caso de comprometimento. |
-| `DB_PASSWORD` | Sim | Senha forte do banco de dados, armazenada em cofre seguro. |
-| `DB_DATABASE` | Sim | Nome do banco utilizado pelo serviço de autenticação. |
-| `DB_HOST` | Sim | Host do servidor de banco de dados acessível somente pela rede interna confiável. |
-| `DB_PORT` | Sim | Porta do banco (ex.: `5432` para PostgreSQL). |
-| `DB_DRIVER` | Sim | Dialeto suportado pelo Sequelize (ex.: `postgres`). |
-| `AUTH_REQUIRE_VERIFIED_EMAIL` | Não | Quando definido como `true`, `1`, `yes` ou `on` (case-insensitive), bloqueia login até que o usuário confirme o e-mail recebido via link único. |
-| `AUTH_VERBOSE_ERRORS` | Não | Habilita stack trace sanitizada e detalhes de causa nos logs estruturados e respostas internas apenas para correlação com `requestId`. Use somente em ambientes seguros de diagnóstico. |
-| `RESET_TOKEN_TTL` | Não | TTL em segundos (máx. 3600) do token de redefinição de senha emitido via `/recover`. |
-| `EMAIL_VERIFICATION_TOKEN_TTL` | Não | TTL em segundos (máx. 3600) do token de verificação enviado por `/verify-email`. |
-| `PASSWORD_RESET_URL` | Sim | URL base da aplicação cliente que receberá o token de redefinição (`?token=<id>.<segredo>`). |
-| `EMAIL_VERIFICATION_URL` | Sim | URL base usada no e-mail de confirmação (`?token=<id>.<segredo>`). |
+| `PORT` | Sim | Porta HTTP do serviço (default 4000).
+| `NODE_ENV` | Sim | Defina `production` em produção para reforçar cookies, HTTPS e validações.
+| `TOTP_ENC_KEY` | Sim | Chave forte (≥32 chars misturando classes) usada para AES-256-GCM dos segredos TOTP.
+| `REDIS_URL` | Sim em produção | Redis utilizado por rate limits, trusted devices e antifraude TOTP.
+| `JWT_KEYS_DIR`/`JWT_PRIVATE_KEY`/`JWT_PUBLIC_KEY` | Sim | Fonte das chaves que assinam/verificam tokens. Sempre proteja o PEM privado.
+| `JWT_ISSUER`, `JWT_AUDIENCE`, `JWT_EXPIRES_IN`, `JWT_REFRESH_EXPIRES_IN` | Sim | Metadados e TTL dos tokens emitidos.
+| `INTROSPECTION_CLIENTS` | Sim | Lista `clientId:clientSecret` autorizada a consultar `/oauth2/introspect`.
+| `INTROSPECTION_MTLS_ALLOWED_CNS` | Opcional | CNs aceitos quando introspecção usa mTLS.
+| `AUTH_REQUIRE_VERIFIED_EMAIL` | Opcional | Bloqueia login até que o e-mail seja confirmado.
+| `PASSWORD_RESET_URL`, `EMAIL_VERIFICATION_URL` | Sim | URLs HTTPS da aplicação cliente que recebem tokens de recuperação/confirmação.
+| `RECAPTCHA_SECRET`, `RECAPTCHA_MIN_SCORE`, `RECAPTCHA_HOSTNAME` | Sim em produção | Configuração do reCAPTCHA v3.
+| `ALLOWED_ORIGINS`/`FE_URL` | Sim | Lista de origens confiáveis para CORS e CSRF.
+| `DB_*` | Sim | Credenciais do banco (princípio do menor privilégio, TLS obrigatório).
+| `OIDC_CLIENTS`, `REQUIRE_PAR`, `REQUIRE_DPOP` | Conforme necessidade | Controlam clientes OIDC, exigência de PAR e DPoP.
 
-> Gere segredos exclusivos por cliente e mantenha-os em um cofre seguro. Tokens
-> de acesso só são considerados ativos se a sessão (`sid`) correspondente estiver
-> marcada como não revogada na tabela `sessions`.
+Consulte o arquivo [`technomoney-auth/prod.env`](technomoney-auth/prod.env) para a
+lista completa e recomendações de segurança comentadas.
 
-## Migrações do banco de dados
+### Documentação complementar
 
-1. Configure as variáveis de ambiente acima (idealmente via `prod.env` ou um gerenciador seguro de segredos).
-2. Certifique-se de que o arquivo `.sequelizerc` aponte para `src/config/config.js`, que expõe as credenciais TypeScript para o `sequelize-cli` com suporte a `ts-node`.
-3. Execute `npx sequelize-cli db:migrate` para aplicar as migrações existentes, incluindo a criação da tabela `sessions`, antes de liberar o login em produção.
+- Documento detalhado em PDF: [`docs/authentication-backend.pdf`](docs/authentication-backend.pdf)
+- Fluxograma do fluxo completo (Mermaid): [`docs/authentication-flowchart.mmd`](docs/authentication-flowchart.mmd)
 
-> Restrinja o acesso a esse comando a pipelines autenticadas e monitore a execução para evitar execuções indevidas que possam alterar o esquema sem autorização.
+## Integração com serviços consumidores
 
-## Boas práticas de segurança
+- **`technomoney-payment-api`**: valida tokens via `/oauth2/introspect`. Tokens
+  revogados ou expirados retornam `401 Unauthorized`. Configure `AUTH_INTROSPECTION_URL`,
+  `AUTH_INTROSPECTION_CLIENT_ID` e `AUTH_INTROSPECTION_CLIENT_SECRET` com segredos
+  fortes e rotacione-os periodicamente.
+- **`technomoney-api`**: middleware usa apenas introspecção (`AUTH_INTROSPECTION_URL`).
+  Quando `cnf.jkt` vem presente, exige cabeçalho DPoP alinhado ao hash do token e
+  rejeita requisições sem prova criptográfica. Configure `AUTH_JWKS_URL`,
+  `AUTH_ISSUER`, `AUTH_AUDIENCE`, além das credenciais de introspecção.
 
-* Rejeitamos clientes não autenticados na introspecção com respostas sanitizadas e status HTTP adequado, evitando vazamento de detalhes de implementação e reduzindo vetores de enumeração.
-* Tokens de recuperação e verificação são de uso único, armazenados apenas como hash Argon2 e expiram em menos de uma hora, reduzindo o impacto de vazamentos de banco.
-* O rate-limit dedicado (`/recover`, `/verify-email`) impede abuso automatizado e combina-se com proteção CSRF em todas as rotas sensíveis.
-* Validamos códigos TOTP apenas uma vez por janela de 30s e guardamos o último counter por até `TOTP_REPLAY_TTL` segundos, mitigando reutilização maliciosa mesmo em cenários de desvio do front-end.
+## Configuração do `TOTP_ENC_KEY`
 
-## Monitoramento e retenção de logs
-
-* Eventos `mfa.enroll.*`, `mfa.challenge.*`, `ws.connection.*` e `auth.refresh.*` são enviados ao pipeline central de observabilidade com retenção mínima de 180 dias. Eles incluem `requestId`, `userId` mascarado e, quando aplicável, identificadores de sessão.
-* O serviço rejeita códigos TOTP repetidos dentro da janela de tolerância e registra falhas com nível `warn`/`error` para alimentar dashboards de tentativa de fraude. Ajuste `TOTP_REPLAY_TTL` para alinhar com a retenção de tickets no Redis (valor padrão cobre três ciclos de 30s com folga).
-* Eventos de reuse de refresh token (`auth.refresh.reuse_detected`) são logados como erro e também enviados ao canal de auditoria (`channel: audit`), permitindo alertas e trilhas de investigação independentes do log aplicativo.
-
-## Fluxos de recuperação de credenciais e verificação de e-mail
-
-1. **Solicitação de redefinição** (`POST /recover`): exige CSRF token válido e aplica rate-limit específico. O serviço persiste token único (`UUID` + hash Argon2) na tabela `password_resets` e envia e-mail com `PASSWORD_RESET_URL?token=<id>.<segredo>`.
-2. **Confirmação de redefinição** (`POST /recover/confirm`): requer senha forte (política aplicada) e valida hash, expiração e uso único antes de atualizar a senha, revogando todas as sessões/tokens ativos.
-3. **Solicitação de verificação** (`POST /verify-email`): disponível para reenviar links sem indicar se o e-mail existe, mitigando enumeração. Tokens são registrados na tabela `email_verifications`.
-4. **Confirmação de e-mail** (`POST /verify-email/confirm`): após validar o token, a flag `email_verified` é ativada. Quando `AUTH_REQUIRE_VERIFIED_EMAIL=true`, o login permanece bloqueado até essa confirmação.
-
-> Garanta que os links sejam entregues via canal TLS confiável e revogue tokens antigos sempre que suspeitar de comprometimento. As variáveis de TTL permitem ajustar a janela de exposição mantendo o limite inferior a 1 hora conforme ASVS V2.2.3.
-
-## Observabilidade segura dos erros
-
-* Com `AUTH_VERBOSE_ERRORS` ativo (ou em ambientes não produtivos) o `safeErr` registra stack trace, causa e `originalError` em formato sanitizado, preservando `requestId` para correlação sem expor segredos de produção.
-* Em produção, mantenha a flag desativada para que apenas `code`/`message` mínimos sejam retornados ao cliente. O stack completo fica restrito aos logs Pino com acesso controlado, atendendo aos requisitos de auditoria e segurança de incidentes.
-* Sempre associe alertas automáticos aos eventos `auth.issue_tokens.failed` para investigar potenciais falhas de infraestrutura ou tentativas de abuso sem comprometer dados sensíveis.
-* O sanitizador de logs identifica referências circulares inclusive em arrays dentro de `metadata`, substituindo-as por marcadores finitos (`[Circular]`) para impedir loops recursivos e preservar a disponibilidade do pipeline de observabilidade.
+O serviço de autenticação exige que a variável de ambiente `TOTP_ENC_KEY` seja
+definida com um segredo forte para criptografar os segredos de TOTP. Utilize uma
+string com pelo menos 32 caracteres misturando letras maiúsculas, minúsculas,
+números e símbolos. Um exemplo de configuração pode ser encontrado em
+[`technomoney-auth/.env.example`](technomoney-auth/.env.example). Substitua esse
+valor por outro gerado especificamente para o seu ambiente antes de ir para
+produção.
