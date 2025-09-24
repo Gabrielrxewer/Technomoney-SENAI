@@ -5,10 +5,15 @@ import { deriveSid, hashRefreshToken } from "../utils/session.util";
 export class SessionService {
   private repo = new SessionRepository();
 
-  async start(userId: string, refreshToken: string, tx?: Transaction) {
+  async start(
+    userId: string,
+    refreshToken: string,
+    tx?: Transaction,
+    aal = "aal1"
+  ) {
     const sid = deriveSid(refreshToken);
     const refreshHash = hashRefreshToken(refreshToken);
-    await this.repo.create(sid, userId, refreshHash, tx);
+    await this.repo.create(sid, userId, refreshHash, tx, aal);
     return sid;
   }
 
@@ -23,5 +28,11 @@ export class SessionService {
 
   isActive(sid: string) {
     return this.repo.isActive(sid);
+  }
+
+  async getAalByRefreshToken(refreshToken: string) {
+    const refreshHash = hashRefreshToken(refreshToken);
+    const session = await this.repo.findByRefreshHash(refreshHash);
+    return session?.aal ?? null;
   }
 }

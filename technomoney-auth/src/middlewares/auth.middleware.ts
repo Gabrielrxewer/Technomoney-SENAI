@@ -27,11 +27,13 @@ export const authenticate = (req: any, res: any, next: any) => {
     const { id, jti, scope, acr, amr, username, email, exp } =
       jwtSvc.verifyAccess(token);
     const scopeList = normalizeScope(scope);
+    const normalizedAcr =
+      typeof acr === "string" ? acr.trim().toLowerCase() : undefined;
     req.user = {
       id,
       jti,
       scope: scopeList,
-      acr,
+      acr: normalizedAcr,
       amr,
       token,
       username: typeof username === "string" ? username : undefined,
@@ -40,7 +42,7 @@ export const authenticate = (req: any, res: any, next: any) => {
     };
     req.authContext = {
       scope: scopeList,
-      acr: typeof acr === "string" ? acr : "aal1",
+      acr: normalizedAcr ?? "aal1",
     };
     next();
   } catch (e) {

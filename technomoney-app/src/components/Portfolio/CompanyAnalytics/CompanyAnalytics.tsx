@@ -23,6 +23,7 @@ type ResumoProps = {
   volume: string;
   marketCap: string;
   dividendYield: string;
+  facts?: { label: string; value: string }[];
 };
 
 export type CompanyAnalyticsProps = {
@@ -35,6 +36,7 @@ export type CompanyAnalyticsProps = {
   marketCap?: string;
   dividendYield?: string;
   panelHeight?: number | string;
+  infoItems?: InfoCardItem[];
 };
 
 export default function CompanyAnalytics({
@@ -47,6 +49,7 @@ export default function CompanyAnalytics({
   marketCap,
   dividendYield,
   panelHeight = 300,
+  infoItems,
 }: CompanyAnalyticsProps) {
   const resumoFinal: ResumoProps = resumo ?? {
     preco: preco ?? "",
@@ -55,17 +58,20 @@ export default function CompanyAnalytics({
     volume: volume ?? "-",
     marketCap: marketCap ?? "-",
     dividendYield: dividendYield ?? "-",
+    facts: [],
   };
 
   const caPanelH =
     typeof panelHeight === "number" ? `${panelHeight}px` : panelHeight;
 
-  const infoItems: InfoCardItem[] = [
-    { title: "Setor", value: "Minerais & Metais", detail: "Básicos" },
-    { title: "P/L", value: "7,8", detail: "Últimos 12m" },
-    { title: "Beta (2y)", value: "1,12", detail: "Volatilidade" },
-    { title: "Free Float", value: "82%", detail: "Ações no mercado" },
-  ];
+  const infoCards = infoItems && infoItems.length > 0
+    ? infoItems
+    : [
+        { title: "Setor", value: "-", detail: "" },
+        { title: "P/L", value: "-", detail: "" },
+        { title: "Margem", value: "-", detail: "" },
+        { title: "Liquidez", value: "-", detail: "" },
+      ];
 
   return (
     <section
@@ -101,10 +107,11 @@ export default function CompanyAnalytics({
           volume={resumoFinal.volume}
           marketCap={resumoFinal.marketCap}
           dividendYield={resumoFinal.dividendYield}
+          facts={resumoFinal.facts}
         />
 
         {/* KPIs extras */}
-        <InfoCardsGrid items={infoItems} />
+        <InfoCardsGrid items={infoCards} />
       </aside>
     </section>
   );

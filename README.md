@@ -20,6 +20,10 @@ produção.
 - Tokens de acesso assinados com DPoP agora carregam `cnf.jkt` no resultado da
   introspecção. Somente objetos simples com `jkt` em formato de string são
   expostos para evitar poluição do contrato.
+- O nível de autenticação (`acr`) passa a ser persistido em cada sessão. O
+  endpoint `/api/auth/refresh` reutiliza o maior AAL conquistado (por exemplo,
+  após MFA TOTP com `aal2`), evitando regressão acidental de privilégios quando
+  o access token é renovado.
 - Configure os novos segredos de introspecção:
   - `INTROSPECTION_CLIENTS`: lista separada por vírgula no formato
     `clientId:clientSecret`. Utilize senhas fortes por cliente que precise
@@ -47,6 +51,17 @@ produção.
 
 ## `technomoney-api`
 
+
+- As rotas `/assets` agora expõem dados enriquecidos (`fundamentals`,
+  `marketCap`, textos analíticos) e validam a resposta externa com Zod antes de
+  persistir preços/volumes.
+- Todas as requisições ao domínio de ativos exigem tokens com `acr=aal2`; em
+  caso de ausência o middleware retorna `WWW-Authenticate:
+  error="insufficient_aal"` para forçar MFA.
+- O middleware normaliza o `acr` retornado na introspecção (ignorando espaços e
+  diferença de caixa), reduzindo falsos negativos quando o provedor emite valores
+  como `AAL2`.
+- A Fake Market API fornece o novo contrato e deve ser configurada em `MARKET_API_BASE_URL` via HTTPS em produção.
 - O middleware de autenticação agora usa somente o fluxo de introspecção via
   `AUTH_INTROSPECTION_URL`, rejeitando sessões inativas imediatamente para
   reduzir superfícies de abuso.
@@ -66,3 +81,17 @@ produção.
     credenciais usadas na chamada autenticada.
 - Limite o acesso a essas credenciais apenas para serviços autorizados e
   monitore logs de introspecção para detectar tentativas suspeitas.
+
+## `technomoney-app`
+
+- O dashboard e a carteira deixam de usar mocks e consomem `GET /assets` e
+  `GET /assets/:tag` da API principal, reutilizando o cache seguro do React
+  Query e respeitando o fluxo de refresh de tokens com AAL2.
+- Toda requisição passa pelo `fetchApiWithAuth`, que injeta o Bearer atual e
+  executa um único refresh em caso de `401`, mantendo o rigor de segurança do
+  backend.
+- Configure `VITE_API_URL`, `VITE_AUTH_API_URL`, `VITE_RECAPTCHA_SITEKEY` e os
+  parâmetros de CSRF (`VITE_CSRF_*`) antes de executar; o front exige HTTPS e
+  `withCredentials=true` para operar com o autenticador.
+- Em caso de falhas na API de mercado, a interface apresenta mensagens de erro
+  com ação de retry sem expor detalhes sensíveis ao usuário final.

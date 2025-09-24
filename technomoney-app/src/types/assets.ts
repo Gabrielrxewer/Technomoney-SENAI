@@ -1,5 +1,4 @@
-
-export interface AssetFundamentalsDto {
+export interface AssetFundamentals {
   dy: number;
   roe: number;
   pl: number;
@@ -9,7 +8,7 @@ export interface AssetFundamentalsDto {
   score: number;
 }
 
-export interface AssetSummaryDto {
+export interface AssetSummary {
   id: number;
   tag: string;
   nome: string;
@@ -17,10 +16,10 @@ export interface AssetSummaryDto {
   preco: number;
   variacao: number;
   volume: number;
-  fundamentals: AssetFundamentalsDto;
+  fundamentals: AssetFundamentals;
 }
 
-export interface AssetDetailDto extends AssetSummaryDto {
+export interface AssetDetail extends AssetSummary {
   marketCap: number;
   dividendYield: number;
   recomendacao: string;

@@ -13,7 +13,8 @@ export const requireAAL2 = async (
   next: NextFunction,
 ) => {
   const u = req.user;
-  if (u && u.acr === "aal2") {
+  const acr = typeof u?.acr === "string" ? u.acr.trim().toLowerCase() : undefined;
+  if (acr === "aal2") {
     next();
     return;
   }
