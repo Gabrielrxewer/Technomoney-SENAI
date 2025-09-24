@@ -1,7 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import "./CardsInformation.css";
-import "../../Home/Modal.css";
-
 type Facts = {
   setor: string;
   industria: string;

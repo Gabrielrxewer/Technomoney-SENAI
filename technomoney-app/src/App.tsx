@@ -11,6 +11,7 @@ import Dashboard from "./components/Dashboard/Dashboard";
 import { AuthProvider } from "./context/AuthContext";
 import PrivateRoute from "./private/PrivateRoute";
 import PortfolioPage from "./components/Portfolio/PortfolioPage";
+
 import "./components/Portfolio/styles/tokens.css";
 import "./components/Portfolio/styles/globals.css";
 
@@ -30,6 +31,7 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+
               <Route
                 path="/dashboard"
                 element={

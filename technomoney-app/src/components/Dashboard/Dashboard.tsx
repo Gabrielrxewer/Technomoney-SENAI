@@ -1,73 +1,25 @@
-import React from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "../../context/AuthContext";
-import { fetchApiWithAuth } from "../../services/http";
-import RealTimeActions from "../Dashboard/RealTimeActions/RealTimeActions";
-import ActionsTable from "../Dashboard/ActionsTable/ActionsTable";
-import ActionsAnalysis from "../Dashboard/ActionsAnalysis/ActionsAnalysis";
-import ErrorMessage from "../Dashboard/ErrorMessage/ErrorMessage";
-import Spinner from "../Spinner/Spinner";
-import "./Dashboard.css";
+import React, { useState, useEffect } from "react";
+import StocksHome from "./StocksHome/StocksHome";
+import Spinner from "../Spinner/Spinner"; 
 
-interface Acao {
-  id: number;
-  tag: string;
-  nome: string;
-  preco: number;
-  variacao: number;
-  volume: number;
-}
+export default function Dashboard() {
+  const [isLoading, setIsLoading] = useState(true);
 
-interface DadosAnalise {
-  totalAcoes: number;
-  maiorPreco: Acao | null;
-  menorPreco: Acao | null;
-}
-
-type AssetsResult = {
-  acoes: Acao[];
-  dadosAnalise: DadosAnalise;
-};
-
-async function fetchAssets({
-  signal,
-}: {
-  signal?: AbortSignal;
-}): Promise<AssetsResult> {
-  const { data } = await fetchApiWithAuth<Acao[]>("/assets/sorted/price", {
-    signal,
-  });
-  const acoes = Array.isArray(data) ? data : [];
-  const maiorPreco = acoes.length ? acoes[0] : null;
-  const menorPreco = acoes.length ? acoes[acoes.length - 1] : null;
-  return {
-    acoes,
-    dadosAnalise: { totalAcoes: acoes.length, maiorPreco, menorPreco },
-  };
-}
-
-const Dashboard: React.FC = () => {
-  const { token } = useAuth();
-
-  const { data, isLoading, error } = useQuery<AssetsResult, Error>({
-    queryKey: ["assetsSortedByPrice", token],
-    queryFn: ({ signal }) => fetchAssets({ signal }),
-    refetchInterval: 5000,
-    refetchIntervalInBackground: true,
-    staleTime: 300000,
-    retry: 1,
-  });
-
-  if (error) return <ErrorMessage message={error.message} />;
-  if (isLoading || !data) return <Spinner />;
+  useEffect(() => {
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 100); 
+  }, []);
 
   return (
     <div className="dashboard-container">
-      <RealTimeActions acoes={data.acoes} loading={isLoading} />
-      <ActionsTable acoes={data.acoes} loading={isLoading} />
-      <ActionsAnalysis acoes={data.acoes} loading={isLoading} />
+      {isLoading ? (
+        <div className="loading-screen">
+          <Spinner />
+        </div>
+      ) : (
+        <StocksHome />
+      )}
     </div>
   );
-};
-
-export default Dashboard;
+}

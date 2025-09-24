@@ -1,4 +1,5 @@
 .footer {
+  position: fixed;
   background-color: #050b11;
   color: white;
   text-align: center;
@@ -7,6 +8,7 @@
   bottom: 0;
   width: 100%;
   font-family: Arial, sans-serif;
+  z-index: 1000; 
 }
 
 .footer h1 {
