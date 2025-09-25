@@ -37,6 +37,11 @@ produção.
   apresentado, a sessão é renovada com `acr=aal2`, `amr` deduplicados e claims
   adicionais (`trusted_device`, `trusted_device_id`, `trusted_device_issued_at`),
   evitando forçar novo TOTP sem perder evidência de segundo fator.
+- Correção no controlador de login garante que o Express exponha `Request`
+  tipado corretamente ao reconstruir sessões de dispositivos confiáveis, evitando
+  crashes do `ts-node` e reforçando a reutilização segura do cookie `tdid` para
+  manter `acr=aal2`.
+
 
 ## `technomoney-payment-api`
 

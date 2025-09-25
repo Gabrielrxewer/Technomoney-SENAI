@@ -55,7 +55,9 @@ restritivo, cookies seguros e forçamento de HTTPS).
      temporário emitido por `AuthService.issueStepUpToken`.
    - Usuário com MFA: resposta `401` com `stepUp="totp"` exigindo desafio.
 3. Trusted device válido → `AuthService.createSession` gera novo par
-   access/refresh; `scheduleTokenExpiringSoon` agenda aviso no WebSocket.
+  access/refresh, reutilizando o cookie `tdid` para reconstruir `acr=aal2`,
+  `amr` deduplicados e claims `trusted_device*` sem reemitir códigos MFA;
+  `scheduleTokenExpiringSoon` agenda aviso no WebSocket.
 
 #### Renovação e revogação
 - `POST /api/auth/refresh` valida token de atualização, verifica se o `sid`

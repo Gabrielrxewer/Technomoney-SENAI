@@ -1,3 +1,4 @@
+import type { Request } from "express";
 import { RequestHandler, Response } from "express";
 import jwt from "jsonwebtoken";
 import { buildRefreshCookie } from "../utils/cookie.util";
