@@ -48,6 +48,7 @@ function run(command, args, options = {}) {
       "src/config/__tests__/config.bridge.spec.ts",
       "src/services/__tests__/auth.service.recovery.spec.ts",
       "src/services/__tests__/auth.service.refresh.spec.ts",
+      "src/services/__tests__/trusted-device.service.spec.ts",
       "src/services/__tests__/totp.service.spec.ts",
       "src/utils/log/__tests__/log.helpers.spec.ts",
       "src/ws/__tests__/ws.spec.ts",
