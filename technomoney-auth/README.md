@@ -26,8 +26,11 @@ restritivo, cookies seguros e forçamento de HTTPS).
   usando `TOTP_ENC_KEY`; códigos são válidos uma vez por janela e o último
   contador fica retido por `TOTP_REPLAY_TTL` segundos para mitigar replay.
 - **Trusted devices + Step-up**: dispositivos confiáveis ficam guardados em
-  Redis; logins fora da lista exigem step-up MFA (enrolamento ou desafio TOTP)
-  com emissão de token temporário.
+  Redis com `acr`/`amr` obtidos no primeiro desafio. Logins fora da lista exigem
+  step-up MFA (enrolamento ou desafio TOTP) com emissão de token temporário;
+  quando o cookie `tdid` é aceito, a sessão já nasce com `acr=aal2`, `amr`
+  deduplicados e claims `trusted_device*`, preservando evidência do segundo
+  fator sem reemitir códigos TOTP a cada autenticação.
 - **OIDC completo**: suporte a PAR + PKCE (code flow), ID Token assinado com as
   mesmas chaves do acesso, opção de exigir DPoP (`REQUIRE_DPOP=true`) e
   introspecção protegida por Basic ou mTLS (`INTROSPECTION_CLIENTS`,
@@ -52,7 +55,9 @@ restritivo, cookies seguros e forçamento de HTTPS).
      temporário emitido por `AuthService.issueStepUpToken`.
    - Usuário com MFA: resposta `401` com `stepUp="totp"` exigindo desafio.
 3. Trusted device válido → `AuthService.createSession` gera novo par
-   access/refresh; `scheduleTokenExpiringSoon` agenda aviso no WebSocket.
+  access/refresh, reutilizando o cookie `tdid` para reconstruir `acr=aal2`,
+  `amr` deduplicados e claims `trusted_device*` sem reemitir códigos MFA;
+  `scheduleTokenExpiringSoon` agenda aviso no WebSocket.
 
 #### Renovação e revogação
 - `POST /api/auth/refresh` valida token de atualização, verifica se o `sid`

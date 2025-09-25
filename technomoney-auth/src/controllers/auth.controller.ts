@@ -1,3 +1,4 @@
+import type { Request } from "express";
 import { RequestHandler, Response } from "express";
 import jwt from "jsonwebtoken";
 import { buildRefreshCookie } from "../utils/cookie.util";
@@ -122,6 +123,38 @@ const decodeUserId = (token: string) => {
   }
 };
 
+const sanitizeAmr = (value: unknown): string[] => {
+  if (!Array.isArray(value)) return [];
+  const values = value
+    .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
+    .filter((entry) => entry.length > 0);
+  return Array.from(new Set(values));
+};
+
+const buildTrustedDeviceSessionExtra = (
+  td: Awaited<ReturnType<typeof getTrustedDevice>>,
+  req: Request,
+) => {
+  const acr =
+    td && typeof td.acr === "string" && td.acr.trim().length > 0
+      ? td.acr
+      : "aal2";
+  const amr = sanitizeAmr(td?.amr);
+  const extra: Record<string, unknown> = {
+    acr,
+    amr: amr.length ? amr : ["pwd", "otp"],
+    trusted_device: true,
+  };
+  const tdid = (req as any)?.cookies?.tdid;
+  if (typeof tdid === "string" && tdid.trim().length > 0) {
+    extra.trusted_device_id = tdid.trim();
+  }
+  if (td && typeof td.issuedAt === "number" && Number.isFinite(td.issuedAt)) {
+    extra.trusted_device_issued_at = td.issuedAt;
+  }
+  return extra;
+};
+
 const respondWithMessage = (
   res: Response,
   status: number,
@@ -193,9 +226,11 @@ export const login: RequestHandler = async (req, res) => {
       res.status(401).json({ stepUp: "totp", ...payload });
       return;
     }
+    const extra = buildTrustedDeviceSessionExtra(td, req);
     const { access, refresh } = await authService.createSession(
       userId,
-      username ?? null
+      username ?? null,
+      extra,
     );
     const sid = deriveSid(refresh);
     const exp = decodeExp(access);
