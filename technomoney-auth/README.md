@@ -26,11 +26,14 @@ restritivo, cookies seguros e forçamento de HTTPS).
   usando `TOTP_ENC_KEY`; códigos são válidos uma vez por janela e o último
   contador fica retido por `TOTP_REPLAY_TTL` segundos para mitigar replay.
 - **Trusted devices + Step-up**: dispositivos confiáveis ficam guardados em
-  Redis com `acr`/`amr` obtidos no primeiro desafio. Logins fora da lista exigem
-  step-up MFA (enrolamento ou desafio TOTP) com emissão de token temporário;
-  quando o cookie `tdid` é aceito, a sessão já nasce com `acr=aal2`, `amr`
-  deduplicados e claims `trusted_device*`, preservando evidência do segundo
-  fator sem reemitir códigos TOTP a cada autenticação.
+  Redis com `acr`/`amr` obtidos no primeiro desafio e replicam uma cópia
+  sanitizada assinada via HMAC no cookie seguro `tdmeta`. Logins fora da lista
+  exigem step-up MFA (enrolamento ou desafio TOTP) com emissão de token
+  temporário; quando o par `tdid`/`tdmeta` é aceito, a sessão já nasce com
+  `acr=aal2`, `amr` deduplicados e claims `trusted_device*`, preservando
+  evidência do segundo fator sem reemitir códigos TOTP a cada autenticação mesmo
+  durante indisponibilidade temporária do Redis.
+
 - **OIDC completo**: suporte a PAR + PKCE (code flow), ID Token assinado com as
   mesmas chaves do acesso, opção de exigir DPoP (`REQUIRE_DPOP=true`) e
   introspecção protegida por Basic ou mTLS (`INTROSPECTION_CLIENTS`,
@@ -113,6 +116,7 @@ restritivo, cookies seguros e forçamento de HTTPS).
 | `NODE_ENV` | Sim | Defina `production` em produção para reforçar cookies, HTTPS e validações.
 | `TOTP_ENC_KEY` | Sim | Chave forte (≥32 chars misturando classes) usada para AES-256-GCM dos segredos TOTP.
 | `REDIS_URL` | Sim em produção | Redis utilizado por rate limits, trusted devices e antifraude TOTP.
+| `TRUSTED_DEVICE_SECRET` | Recomendado | Segredo com ≥32 caracteres usado para assinar o cookie `tdmeta`. Quando ausente, o serviço deriva um HMAC da chave privada ativa do JWT.
 | `JWT_KEYS_DIR`/`JWT_PRIVATE_KEY`/`JWT_PUBLIC_KEY` | Sim | Fonte das chaves que assinam/verificam tokens. Sempre proteja o PEM privado.
 | `JWT_ISSUER`, `JWT_AUDIENCE`, `JWT_EXPIRES_IN`, `JWT_REFRESH_EXPIRES_IN` | Sim | Metadados e TTL dos tokens emitidos.
 | `INTROSPECTION_CLIENTS` | Sim | Lista `clientId:clientSecret` autorizada a consultar `/oauth2/introspect`.
