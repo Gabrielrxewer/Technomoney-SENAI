@@ -32,6 +32,17 @@ produção.
   segundos (padrão 300). Logs `mfa.enroll.*`, `mfa.challenge.*`, `ws.connection.*`
   e `auth.refresh.*` incluem `requestId`, identificadores mascarados e são
   retidos por, no mínimo, 180 dias para auditoria.
+- Dispositivos confiáveis agora armazenam em Redis os metadados `acr`/`amr`
+  obtidos durante o primeiro desafio MFA **e** replicam uma versão sanitizada
+  assinada via HMAC no cookie seguro `tdmeta`. Assim, mesmo em ambientes onde o
+  Redis estiver indisponível o backend consegue reconstruir `acr=aal2`, fatores
+  `amr` deduplicados e os claims `trusted_device*` sem reemitir o TOTP. O segredo
+  utilizado para assinar o cookie deriva de `TRUSTED_DEVICE_SECRET` (mínimo 32
+  caracteres) ou, na ausência dele, da chave privada ativa do JWT.
+- Correção no controlador de login garante que o Express exponha `Request`
+  tipado corretamente ao reconstruir sessões de dispositivos confiáveis, evitando
+  crashes do `ts-node` e reforçando a reutilização segura do cookie `tdid` para
+  manter `acr=aal2`.
 
 ## `technomoney-payment-api`
 

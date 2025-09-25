@@ -90,7 +90,13 @@ class TotpServiceStub {
 }
 
 class AuthServiceStub {
-  async createSession() {
+  lastExtra: Record<string, unknown> | null = null;
+  async createSession(
+    _id: string,
+    _username: string | null,
+    extra?: Record<string, unknown>,
+  ) {
+    this.lastExtra = extra || null;
     return { access: "access-token", refresh: "refresh-token" };
   }
 }
@@ -109,11 +115,15 @@ test.after(() => {
 test("challengeVerify loga sucesso com requestId", async () => {
   (globalThis as any).__logRecords = [];
   TotpServiceStub.nextChallenge = { verified: true };
+  const authStub = new AuthServiceStub();
+  const trustedCalls: any[] = [];
   __setTotpControllerDeps({
     totpService: new TotpServiceStub() as any,
-    authService: new AuthServiceStub() as any,
+    authService: authStub as any,
     cookieOptions: {},
-    setTrustedDevice: async () => {},
+    setTrustedDevice: async (...args: unknown[]) => {
+      trustedCalls.push(args);
+    },
     resetTotpLimiter: async () => {},
     deriveSid: () => "sid-123",
     scheduleTokenExpiringSoon: () => {},
@@ -145,6 +155,10 @@ test("challengeVerify loga sucesso com requestId", async () => {
     acr: "aal2",
     username: null,
   });
+  assert.equal(trustedCalls.length, 1);
+  assert.equal(trustedCalls[0][1], "user-1");
+  assert.deepEqual(trustedCalls[0][2], { acr: "aal2", amr: ["pwd", "otp"] });
+  assert.deepEqual(authStub.lastExtra, { acr: "aal2", amr: ["pwd", "otp"] });
   const records: any[] = (globalThis as any).__logRecords;
   const success = records.find((r) => r.msg === "mfa.challenge.success");
   assert.ok(success, "sucesso deve ser logado");
