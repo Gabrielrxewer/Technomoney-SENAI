@@ -85,6 +85,13 @@ type AuthServiceStub = {
   logoutCalls: Array<[string]>;
   createSessionCalls: Array<[string, string | null, Record<string, unknown>]>;
   issueStepUpCalls: Array<[string, string | null]>;
+  refreshCalls: Array<
+    [
+      string,
+      ((userId: string) => Promise<Record<string, unknown>>) | undefined,
+    ]
+  >;
+  refreshExtraResults: Array<Record<string, unknown>>;
   loginResult: LoginResult;
   createSessionResult: LoginResult & { access: string; refresh: string };
   issueStepUpResult: StepUpResult;
@@ -105,7 +112,10 @@ type AuthServiceStub = {
     username: string | null
   ): Promise<StepUpResult>;
   register(): Promise<never>;
-  refresh(): Promise<never>;
+  refresh(
+    token: string,
+    extraProvider?: (userId: string) => Promise<Record<string, unknown>>,
+  ): Promise<{ access: string; refresh: string }>;
   requestPasswordReset(): Promise<never>;
   resetPassword(): Promise<never>;
   requestEmailVerification(): Promise<never>;
@@ -130,6 +140,8 @@ const createAuthServiceStub = (result: LoginResult): AuthServiceStub => {
     logoutCalls: [],
     createSessionCalls: [],
     issueStepUpCalls: [],
+    refreshCalls: [],
+    refreshExtraResults: [],
     loginResult: result,
     createSessionResult: {
       ...result,
@@ -168,8 +180,21 @@ const createAuthServiceStub = (result: LoginResult): AuthServiceStub => {
     async register() {
       throw new Error("not used");
     },
-    async refresh() {
-      throw new Error("not used");
+    async refresh(
+      token: string,
+      extraProvider?: (userId: string) => Promise<Record<string, unknown>>,
+    ) {
+      stub.refreshCalls.push([token, extraProvider]);
+      if (extraProvider) {
+        const extra = await extraProvider(stub.loginResult.id);
+        stub.refreshExtraResults.push(extra || {});
+      } else {
+        stub.refreshExtraResults.push({});
+      }
+      return {
+        access: stub.createSessionResult.access,
+        refresh: stub.createSessionResult.refresh,
+      };
     },
     async requestPasswordReset() {
       throw new Error("not used");
@@ -465,4 +490,89 @@ test("login inclui requestId quando emissão de sessão falha", async (t) => {
     requestId: "req-123",
   });
   assert.strictEqual(authService.createSessionCalls.length, 1);
+});
+
+test("refresh reutiliza trusted device válido para preservar acr=aal2", async (t) => {
+  process.env.AUTH_CONTROLLER_SKIP_DEFAULT = "1";
+  const controller = await import("../auth.controller");
+  const authService = createAuthServiceStub({ id: "user-789", username: "Neo" });
+  const totpService = createTotpServiceStub(true);
+  const trustedDevice = createTrustedDeviceStub({
+    userId: "user-789",
+    acr: "aal2",
+    amr: ["pwd", "otp", "otp"],
+    issuedAt: 1700000000000,
+  });
+  controller.__setAuthControllerDeps({
+    authService,
+    totpService,
+    getTrustedDevice: trustedDevice,
+  });
+  t.after(() => {
+    controller.__resetAuthControllerDeps();
+  });
+  const req = {
+    cookies: { refreshToken: "old-refresh", tdid: "device-xyz" },
+  } as unknown as Request;
+  const res = makeResponse();
+
+  await controller.refresh(req, res as Response, (() => {}) as any);
+
+  assert.strictEqual(authService.refreshCalls.length, 1);
+  const [token, provider] = authService.refreshCalls[0];
+  assert.strictEqual(token, "old-refresh");
+  assert.ok(provider);
+  const extra = await provider!("user-789");
+  assert.deepStrictEqual(extra, {
+    acr: "aal2",
+    amr: ["pwd", "otp"],
+    trusted_device: true,
+    trusted_device_id: "device-xyz",
+    trusted_device_issued_at: 1700000000000,
+  });
+  assert.deepStrictEqual(authService.refreshExtraResults, [extra]);
+  assert.strictEqual(res.statusCalls.length, 0);
+  assert.strictEqual(res.jsonCalls.length, 1);
+  assert.deepStrictEqual(res.jsonCalls[0][0], {
+    token: authService.createSessionResult.access,
+  });
+});
+
+test("refresh ignora trusted device de outro usuário", async (t) => {
+  process.env.AUTH_CONTROLLER_SKIP_DEFAULT = "1";
+  const controller = await import("../auth.controller");
+  const authService = createAuthServiceStub({ id: "user-999", username: "Neo" });
+  const totpService = createTotpServiceStub(true);
+  const trustedDevice = createTrustedDeviceStub({
+    userId: "user-123",
+    acr: "aal2",
+    amr: ["pwd", "otp"],
+    issuedAt: 1700000000000,
+  });
+  controller.__setAuthControllerDeps({
+    authService,
+    totpService,
+    getTrustedDevice: trustedDevice,
+  });
+  t.after(() => {
+    controller.__resetAuthControllerDeps();
+  });
+  const req = {
+    cookies: { refreshToken: "old-refresh", tdid: "device-xyz" },
+  } as unknown as Request;
+  const res = makeResponse();
+
+  await controller.refresh(req, res as Response, (() => {}) as any);
+
+  assert.strictEqual(authService.refreshCalls.length, 1);
+  const [, provider] = authService.refreshCalls[0];
+  assert.ok(provider);
+  const extra = await provider!("user-999");
+  assert.deepStrictEqual(extra, {});
+  assert.deepStrictEqual(authService.refreshExtraResults, [{}]);
+  assert.strictEqual(res.statusCalls.length, 0);
+  assert.strictEqual(res.jsonCalls.length, 1);
+  assert.deepStrictEqual(res.jsonCalls[0][0], {
+    token: authService.createSessionResult.access,
+  });
 });

@@ -39,6 +39,11 @@ produção.
   `amr` deduplicados e os claims `trusted_device*` sem reemitir o TOTP. O segredo
   utilizado para assinar o cookie deriva de `TRUSTED_DEVICE_SECRET` (mínimo 32
   caracteres) ou, na ausência dele, da chave privada ativa do JWT.
+- O fluxo `POST /api/auth/refresh` agora reaproveita com segurança os metadados
+  do trusted device (quando pertencem ao mesmo usuário) para assinar o novo
+  access token com `acr=aal2` e `amr` deduplicados. Tentativas de reutilizar
+  cookies de outro usuário são descartadas, garantindo que endpoints AAL2 como
+  `/assets` continuem acessíveis após recarregar a página.
 - Correção no controlador de login garante que o Express exponha `Request`
   tipado corretamente ao reconstruir sessões de dispositivos confiáveis, evitando
   crashes do `ts-node` e reforçando a reutilização segura do cookie `tdid` para
