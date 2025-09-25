@@ -33,6 +33,7 @@ restritivo, cookies seguros e forçamento de HTTPS).
   `acr=aal2`, `amr` deduplicados e claims `trusted_device*`, preservando
   evidência do segundo fator sem reemitir códigos TOTP a cada autenticação mesmo
   durante indisponibilidade temporária do Redis.
+
 - **OIDC completo**: suporte a PAR + PKCE (code flow), ID Token assinado com as
   mesmas chaves do acesso, opção de exigir DPoP (`REQUIRE_DPOP=true`) e
   introspecção protegida por Basic ou mTLS (`INTROSPECTION_CLIENTS`,

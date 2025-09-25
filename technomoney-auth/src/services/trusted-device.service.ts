@@ -92,6 +92,7 @@ const decodeMetadata = (token: unknown): Record<string, unknown> | null => {
   }
 };
 
+
 const sanitizeAcr = (value: unknown): string | undefined => {
   if (typeof value !== "string") return undefined;
   const trimmed = value.trim();
@@ -114,6 +115,7 @@ export async function setTrustedDevice(
 ) {
   const tdid = crypto.randomUUID();
   const payload: Record<string, unknown> = { userId, tdid };
+
   const acr = sanitizeAcr(metadata.acr);
   const amr = sanitizeAmr(metadata.amr);
   if (acr) payload.acr = acr;
@@ -124,6 +126,7 @@ export async function setTrustedDevice(
   const r: any = await redisGetter();
   if (r) await r.setEx(`tdid:${tdid}`, ttlSec, JSON.stringify(payload));
   const encoded = encodeMetadata(payload);
+
   res.cookie("tdid", tdid, {
     httpOnly: true,
     secure: true,
