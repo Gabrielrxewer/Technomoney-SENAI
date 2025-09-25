@@ -42,6 +42,7 @@ produção.
   crashes do `ts-node` e reforçando a reutilização segura do cookie `tdid` para
   manter `acr=aal2`.
 
+
 ## `technomoney-payment-api`
 
 - Todas as chamadas autenticadas agora validam o token de acesso via o endpoint
