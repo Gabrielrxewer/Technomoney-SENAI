@@ -145,7 +145,7 @@ export const challengeVerify: RequestHandler = async (req: any, res) => {
     "mfa.challenge.success"
   );
   await resetTotpLimiterImpl(res);
-  await setTrustedDeviceImpl(res, u.id);
+  await setTrustedDeviceImpl(res, u.id, { acr: "aal2", amr: ["pwd", "otp"] });
   const username = extractUsername((u as any)?.token);
   const session = await auth.createSession(u.id, username, {
     acr: "aal2",

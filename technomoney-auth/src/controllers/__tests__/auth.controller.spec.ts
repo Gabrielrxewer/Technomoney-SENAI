@@ -83,7 +83,7 @@ const makeResponse = (): MockResponse => {
 type AuthServiceStub = {
   loginCalls: Array<[string, string]>;
   logoutCalls: Array<[string]>;
-  createSessionCalls: Array<[string, string | null]>;
+  createSessionCalls: Array<[string, string | null, Record<string, unknown>]>;
   issueStepUpCalls: Array<[string, string | null]>;
   loginResult: LoginResult;
   createSessionResult: LoginResult & { access: string; refresh: string };
@@ -91,7 +91,11 @@ type AuthServiceStub = {
 } & {
   login(email: string, password: string): Promise<LoginResult>;
   logout(refresh: string): Promise<void>;
-  createSession(id: string, username: string | null): Promise<{
+  createSession(
+    id: string,
+    username: string | null,
+    extra?: Record<string, unknown>,
+  ): Promise<{
     access: string;
     refresh: string;
     username: string | null;
@@ -145,8 +149,12 @@ const createAuthServiceStub = (result: LoginResult): AuthServiceStub => {
     async logout(refresh: string) {
       stub.logoutCalls.push([refresh]);
     },
-    async createSession(id: string, username: string | null) {
-      stub.createSessionCalls.push([id, username]);
+    async createSession(
+      id: string,
+      username: string | null,
+      extra: Record<string, unknown> = {},
+    ) {
+      stub.createSessionCalls.push([id, username, { ...extra }]);
       return {
         access: stub.createSessionResult.access,
         refresh: stub.createSessionResult.refresh,
@@ -278,6 +286,98 @@ test("login returns totp step-up with issued token", async (t) => {
   });
 });
 
+test("login reutiliza metadados do trusted device para emitir sessão AAL2", async (t) => {
+  process.env.AUTH_CONTROLLER_SKIP_DEFAULT = "1";
+  const controller = await import("../auth.controller");
+  const authService = createAuthServiceStub({ id: "user-123", username: "Neo" });
+  const totpService = createTotpServiceStub(true);
+  const trustedDevice = createTrustedDeviceStub({
+    userId: "user-123",
+    acr: "aal2",
+    amr: ["pwd", "otp", "otp"],
+    issuedAt: 1700000000000,
+  });
+  controller.__setAuthControllerDeps({
+    authService,
+    totpService,
+    getTrustedDevice: trustedDevice,
+  });
+  t.after(() => {
+    controller.__resetAuthControllerDeps();
+  });
+  const req = {
+    body: { email: "user@example.com", password: "secret" },
+    cookies: { tdid: "device-abc" },
+  } as unknown as Request;
+  const res = makeResponse();
+
+  await controller.login(req, res as Response, (() => {}) as any);
+
+  assert.strictEqual(authService.loginCalls.length, 1);
+  assert.strictEqual(totpService.statusCalls.length, 0);
+  assert.strictEqual(authService.issueStepUpCalls.length, 0);
+  assert.strictEqual(authService.createSessionCalls.length, 1);
+  assert.deepStrictEqual(authService.createSessionCalls[0], [
+    "user-123",
+    "Neo",
+    {
+      acr: "aal2",
+      amr: ["pwd", "otp"],
+      trusted_device: true,
+      trusted_device_id: "device-abc",
+      trusted_device_issued_at: 1700000000000,
+    },
+  ]);
+  assert.strictEqual(res.statusCalls.length, 0);
+  assert.strictEqual(res.jsonCalls.length, 1);
+  assert.deepStrictEqual(res.jsonCalls[0][0], {
+    token: authService.createSessionResult.access,
+    username: "Neo",
+  });
+});
+
+test("login define claims AAL2 padrão quando metadata não traz fatores", async (t) => {
+  process.env.AUTH_CONTROLLER_SKIP_DEFAULT = "1";
+  const controller = await import("../auth.controller");
+  const authService = createAuthServiceStub({ id: "user-123", username: "Neo" });
+  const totpService = createTotpServiceStub(true);
+  const trustedDevice = createTrustedDeviceStub({ userId: "user-123" });
+  controller.__setAuthControllerDeps({
+    authService,
+    totpService,
+    getTrustedDevice: trustedDevice,
+  });
+  t.after(() => {
+    controller.__resetAuthControllerDeps();
+  });
+  const req = {
+    body: { email: "user@example.com", password: "secret" },
+    cookies: { tdid: "device-def" },
+  } as unknown as Request;
+  const res = makeResponse();
+
+  await controller.login(req, res as Response, (() => {}) as any);
+
+  assert.strictEqual(authService.createSessionCalls.length, 1);
+  assert.deepStrictEqual(authService.createSessionCalls[0], [
+    "user-123",
+    "Neo",
+    {
+      acr: "aal2",
+      amr: ["pwd", "otp"],
+      trusted_device: true,
+      trusted_device_id: "device-def",
+    },
+  ]);
+  assert.strictEqual(totpService.statusCalls.length, 0);
+  assert.strictEqual(res.statusCalls.length, 0);
+  assert.strictEqual(res.jsonCalls.length, 1);
+  assert.deepStrictEqual(res.jsonCalls[0][0], {
+    token: authService.createSessionResult.access,
+    username: "Neo",
+  });
+});
+
 test("login returns 401 when auth service rejects with invalid credentials", async (t) => {
   process.env.AUTH_CONTROLLER_SKIP_DEFAULT = "1";
   const controller = await import("../auth.controller");
@@ -324,8 +424,12 @@ test("login inclui requestId quando emissão de sessão falha", async (t) => {
   process.env.AUTH_CONTROLLER_SKIP_DEFAULT = "1";
   const controller = await import("../auth.controller");
   const authService = createAuthServiceStub({ id: "user-123", username: "Neo" });
-  authService.createSession = async (id: string, username: string | null) => {
-    authService.createSessionCalls.push([id, username]);
+  authService.createSession = async (
+    id: string,
+    username: string | null,
+    extra: Record<string, unknown> = {},
+  ) => {
+    authService.createSessionCalls.push([id, username, { ...extra }]);
     const err = new Error("ISSUE_TOKENS_FAILED") as Error & {
       code: string;
       status: number;
