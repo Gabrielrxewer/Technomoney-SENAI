@@ -260,11 +260,17 @@ export class AuthService {
       throw new DomainError("INVALID_TOKEN", 400);
     }
     if (record.used_at) {
-      log.warn({ evt: "auth.reset.confirm.used", userId: mask(record.user_id) });
+      log.warn({
+        evt: "auth.reset.confirm.used",
+        userId: mask(record.user_id),
+      });
       throw new DomainError("TOKEN_ALREADY_USED", 400);
     }
     if (record.expires_at.getTime() <= this.now().getTime()) {
-      log.warn({ evt: "auth.reset.confirm.expired", userId: mask(record.user_id) });
+      log.warn({
+        evt: "auth.reset.confirm.expired",
+        userId: mask(record.user_id),
+      });
       throw new DomainError("TOKEN_EXPIRED", 400);
     }
     const ok = await comparePassword(secret, record.token_hash);
@@ -329,11 +335,17 @@ export class AuthService {
       throw new DomainError("INVALID_TOKEN", 400);
     }
     if (record.confirmed_at) {
-      log.warn({ evt: "auth.verify.confirm.used", userId: mask(record.user_id) });
+      log.warn({
+        evt: "auth.verify.confirm.used",
+        userId: mask(record.user_id),
+      });
       throw new DomainError("TOKEN_ALREADY_USED", 400);
     }
     if (record.expires_at.getTime() <= this.now().getTime()) {
-      log.warn({ evt: "auth.verify.confirm.expired", userId: mask(record.user_id) });
+      log.warn({
+        evt: "auth.verify.confirm.expired",
+        userId: mask(record.user_id),
+      });
       throw new DomainError("TOKEN_EXPIRED", 400);
     }
     const ok = await comparePassword(secret, record.token_hash);
@@ -349,7 +361,7 @@ export class AuthService {
   }
 
   private sanitizeSessionExtra(
-    extra: Record<string, unknown> | null | undefined,
+    extra: Record<string, unknown> | null | undefined
   ): Record<string, unknown> {
     if (!extra || typeof extra !== "object") {
       return {};
@@ -386,7 +398,7 @@ export class AuthService {
 
   async refresh(
     oldToken: string,
-    extraProvider?: (userId: string) => Promise<Record<string, unknown> | null>,
+    extraProvider?: (userId: string) => Promise<Record<string, unknown> | null>
   ): Promise<RefreshTokensDto> {
     const log = this.log();
     log.debug({ evt: "auth.refresh.start", oldJti: maskJti(getJti(oldToken)) });
@@ -433,7 +445,7 @@ export class AuthService {
           extraPayload = provided;
         }
       } catch (err) {
-        this.log.debug({
+        log.debug({
           evt: "auth.refresh.extra_failed",
           err: safeErr(err),
         });
