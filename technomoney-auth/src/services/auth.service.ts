@@ -348,7 +348,46 @@ export class AuthService {
     log.debug({ evt: "auth.verify.confirm.ok", userId: mask(record.user_id) });
   }
 
-  async refresh(oldToken: string): Promise<RefreshTokensDto> {
+  private sanitizeSessionExtra(
+    extra: Record<string, unknown> | null | undefined,
+  ): Record<string, unknown> {
+    if (!extra || typeof extra !== "object") {
+      return {};
+    }
+    const sanitized: Record<string, unknown> = {};
+    if (typeof extra.acr === "string" && extra.acr.trim().length > 0) {
+      sanitized.acr = extra.acr.trim();
+    }
+    if (Array.isArray(extra.amr)) {
+      const amr = extra.amr
+        .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
+        .filter((entry) => entry.length > 0);
+      if (amr.length > 0) {
+        sanitized.amr = Array.from(new Set(amr));
+      }
+    }
+    if (typeof extra.trusted_device === "boolean") {
+      sanitized.trusted_device = extra.trusted_device;
+    }
+    if (
+      typeof extra.trusted_device_id === "string" &&
+      extra.trusted_device_id.trim().length > 0
+    ) {
+      sanitized.trusted_device_id = extra.trusted_device_id.trim();
+    }
+    if (
+      typeof extra.trusted_device_issued_at === "number" &&
+      Number.isFinite(extra.trusted_device_issued_at)
+    ) {
+      sanitized.trusted_device_issued_at = extra.trusted_device_issued_at;
+    }
+    return sanitized;
+  }
+
+  async refresh(
+    oldToken: string,
+    extraProvider?: (userId: string) => Promise<Record<string, unknown> | null>,
+  ): Promise<RefreshTokensDto> {
     const log = this.log();
     log.debug({ evt: "auth.refresh.start", oldJti: maskJti(getJti(oldToken)) });
     let id = "";
@@ -386,13 +425,28 @@ export class AuthService {
     }
     let access = "";
     let refresh = "";
+    let extraPayload: Record<string, unknown> = {};
+    if (extraProvider) {
+      try {
+        const provided = await extraProvider(id);
+        if (provided && typeof provided === "object") {
+          extraPayload = provided;
+        }
+      } catch (err) {
+        this.log.debug({
+          evt: "auth.refresh.extra_failed",
+          err: safeErr(err),
+        });
+      }
+    }
+    const sanitizedExtra = this.sanitizeSessionExtra(extraPayload);
     await sequelize.transaction(async (tx) => {
       refresh = this.jwt.signRefresh(id);
       const sid = await this.sessions.start(id, refresh, tx);
       await this.tokens.save(refresh, id, tx);
       await this.sessions.revokeByRefreshToken(oldToken, tx);
       await this.tokens.revoke(oldToken, tx);
-      access = this.jwt.signAccess(id, { sid });
+      access = this.jwt.signAccess(id, { sid, ...sanitizedExtra });
     });
     const bindings = {
       evt: "auth.refresh.ok",
@@ -422,7 +476,9 @@ export class AuthService {
     try {
       const { kid, alg } = keysService.getActive();
       log.debug({ evt: "auth.issue_tokens.start", kid, alg });
-      const payload: Record<string, unknown> = { ...extra };
+      const payload: Record<string, unknown> = {
+        ...this.sanitizeSessionExtra(extra),
+      };
       if (typeof username === "string" && username.length > 0) {
         payload.username = username;
         payload.preferred_username = username;

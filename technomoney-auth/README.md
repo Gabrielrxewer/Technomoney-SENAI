@@ -64,8 +64,12 @@ restritivo, cookies seguros e forçamento de HTTPS).
 
 #### Renovação e revogação
 - `POST /api/auth/refresh` valida token de atualização, verifica se o `sid`
-  continua ativo e retorna tokens novos. Tentativas de reuse geram log de auditoria
-  `auth.refresh.reuse_detected` e revogam a sessão.
+  continua ativo e retorna tokens novos. Quando o par `tdid`/`tdmeta` pertence ao
+  mesmo usuário, os metadados do trusted device são reutilizados para assinar o
+  novo access token com `acr=aal2`, `amr` deduplicados e claims
+  `trusted_device*`, garantindo que rotas protegidas por MFA permaneçam acessíveis
+  após um refresh. Tentativas de reuse ou de reaproveitar cookies de outro usuário
+  são ignoradas, e o fluxo mantém `aal1`.
 - `POST /api/auth/logout` e `AuthService.resetPassword` revogam todos os refresh
   tokens ativos do usuário.
 

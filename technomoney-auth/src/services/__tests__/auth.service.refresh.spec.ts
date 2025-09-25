@@ -198,3 +198,67 @@ test("refresh detecta reuse e loga com severidade", async () => {
   );
   assert.ok(auditLog, "audit deve registrar reuse");
 });
+
+test("refresh propaga claims AAL2 quando provider retorna metadados confiáveis", async () => {
+  (globalThis as any).__logRecords = [];
+  const captured: Array<Record<string, unknown>> = [];
+  const { AuthService } = require("../auth.service");
+  const service = new AuthService({
+    jwtService: {
+      verifyRefresh() {
+        return { sub: "user-42" };
+      },
+      signRefresh() {
+        return "next-refresh";
+      },
+      signAccess(_: string, payload: Record<string, unknown>) {
+        captured.push(payload);
+        return "next-access";
+      },
+    } as any,
+    tokenService: {
+      async isValid(token: string) {
+        return token === okToken;
+      },
+      async wasIssued() {
+        return true;
+      },
+      async save() {},
+      async revoke() {},
+      async revokeAllForUser() {},
+    } as any,
+    sessionService: {
+      async start() {
+        return "sid-9";
+      },
+      async revokeByRefreshToken() {},
+      async revokeAllForUser() {},
+    } as any,
+  });
+
+  const tokens = await service.refresh(okToken, async (userId) => {
+    if (userId !== "user-42") {
+      throw new Error("unexpected user");
+    }
+    return {
+      acr: "aal2",
+      amr: ["pwd", "otp", "otp"],
+      trusted_device: true,
+      trusted_device_id: " device-xyz ",
+      trusted_device_issued_at: 1700000000000,
+      ignored: "value",
+    };
+  });
+
+  assert.equal(tokens.access, "next-access");
+  assert.equal(tokens.refresh, "next-refresh");
+  assert.equal(captured.length, 1);
+  assert.deepEqual(captured[0], {
+    sid: "sid-9",
+    acr: "aal2",
+    amr: ["pwd", "otp"],
+    trusted_device: true,
+    trusted_device_id: "device-xyz",
+    trusted_device_issued_at: 1700000000000,
+  });
+});

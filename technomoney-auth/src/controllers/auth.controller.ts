@@ -261,7 +261,17 @@ export const refresh: RequestHandler = async (req, res) => {
     return;
   }
   try {
-    const { access, refresh } = await authService.refresh(old);
+    let td: Awaited<ReturnType<typeof getTrustedDeviceImpl>> | null = null;
+    try {
+      td = await getTrustedDeviceImpl(req);
+    } catch {}
+    const provider = td
+      ? async (userId: string) => {
+          if (!td || td.userId !== userId) return {};
+          return buildTrustedDeviceSessionExtra(td, req);
+        }
+      : undefined;
+    const { access, refresh } = await authService.refresh(old, provider);
     const oldSid = deriveSid(old);
     const newSid = deriveSid(refresh);
     const exp = decodeExp(access);
