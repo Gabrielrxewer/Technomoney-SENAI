@@ -32,6 +32,11 @@ produção.
   segundos (padrão 300). Logs `mfa.enroll.*`, `mfa.challenge.*`, `ws.connection.*`
   e `auth.refresh.*` incluem `requestId`, identificadores mascarados e são
   retidos por, no mínimo, 180 dias para auditoria.
+- Dispositivos confiáveis agora armazenam em Redis os metadados `acr`/`amr`
+  obtidos durante o primeiro desafio MFA. Sempre que o cookie `tdid` for
+  apresentado, a sessão é renovada com `acr=aal2`, `amr` deduplicados e claims
+  adicionais (`trusted_device`, `trusted_device_id`, `trusted_device_issued_at`),
+  evitando forçar novo TOTP sem perder evidência de segundo fator.
 
 ## `technomoney-payment-api`
 
