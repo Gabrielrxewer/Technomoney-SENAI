@@ -1,119 +1,345 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
-import axios from "axios";
 import "./Auth.css";
+import Spinner from "../../components/Dashboard/Spinner/Spinner";
+import { authApi } from "../../services/http";
+import { useAuth } from "../../context/AuthContext";
+import TotpEnrollment from "./TotpEnrollment";
+import TotpChallenge from "./TotpChallenge";
+
+type StepUpState = {
+  mode: "enroll_totp" | "totp";
+  usernameHint?: string | null;
+};
+
+const MAX_FIELD = 50;
+const MAX_PASS = 50;
 
 const Register: React.FC = () => {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [showPass, setShowPass] = useState(false);
+  const [showConf, setShowConf] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadingSpinner, setLoadingSpinner] = useState(true);
   const [error, setError] = useState("");
+  const [emailTaken, setEmailTaken] = useState(false);
+  const [retryAfter, setRetryAfter] = useState<number | null>(null);
+  const { executeRecaptcha } = useGoogleReCaptcha();
   const navigate = useNavigate();
+  const { login } = useAuth();
+  const [stepUp, setStepUp] = useState<StepUpState | null>(null);
+  const [stepUpProcessing, setStepUpProcessing] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (loading) return;
+  useEffect(() => {
+    const timer = setTimeout(() => setLoadingSpinner(false), 100);
+    return () => clearTimeout(timer);
+  }, []);
 
-    if (password !== confirmPassword) {
-      setError("As senhas não coincidem.");
+  useEffect(() => {
+    if (retryAfter === null) return;
+    if (retryAfter <= 0) {
+      setRetryAfter(null);
+      setError("");
       return;
     }
+    const timer = setTimeout(() => setRetryAfter(retryAfter - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [retryAfter]);
 
-    setLoading(true);
+  const attemptLogin = async () => {
+    if (!executeRecaptcha) {
+      const err: any = new Error("recaptcha_unavailable");
+      err.code = "recaptcha_unavailable";
+      throw err;
+    }
+    const captchaToken = await executeRecaptcha!("login");
+    const { data: csrf } = await authApi.get("auth/csrf", {
+      withCredentials: true,
+    });
+    if (csrf?.csrfToken)
+      authApi.defaults.headers.common["x-csrf-token"] = csrf.csrfToken;
+    const { data } = await authApi.post(
+      "auth/login",
+      { email, password, recaptchaToken: captchaToken },
+      { withCredentials: true }
+    );
+    return data as { token: string; username: string | null };
+  };
+
+  const handleStepUp = async (
+    step: string,
+    data: any | undefined
+  ): Promise<void> => {
+    if (step !== "enroll_totp" && step !== "totp") return;
+    const usernameHint = data?.username ?? null;
+    if (data?.token) {
+      await login(data.token, usernameHint);
+    }
+    setStepUp({ mode: step, usernameHint });
     setError("");
+  };
 
+  const processLoginError = async (err: any) => {
+    const step = err?.response?.data?.stepUp;
+    if (step) {
+      await handleStepUp(step, err.response?.data);
+      return;
+    }
+    const status = err?.response?.status;
+    const msg =
+      err?.response?.data?.message ||
+      "O servidor não responde. Tente novamente.";
+    if (status === 429 && err?.response?.data?.retryAfter) {
+      setRetryAfter(err.response.data.retryAfter);
+      setError(msg);
+    } else {
+      if (msg.toLowerCase().includes("e-mail já está em uso")) {
+        setEmailTaken(true);
+      }
+      setError(msg);
+    }
+  };
+
+  const performLogin = async () => {
+    setLoading(true);
     try {
-      const { data } = await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/auth/register`,
-        { email, password, username },
-        { headers: { "Content-Type": "application/json" } }
-      );
-
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("username", JSON.stringify(data.username));
-
+      const data = await attemptLogin();
+      await login(data.token, data.username);
+      setStepUp(null);
       navigate("/dashboard");
     } catch (err: any) {
-      const message =
-        err?.response?.data?.message ||
-        "O servidor não responde. Tente novamente";
-      setError(message);
-      console.error("Erro ao registrar:", err);
+      if (err?.code === "recaptcha_unavailable") {
+        setError("reCAPTCHA não carregou. Atualize a página.");
+      } else {
+        await processLoginError(err);
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (loading || retryAfter) return;
+    const form = e.currentTarget as HTMLFormElement;
+    if (!form.checkValidity()) {
+      form.reportValidity();
+      return;
+    }
+    if (
+      username.length > MAX_FIELD ||
+      email.length > MAX_FIELD ||
+      password.length > MAX_PASS ||
+      confirm.length > MAX_PASS
+    ) {
+      setError("Cada campo deve ter no máximo 50 caracteres.");
+      return;
+    }
+    if (password !== confirm) {
+      setError("As senhas não coincidem.");
+      return;
+    }
+    if (!executeRecaptcha) {
+      setError("reCAPTCHA não carregou. Atualize a página.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const captchaToken = await executeRecaptcha("register");
+      const { data: csrf } = await authApi.get("auth/csrf", {
+        withCredentials: true,
+      });
+      if (csrf?.csrfToken)
+        authApi.defaults.headers.common["x-csrf-token"] = csrf.csrfToken;
+      await authApi.post(
+        "auth/register",
+        { username, email, password, recaptchaToken: captchaToken },
+        { withCredentials: true }
+      );
+      await performLogin();
+    } catch (err: any) {
+      const status = err.response?.status;
+      const msg =
+        err.response?.data?.message ||
+        "O servidor não responde. Tente novamente.";
+      if (status === 429 && err.response?.data?.retryAfter) {
+        setRetryAfter(err.response.data.retryAfter);
+        setError(msg);
+      } else {
+        if (msg.toLowerCase().includes("e-mail já está em uso")) {
+          setEmailTaken(true);
+        }
+        setError(msg);
+      }
+      setLoading(false);
+    }
+  };
+
+  const handleChallengeSuccess = async () => {
+    try {
+      setStepUpProcessing(true);
+      await performLogin();
+    } finally {
+      setStepUpProcessing(false);
+    }
+  };
+
+  const handleEnrollmentCompleted = async () => {
+    setStepUp((prev) => ({
+      mode: "totp",
+      usernameHint: prev?.usernameHint ?? null,
+    }));
+    await handleChallengeSuccess();
+  };
+
+  if (loadingSpinner) return <Spinner />;
+
+  if (retryAfter !== null) {
+    return (
+      <div className="auth-container">
+        <Header />
+        <div className="auth-content">
+          <div className="auth-card blocked">
+            <h2>Registro Temporariamente Bloqueado</h2>
+            <p>
+              Você poderá tentar novamente em <strong>{retryAfter}s</strong>.
+            </p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="auth-container">
       <Header />
       <div className="auth-content">
         <div className="auth-card">
-          <h2>Registrar-se</h2>
-          <form onSubmit={handleSubmit}>
+          <h2>Registro</h2>
+          <form onSubmit={handleSubmit} noValidate>
             <div className="form-group">
-              <label htmlFor="username">Nome de usuário</label>
+              <label htmlFor="reg-username">Usuário</label>
               <input
-                type="username"
-                id="username"
+                id="reg-username"
+                required
+                maxLength={MAX_FIELD}
+                placeholder="Escolha um nome"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                required
-                placeholder="Digite seu username"
+              />
+              <span
+                className="char-count"
+                data-current={username.length}
+                data-max={MAX_FIELD}
               />
             </div>
             <div className="form-group">
-              <label htmlFor="email">E-mail</label>
+              <label htmlFor="reg-email">E-mail</label>
               <input
+                id="reg-email"
                 type="email"
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
                 required
+                maxLength={MAX_FIELD}
                 placeholder="Digite seu e-mail"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setEmailTaken(false);
+                }}
+                className={emailTaken ? "input-error" : ""}
+              />
+              <span
+                className="char-count"
+                data-current={email.length}
+                data-max={MAX_FIELD}
               />
             </div>
-
             <div className="form-group">
-              <label htmlFor="password">Senha</label>
-              <input
-                type="password"
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                placeholder="Digite sua senha"
+              <label htmlFor="reg-password">Senha</label>
+              <div className="input-eye">
+                <input
+                  id="reg-password"
+                  type={showPass ? "text" : "password"}
+                  required
+                  minLength={6}
+                  maxLength={MAX_PASS}
+                  placeholder="Mínimo 6 caracteres"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="password-input"
+                />
+                <button
+                  type="button"
+                  className="eye-btn"
+                  onClick={() => setShowPass(!showPass)}
+                  aria-label={showPass ? "Ocultar senha" : "Mostrar senha"}
+                >
+                  {showPass ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
+              <span
+                className="char-count"
+                data-current={password.length}
+                data-max={MAX_PASS}
               />
             </div>
-
             <div className="form-group">
-              <label htmlFor="confirmPassword">Confirmar senha</label>
-              <input
-                type="password"
-                id="confirmPassword"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                placeholder="Confirme sua senha"
+              <label htmlFor="reg-confirm">Confirmar senha</label>
+              <div className="input-eye">
+                <input
+                  id="reg-confirm"
+                  type={showConf ? "text" : "password"}
+                  required
+                  minLength={6}
+                  maxLength={MAX_PASS}
+                  placeholder="Repita a senha"
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                  className="password-input"
+                />
+                <button
+                  type="button"
+                  className="eye-btn"
+                  onClick={() => setShowConf(!showConf)}
+                  aria-label={showConf ? "Ocultar senha" : "Mostrar senha"}
+                >
+                  {showConf ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
+              <span
+                className="char-count"
+                data-current={confirm.length}
+                data-max={MAX_PASS}
               />
             </div>
-
-            <button type="submit" className="auth-button" disabled={loading}>
+            <button className="auth-button" disabled={loading}>
               {loading ? "Enviando…" : "Registrar"}
             </button>
-
             {error && <p className="error-msg">{error}</p>}
           </form>
-
+          {stepUp?.mode === "enroll_totp" && (
+            <TotpEnrollment onCompleted={handleEnrollmentCompleted} />
+          )}
+          {stepUp?.mode === "totp" && (
+            <TotpChallenge
+              onSuccess={handleChallengeSuccess}
+              disabled={stepUpProcessing || loading}
+            />
+          )}
           <div className="auth-footer">
             <p>
-              Já tem uma conta?{" "}
+              Já tem conta?{" "}
               <Link to="/login">
-                <strong>Faça login</strong>
+                <strong>Entrar</strong>
               </Link>
             </p>
           </div>

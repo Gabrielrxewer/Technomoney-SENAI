@@ -1,44 +1,190 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
-import axios from "axios";
 import "./Auth.css";
+import Spinner from "../../components/Dashboard/Spinner/Spinner";
+import { useAuth } from "../../context/AuthContext";
+import { authApi } from "../../services/http";
+import TotpEnrollment from "./TotpEnrollment";
+import TotpChallenge from "./TotpChallenge";
+
+type StepUpState = {
+  mode: "enroll_totp" | "totp";
+  usernameHint?: string | null;
+};
+
+const MAX_FIELD = 50;
+const MAX_PASS = 50;
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadingSpinner, setLoadingSpinner] = useState(true);
   const [error, setError] = useState("");
+  const [loginError, setLoginError] = useState(false);
+  const [retryAfter, setRetryAfter] = useState<number | null>(null);
+  const { executeRecaptcha } = useGoogleReCaptcha();
   const navigate = useNavigate();
+  const { login } = useAuth();
+  const [stepUp, setStepUp] = useState<StepUpState | null>(null);
+  const [stepUpProcessing, setStepUpProcessing] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (loading) return;
+  useEffect(() => {
+    const timer = setTimeout(() => setLoadingSpinner(false), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (retryAfter === null) return;
+    if (retryAfter <= 0) {
+      setRetryAfter(null);
+      setError("");
+      return;
+    }
+    const timer = setTimeout(() => setRetryAfter(retryAfter - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [retryAfter]);
+
+  const attemptLogin = async () => {
+    if (!executeRecaptcha) {
+      const err: any = new Error("recaptcha_unavailable");
+      err.code = "recaptcha_unavailable";
+      throw err;
+    }
+    const captchaToken = await executeRecaptcha("login");
+    const { data: csrf } = await authApi.get("auth/csrf", {
+      withCredentials: true,
+    });
+    if (csrf?.csrfToken)
+      authApi.defaults.headers.common["x-csrf-token"] = csrf.csrfToken;
+    const { data } = await authApi.post(
+      "auth/login",
+      { email, password, recaptchaToken: captchaToken },
+      { withCredentials: true }
+    );
+    return data as { token: string; username: string | null };
+  };
+
+  const handleStepUp = async (
+    step: string,
+    data: any | undefined
+  ): Promise<void> => {
+    if (step !== "enroll_totp" && step !== "totp") return;
+    const usernameHint = data?.username ?? null;
+    if (data?.token) {
+      await login(data.token, usernameHint, {
+        stepUp: true,
+        acr: data?.acr ?? null,
+        source: "login",
+      });
+    }
+    setStepUp({ mode: step, usernameHint });
+    setError("");
+    setLoginError(false);
+  };
+
+  const processLoginError = async (err: any) => {
+    const step = err?.response?.data?.stepUp;
+    if (step) {
+      await handleStepUp(step, err.response?.data);
+      return;
+    }
+    const status = err?.response?.status;
+    const msg =
+      err?.response?.data?.message ||
+      "O servidor não responde. Tente novamente.";
+    if (status === 429 && err?.response?.data?.retryAfter) {
+      setRetryAfter(err.response.data.retryAfter);
+      setError(msg);
+    } else {
+      const low = msg.toLowerCase();
+      if (
+        low.includes("conta não encontrada") ||
+        low.includes("credenciais") ||
+        low.includes("senha")
+      ) {
+        setLoginError(true);
+      }
+      setError(msg);
+    }
+  };
+
+  const performLogin = async () => {
+    if (loading || retryAfter) return;
     setLoading(true);
     setError("");
-
+    setLoginError(false);
     try {
-      const { data } = await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/auth/login`,
-        { email, password },
-        { headers: { "Content-Type": "application/json" } }
-      );
-
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("username", JSON.stringify(data.username));
-
+      const data = await attemptLogin();
+      await login(data.token, data.username);
+      setStepUp(null);
       navigate("/dashboard");
     } catch (err: any) {
-      const message =
-        err?.response?.data?.message ||
-        "O servidor não responde. Tente novamente.";
-      setError(message);
-      console.error("Erro ao autenticar:", err);
+      if (err?.code === "recaptcha_unavailable") {
+        setError("reCAPTCHA não carregou. Atualize a página.");
+      } else {
+        await processLoginError(err);
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (loading || retryAfter) return;
+    const form = e.currentTarget as HTMLFormElement;
+    if (!form.checkValidity()) {
+      form.reportValidity();
+      return;
+    }
+    if (email.length > MAX_FIELD || password.length > MAX_PASS) {
+      setError("Cada campo deve ter no máximo 50 caracteres.");
+      return;
+    }
+    await performLogin();
+  };
+
+  const handleChallengeSuccess = async () => {
+    setStepUpProcessing(true);
+    try {
+      setStepUp(null);
+      navigate("/dashboard");
+    } finally {
+      setStepUpProcessing(false);
+    }
+  };
+
+  const handleEnrollmentCompleted = () => {
+    setStepUp((prev) => ({
+      mode: "totp",
+      usernameHint: prev?.usernameHint ?? null,
+    }));
+  };
+
+  if (loadingSpinner) return <Spinner />;
+
+  if (retryAfter !== null) {
+    return (
+      <div className="auth-container">
+        <Header />
+        <div className="auth-content">
+          <div className="auth-card blocked">
+            <h2>Login Temporariamente Bloqueado</h2>
+            <p>
+              Você poderá tentar novamente em <strong>{retryAfter}s</strong>.
+            </p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="auth-container">
@@ -46,44 +192,79 @@ const Login: React.FC = () => {
       <div className="auth-content">
         <div className="auth-card">
           <h2>Login</h2>
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} noValidate>
             <div className="form-group">
-              <label htmlFor="email">E-mail</label>
+              <label htmlFor="login-email">E-mail</label>
               <input
+                id="login-email"
                 type="email"
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
                 required
+                maxLength={MAX_FIELD}
                 placeholder="Digite seu e-mail"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setLoginError(false);
+                }}
+                className={loginError ? "input-error" : ""}
+              />
+              <span
+                className="char-count"
+                data-current={email.length}
+                data-max={MAX_FIELD}
               />
             </div>
             <div className="form-group">
-              <label htmlFor="password">Senha</label>
-              <input
-                type="password"
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                placeholder="Digite sua senha"
+              <label htmlFor="login-password">Senha</label>
+              <div className="input-eye">
+                <input
+                  id="login-password"
+                  type={showPass ? "text" : "password"}
+                  required
+                  minLength={6}
+                  maxLength={MAX_PASS}
+                  placeholder="Digite sua senha"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setLoginError(false);
+                  }}
+                  className={`password-input ${loginError ? "input-error" : ""}`}
+                />
+                <button
+                  type="button"
+                  className="eye-btn"
+                  aria-label={showPass ? "Ocultar senha" : "Mostrar senha"}
+                  onClick={() => setShowPass(!showPass)}
+                >
+                  {showPass ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
+              <span
+                className="char-count"
+                data-current={password.length}
+                data-max={MAX_PASS}
               />
             </div>
-
-            <button type="submit" className="auth-button" disabled={loading}>
+            <button className="auth-button" disabled={loading}>
               {loading ? "Enviando…" : "Entrar"}
             </button>
-
             {error && <p className="error-msg">{error}</p>}
           </form>
-
+          {stepUp?.mode === "enroll_totp" && (
+            <TotpEnrollment onCompleted={handleEnrollmentCompleted} />
+          )}
+          {stepUp?.mode === "totp" && (
+            <TotpChallenge
+              onSuccess={handleChallengeSuccess}
+              disabled={stepUpProcessing || loading}
+            />
+          )}
           <div className="auth-footer">
-            <p>
-              Não tem uma conta?{" "}
-              <Link to="/register">
-                <strong>Registre-se</strong>
-              </Link>
-            </p>
+            Não tem conta?{" "}
+            <Link to="/register">
+              <strong>Registre-se</strong>
+            </Link>
           </div>
         </div>
       </div>

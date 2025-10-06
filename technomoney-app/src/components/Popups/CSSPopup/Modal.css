@@ -1,0 +1,79 @@
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7); /* Escurecimento do fundo */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999; /* Modal ficará sobre os outros elementos */
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease-in-out, visibility 0s 0.3s;
+}
+
+.modal-overlay[aria-modal="true"] {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.3s ease-in-out, visibility 0s;
+}
+
+.modal {
+  background-color: var(--color-card-bg);
+  border-radius: 16px;
+  padding: 30px;
+  max-width: 600px;
+  width: 100%;
+  height: 340px; /* Altura fixa */
+  overflow-y: auto; /* Permite rolagem vertical caso o conteúdo seja maior que o espaço */
+  z-index: 10000; /* Modal deve estar acima do fundo */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  position: relative; /* Necessário para posicionamento absoluto do ícone de fechar */
+}
+
+.modal__close {
+  font-size: 30px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--color-primary); /* Cor do título */
+  position: absolute;
+  top: 1px; /* Posição do ícone de fechar em relação ao topo do modal */
+  right: 1px; /* Posição do ícone de fechar no canto direito */
+  transition: color 0.3s, background-color 0.3s;
+}
+
+.modal__close:hover {
+  color: #ff0000; /* Cor vermelha ao passar o mouse */
+}
+
+.modal__title {
+  text-align: center; /* Alinhamento do título à esquerda */
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 15px;
+  color: var(--color-primary);
+  margin-right: 40px; /* Espaço à direita para o ícone */
+}
+
+.modal__body {
+  text-align: justify; /* Justifica o texto */
+  font-size: 1rem;
+  margin-bottom: 16px;
+  color: var(--color-text-secondary);
+  overflow-wrap: break-word; /* Quebra de linha automática */
+}
+
+.modal__list {
+  list-style-type: none;
+  padding: 0;
+}
+
+.modal__list li {
+  margin-bottom: 5px;
+}

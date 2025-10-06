@@ -1,50 +1,195 @@
-import React from "react";
-import "./Home.css";
+import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
+
+import "../Home/Home.css";
+import "../Popups/CSSPopup/Modal.css";
+import AboutSection from "./sections/AboutSection";
+import ServicesSection from "./sections/ServicesSection";
+import PricingSection from "./sections/PricingSection";
+import ContactSection from "./sections/ContactSection";
+import BlogSection from "./sections/BlogSection";
+import FaqSection from "./sections/FaqSection";
+import Spinner from "../Spinner/Spinner";
+
+interface InfoCard {
+  title: string;
+  description: string;
+  details: string[];
+}
+
+const cards: InfoCard[] = [
+  {
+    title: "Personalização",
+    description:
+      "Ajuste o grid, escolha fórmulas e salve tudo em templates. Com carteiras configuráveis, você analisa apenas os dados que importam e compara estratégias rapidamente — liberdade para investir do seu jeito.",
+    details: [
+      "➤ Colunas visíveis: mostre ou oculte métricas conforme sua análise.",
+      "➤ Filtros salvos: aplique rapidamente combinações frequentes.",
+      "➤ Indicadores customizados: adicione fórmulas e KPIs de preferência.",
+    ],
+  },
+  {
+    title: "Interação em tempo real",
+    description:
+      "Cards atualizam preços, volumes e notícias sem recarregar a página. Defina alertas por preço ou evento e receba notificações instantâneas para agir na hora certa.",
+    details: [
+      "➤ Streaming via WebSocket atualizado a cada segundo.",
+      "➤ Alertas visuais quando o preço atinge metas definidas.",
+      "➤ Destaques automáticos de maior alta e maior baixa.",
+    ],
+  },
+  {
+    title: "Simulações",
+    description:
+      "Monte cenários sem arriscar dinheiro: conecte carteiras ou crie simulações do zero, ajuste período e indicadores e acompanhe gráficos que mostram o desempenho da estratégia antes de investir de verdade.",
+    details: [
+      "➤ Crie múltiplos cenários *what-if* lado a lado.",
+      "➤ Vincule simulações a carteiras para comparar resultados.",
+      "➤ Relatórios de rentabilidade, risco e drawdown projetados.",
+    ],
+  },
+];
 
 const Home: React.FC = () => {
+  const { hash } = useLocation();
+  const [activeCard, setActiveCard] = useState<InfoCard | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let raf = requestAnimationFrame(() => {
+      const t = window.setTimeout(() => setLoading(false), 120);
+      return () => clearTimeout(t);
+    });
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  useEffect(() => {
+    if (loading) return;
+
+    try {
+      if (hash && hash.length > 1) {
+        const id = hash.slice(1);
+
+        const byId = document.getElementById(id);
+        if (byId) {
+          setTimeout(() => byId.scrollIntoView({ behavior: "smooth" }), 50);
+          return;
+        }
+
+        const escaped = (window as any).CSS?.escape
+          ? (window as any).CSS.escape(`#${id}`)
+          : `#${id.replace(/([ !"$%&'()*+,./:;<=>?@[\\\]^`{|}~])/g, "\\$1")}`;
+
+        const target = document.querySelector(escaped);
+        if (target) {
+          setTimeout(() => target.scrollIntoView({ behavior: "smooth" }), 50);
+        }
+      }
+    } catch (err) {
+      console.error("Falha ao rolar até o hash:", err);
+    }
+  }, [hash, loading]);
+
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) =>
+      e.key === "Escape" && setActiveCard(null);
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, []);
+
+  const scrollToPrecos = () => {
+    const section = document.getElementById("precos");
+    if (section) section.scrollIntoView({ behavior: "smooth" });
+  };
+
+  if (loading) {
+    return <Spinner />;
+  }
+
   return (
-    <div className="home-container">
-      {/* Seção Principal */}
-      <main className="home-main">
-        <section className="hero">
-          <h1>Acessoria em Investimentos</h1>
-        </section>
-        <button className="saiba-mais">Saiba mais</button>
-      </main>
-      {/* Seção dos Cartões de Informação */}
-      <section className="info-cards">
-        <div className="card">
-          <h1>Personalização</h1>
-          <p>
-            Os usuários podem personalizar a visualização das suas carteiras e
-            das informações das ações, ajustando colunas, filtros e até mesmo os
-            indicadores que desejam visualizar, criando uma experiência mais
-            adaptada às suas necessidades.
-          </p>
-        </div>
-        <div className="card">
-          {" "}
-          <h1>Interação em tempo real</h1>
-          <p>
-            A plataforma oferece atualizações dinâmicas em tempo real das ações
-            no mercado, permitindo que os usuários acompanhem as flutuações de
-            preços e volúmenes de negociação de forma contínua, sem necessidade
-            de recarregar a página.
-          </p>
-        </div>
-        <div className="card">
-          {" "}
-          <h1>Simulações</h1>
-          <p>
-            A plataforma permite que os usuários criem simulações de
-            investimentos, testando diferentes cenários antes de aplicar
-            dinheiro real. É possível vincular simulações a
-            carteiras específicas e acompanhar o comportamento de seus ativos ao
-            longo do tempo.
-          </p>
-        </div>
+    <main className="home_home">
+      {/* Hero */}
+      <header className="hero_home" role="banner" id="hero">
+        <h1 className="hero__title_home">Assessoria em Investimentos</h1>
+        <p className="hero__subtitle_home">
+          Transforme seu futuro financeiro conosco.
+        </p>
+        <button onClick={scrollToPrecos} className="btn_home btn--primary_home">
+          Saiba mais
+        </button>
+      </header>
+
+      {/* Benefícios */}
+      <section
+        className="info-cards_home"
+        id="beneficios"
+        aria-label="Principais benefícios da plataforma"
+      >
+        {cards.map((card) => (
+          <article
+            key={card.title}
+            className="card_home"
+            tabIndex={0}
+            role="button"
+            aria-labelledby={`${card.title
+              .replace(/\s+/g, "-")
+              .toLowerCase()}-title-home`}
+            onClick={() => setActiveCard(card)}
+            onKeyDown={(e) =>
+              (e.key === "Enter" || e.key === " ") && setActiveCard(card)
+            }
+          >
+            <h2
+              id={`${card.title.replace(/\s+/g, "-").toLowerCase()}-title-home`}
+              className="card__title_home"
+            >
+              {card.title}
+            </h2>
+            <p className="card__description_home">{card.description}</p>
+          </article>
+        ))}
       </section>
-    </div>
+
+      {/* Modal */}
+      {activeCard && (
+        <div
+          className="modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-title"
+          onClick={() => setActiveCard(null)} // Fechar ao clicar no fundo
+        >
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <button
+              className="modal__close"
+              onClick={() => setActiveCard(null)}
+              aria-label="Fechar"
+            >
+              ×
+            </button>
+            <h2 id="modal-title" className="modal__title">
+              {activeCard.title}
+            </h2>
+            <p className="modal__body">{activeCard.description}</p>
+            <ul className="modal__list">
+              {activeCard.details.map((d) => (
+                <li key={d}>{d}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {/* Seções de 100vh */}
+      <div className="lp">
+        <AboutSection />
+        <ServicesSection />
+        <PricingSection />
+        <ContactSection />
+        <BlogSection />
+        <FaqSection />
+      </div>
+    </main>
   );
 };
 

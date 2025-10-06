@@ -1,0 +1,253 @@
+/* =====================================================
+   LANDING PAGE (escopo .lp)
+   ===================================================== */
+
+/* ---------- Tokens de cor, sombra e raio ---------- */
+:root {
+  --color-bg:             #0d1821;
+  --color-card-bg:        #132f3d;
+  --color-card-glass:     #132f3dcc;     /* 80% opacidade */;
+  --color-primary:        #00c6ff;
+  --color-primary-dark:   #05a7d9;
+
+  --color-text-main:      #e4f0f4;
+  --color-text-secondary: #c0d4db;
+
+  --shadow-primary: 0 8px 18px rgba(0, 0, 0, 0.15);
+  --shadow-hover:   0 14px 28px rgba(0, 0, 0, 0.28);
+
+  --radius-lg: 1.2rem;
+  --radius-sm: .55rem;
+
+  --gap-after-cards: 4rem;
+}
+
+/* =====================================================
+   CONTEXTUAL – folga após bloco de benefícios
+   ===================================================== */
+.info-cards_home {
+  margin-bottom: var(--gap-after-cards);
+}
+
+/* =====================================================
+   CONTÊINER DE PÁGINAS (snap)
+   ===================================================== */
+.lp {
+  background: var(--color-bg);
+  scroll-snap-type: y mandatory;
+  overscroll-behavior-y: contain;
+}
+
+/* =====================================================
+   SEÇÃO GENÉRICA
+   ===================================================== */
+.lp .section_generic {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  padding: clamp(1.5rem, 4vw, 7rem);
+  scroll-snap-align: start;
+  color: var(--color-text-main);
+}
+
+.lp .section_generic h2 {
+  font-size: clamp(2rem, 2.5vw + 1rem, 3rem);
+  color: var(--color-primary);
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.lp .section_generic p,
+.lp .section_generic li {
+  font-size: 1.08rem;
+  line-height: 1.68;
+  color: var(--color-text-secondary);
+  max-width: 70ch;
+  margin: 0 auto 1rem;
+  text-align: justify;
+  text-justify: inter-word;
+}
+
+/* =====================================================
+   PLANOS – full-width, efeito moderno e texto centralizado
+   ===================================================== */
+.lp .pricing__plans {
+  --min-card: clamp(280px, 28vw, 380px);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--min-card), 1fr));
+  gap: clamp(1.25rem, 2vw, 2.5rem);
+  width: 100%;
+  margin-top: 3rem;
+  padding-inline: clamp(1rem, 4vw, 5rem);
+}
+
+.lp .plan_card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--color-card-glass);
+  border: 1px solid transparent;
+  backdrop-filter: blur(10px);
+  border-radius: var(--radius-lg);
+  padding: 3rem 2rem 4rem;
+  box-shadow: var(--shadow-primary);
+  overflow: hidden;
+  isolation: isolate;
+  transition:
+    transform .4s cubic-bezier(.22,.61,.36,1),
+    box-shadow .35s ease,
+    border-color .35s ease;
+  text-align: center; /* CENTRALIZA TODO TEXTO */
+}
+
+.lp .plan_card::before {
+  content: "";
+  position: absolute;
+  inset: -30%;
+  background: conic-gradient(
+     from 180deg at 50% 50%,
+     transparent 10deg,
+     var(--color-primary) 80deg,
+     transparent 90deg
+  );
+  filter: blur(30px);
+  opacity: 0;
+  transition: opacity .4s ease, transform .4s ease;
+  transform: rotate(25deg);
+  z-index: -1;
+}
+
+.lp .plan_card:hover::before,
+.lp .plan_card:focus-within::before {
+  opacity: .35;
+  transform: rotate(0deg);
+}
+
+.lp .plan_card:hover,
+.lp .plan_card:focus-within {
+  transform: translateY(-10px) scale(1.03);
+  box-shadow: var(--shadow-hover);
+  border-color: var(--color-primary);
+}
+
+.lp .plan_card[data-featured="true"] {
+  border-color: var(--color-primary);
+}
+.lp .plan_card[data-featured="true"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow:
+    0 0 0 2px var(--color-primary) inset,
+    0 0 18px var(--color-primary);
+  pointer-events: none;
+}
+
+.lp .plan_card h3 {
+  font-size: 1.55rem;
+  color: var(--color-primary);
+  margin-bottom: .85rem;
+}
+
+.lp .plan_card .price {
+  font-size: 2.1rem;
+  font-weight: 700;
+  margin-bottom: 1.35rem;
+  color: var(--color-text-main);
+}
+
+.lp .plan_card ul {
+  list-style: none;
+  margin: 0 auto 2rem;
+  padding: 0;
+  max-width: 42ch;
+  text-align: center;
+}
+
+.lp .plan_card li {
+  position: relative;
+  display: inline-block; 
+  margin: .4rem 0;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  padding-left: 0;  
+}
+
+.lp .plan_card li::before {
+  content: "✓ ";
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.lp .plan_card button {
+  padding: .9rem 2.25rem;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: #081318;
+  cursor: pointer;
+  transition: transform .2s ease, filter .2s ease, box-shadow .2s ease;
+  margin: 0 auto; 
+}
+
+.lp .faq_item {
+  margin-bottom: 1.6rem;
+  border-bottom: 1px solid rgba(255, 255, 255, .09);
+  width: 100%;
+  max-width: 70ch;
+}
+
+.lp .faq_item summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--color-primary);
+  padding: .8rem 0;
+  position: relative;
+}
+
+.lp .faq_item summary::after {
+  content: '+';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.5rem;
+  transition: transform .25s ease;
+}
+
+.lp .faq_item[open] summary::after {
+  transform: rotate(45deg);
+}
+
+.lp .faq_item p {
+  margin: .85rem 0 1.2rem;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+  text-align: justify;
+  text-justify: inter-word;
+}
+
+@media (max-width: 768px) {
+  .lp .section_generic {
+    padding-inline: 1rem;
+  }
+
+  .lp .plan_card {
+    padding: 2.2rem 1.5rem 3rem;
+  }
+
+  .lp .plan_card .price {
+    font-size: 1.8rem;
+  }
+
+  .lp .plan_card button {
+    width: 100%;
+  }
+}

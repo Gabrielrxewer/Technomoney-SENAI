@@ -6,7 +6,12 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "outDir": "./dist",
-    "rootDir": "./src"
+    "rootDir": "./src",
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@technomoney/types/*": ["../types/*"]
+    }
   },
   "include": ["src/**/*"]
 }
