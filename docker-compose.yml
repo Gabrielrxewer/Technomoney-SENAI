@@ -92,5 +92,26 @@ services:
       postgres:
         condition: service_healthy
 
+  ia-agent:
+    build:
+      context: ./technomoney-ia
+    container_name: technomoney-ia
+    env_file:
+      - ./technomoney-ia/.env
+    environment:
+      NODE_ENV: production
+      PORT: "4010"
+      AUTH_INTROSPECTION_URL: "http://auth:4000/api/oauth2/introspect"
+      RATE_LIMIT_WINDOW_MS: "60000"
+      RATE_LIMIT_MAX: "60"
+    ports:
+      - "4010:4010"
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      auth:
+        condition: service_started
+
 volumes:
   pgdata:
