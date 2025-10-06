@@ -1,174 +1,386 @@
 import React, {
   createContext,
   useContext,
-  useState,
   useEffect,
-  useCallback,
+  useMemo,
   useRef,
-  ReactNode,
+  useState,
+  useCallback,
 } from "react";
-import { AxiosRequestConfig, AxiosResponse } from "axios";
-import { authApi } from "../services/http";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { AxiosRequestConfig, AxiosResponse } from "axios";
+import { authApi, setAuthRefreshHandler, setAuthTokenGetter } from "../services/http";
+import type {
+  AuthContextType,
+  AuthEvent,
+  AuthResponse,
+  MeResponse,
+  StepUpRequirement,
+  LoginOptions,
+} from "../types/auth";
 
-interface UserPayload {
-  id: string;
-  username: string;
-  exp: number;
+function b64urlToBuffer(b64url: string): ArrayBuffer {
+  const pad = "=".repeat((4 - (b64url.length % 4)) % 4);
+  const b64 = (b64url + pad).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(b64);
+  const out = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+  return out.buffer;
 }
 
-interface AuthContextType {
-  token: string | null;
-  username: string | null;
-  login: (token: string, username: string) => void;
-  logout: () => Promise<void>;
-  isAuthenticated: boolean;
-  loading: boolean;
-  fetchWithAuth: (
-    input: string,
-    config?: AxiosRequestConfig
-  ) => Promise<AxiosResponse>;
+function bufferToB64url(buf: ArrayBuffer | Uint8Array): string {
+  const b = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+  let s = "";
+  for (let i = 0; i < b.byteLength; i++) s += String.fromCharCode(b[i]);
+  const b64 = btoa(s);
+  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-const queryClient = new QueryClient();
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [token, setToken] = useState<string | null>(null);
+  const tokenRef = useRef<string | null>(null);
+  const [tokenState, setTokenState] = useState<string | null>(null);
+  const setToken = useCallback((value: string | null) => {
+    tokenRef.current = value;
+    setTokenState(value);
+  }, []);
+  const token = tokenState;
   const [username, setUsername] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const initRef = useRef(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [connected, setConnected] = useState<boolean>(false);
+  const [lastEvent, setLastEvent] = useState<AuthEvent | null>(null);
+  const [stepUpRequirement, setStepUpRequirement] =
+    useState<StepUpRequirement | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
+  const backoffRef = useRef<number>(500);
 
-  const logout = useCallback(async () => {
+  const refreshToken = useCallback(async (): Promise<string | null> => {
     try {
-      await authApi.post("/api/auth/logout");
-    } catch {}
-    setToken(null);
-    setUsername(null);
-    localStorage.removeItem("token");
-    localStorage.removeItem("username");
-  }, []);
+      const r = await authApi.post<AuthResponse>(
+        "/auth/refresh",
+        {},
+        { withCredentials: true }
+      );
+      const newToken = r.data.token;
+      setToken(newToken);
+      setIsAuthenticated(true);
+      return newToken;
+    } catch {
+      setToken(null);
+      setIsAuthenticated(false);
+      return null;
+    }
+  }, [setToken, setStepUpRequirement]);
 
-  const validateTokenBackend = useCallback(
-    async (t: string): Promise<UserPayload | null> => {
+  const getMe = useCallback(
+    async (currentToken: string): Promise<MeResponse | null> => {
       try {
-        const res = await authApi.get("/api/auth/me", {
-          headers: { Authorization: `Bearer ${t}` },
+        const r = await authApi.get<MeResponse>("/auth/me", {
+          headers: { Authorization: `Bearer ${currentToken}` },
         });
-        return res.data as UserPayload;
+        setUsername(r.data.username || null);
+        setIsAuthenticated(true);
+        return r.data;
       } catch {
+        setIsAuthenticated(false);
         return null;
       }
     },
     []
   );
 
-  const refreshAccessToken = useCallback(async (): Promise<string | null> => {
+  const logout = useCallback(async () => {
     try {
-      const res = await authApi.post("/api/auth/refresh");
-      const newToken = res.data.token;
-      localStorage.setItem("token", newToken);
-      setToken(newToken);
-      return newToken;
-    } catch {
-      await logout();
-      return null;
-    }
-  }, [logout]);
+      await authApi.post("/auth/logout", {}, { withCredentials: true });
+    } catch {}
+    try {
+      wsRef.current?.close();
+    } catch {}
+    setConnected(false);
+    setToken(null);
+    setUsername(null);
+    setIsAuthenticated(false);
+    setStepUpRequirement(null);
+  }, [setToken]);
 
-  useEffect(() => {
-    if (initRef.current) return;
-    initRef.current = true;
-    const init = async () => {
-      const storedToken = localStorage.getItem("token");
-      const storedUsername = localStorage.getItem("username");
-      if (storedToken && storedUsername) {
-        const user = await validateTokenBackend(storedToken);
-        if (user) {
-          setToken(storedToken);
-          setUsername(JSON.parse(storedUsername));
-        } else {
+  const connectEvents = useCallback(
+    async (currentToken?: string) => {
+      try {
+        let bearer = currentToken || tokenRef.current;
+        if (!bearer) bearer = await refreshToken();
+        if (!bearer) return;
+        const r = await authApi.post<{
+          ticket: string;
+          sid: string;
+          wsUrl: string;
+        }>(
+          "/auth/ws-ticket",
+          {},
+          {
+            headers: { Authorization: `Bearer ${bearer}` },
+            withCredentials: true,
+          }
+        );
+        const ws = new WebSocket(
+          r.data.wsUrl,
+          `tm.auth.ticket.${r.data.ticket}`
+        );
+        wsRef.current = ws;
+        ws.onopen = () => {
+          setConnected(true);
+          backoffRef.current = 500;
+        };
+        ws.onclose = async (e) => {
+          setConnected(false);
+          if ([4001, 4002, 4003, 4004].includes(e.code)) return;
+          await new Promise((s) =>
+            setTimeout(s, backoffRef.current + Math.random() * 200)
+          );
+          backoffRef.current = Math.min(backoffRef.current * 2, 10000);
+          connectEvents();
+        };
+        ws.onmessage = async (ev) => {
+          try {
+            const msg = JSON.parse(ev.data) as AuthEvent;
+            setLastEvent(msg);
+            if (msg.type === "token.expiring_soon") {
+              await refreshToken();
+            } else if (msg.type === "session.refreshed") {
+            } else if (
+              msg.type === "session.revoked" ||
+              msg.type === "session.compromised"
+            ) {
+              await logout();
+              window.location.assign("/login");
+            } else if (msg.type === "jwks.rotated") {
+              const url = `${import.meta.env.VITE_AUTH_API_URL || ""}/.well-known/jwks.json`;
+              try {
+                await fetch(url, { cache: "reload" });
+              } catch {}
+            } else if (msg.type === "hello") {
+            } else if (msg.type === "stepup.required") {
+              setStepUpRequirement({
+                type: "totp",
+                acr: msg.acr,
+                source: "websocket",
+              });
+            }
+          } catch {}
+        };
+      } catch (e: any) {
+        if (e?.response?.status === 401 || e?.response?.status === 403) {
+          const nt = await refreshToken();
+          if (nt && nt !== currentToken) {
+            await connectEvents(nt);
+            return;
+          }
           await logout();
         }
-      } else {
-        await logout();
       }
-      setLoading(false);
-    };
-    init();
-  }, [validateTokenBackend, logout]);
+    },
+    [refreshToken, logout]
+  );
 
-  const login = (newToken: string, newUsername: string) => {
-    setToken(newToken);
-    setUsername(newUsername);
-    localStorage.setItem("token", newToken);
-    localStorage.setItem("username", JSON.stringify(newUsername));
-  };
+  const loginFn = useCallback(
+    async (newToken: string, name: string | null, options?: LoginOptions) => {
+      setToken(newToken);
+      if (typeof name === "string") setUsername(name);
+      if (options?.stepUp) {
+        setIsAuthenticated(false);
+        setStepUpRequirement({
+          type: "totp",
+          acr: options.acr ?? null,
+          source: options.source ?? "login",
+        });
+        return;
+      }
+      setIsAuthenticated(true);
+      setStepUpRequirement(null);
+      await connectEvents(newToken);
+    },
+    [connectEvents, setToken, setStepUpRequirement]
+  );
 
   const fetchWithAuth = useCallback(
     async (
-      url: string,
-      config: AxiosRequestConfig = {}
+      input: string,
+      config?: AxiosRequestConfig
     ): Promise<AxiosResponse> => {
-      if (!token) throw new Error("Usuário não autenticado");
-      config.headers = {
-        ...(config.headers || {}),
-        Authorization: `Bearer ${token}`,
-      };
+      const bearer = tokenRef.current || (await refreshToken());
+      if (!bearer) throw new Error("unauthenticated");
       try {
-        return await authApi.request({ url, ...config });
-      } catch (error: any) {
-        if (error.response?.status === 401) {
-          const newToken = await refreshAccessToken();
-          if (!newToken) throw new Error("Sessão expirada");
-          config.headers = {
-            ...(config.headers || {}),
-            Authorization: `Bearer ${newToken}`,
-          };
-          try {
-            return await authApi.request({ url, ...config });
-          } catch (err: any) {
-            if (err.response?.status === 401) {
-              await logout();
-              throw new Error("Sessão expirada");
-            }
-            throw err;
-          }
+        const r = await authApi.request({
+          url: input,
+          headers: { Authorization: `Bearer ${bearer}` },
+          ...config,
+        });
+        return r;
+      } catch (e: any) {
+        if (e?.response?.status === 401) {
+          const nt = await refreshToken();
+          if (!nt) throw e;
+          const r = await authApi.request({
+            url: input,
+            headers: { Authorization: `Bearer ${nt}` },
+            ...config,
+          });
+          return r;
         }
-        throw error;
+        throw e;
       }
     },
-    [token, refreshAccessToken, logout]
+    [refreshToken]
   );
 
-  const isAuthenticated = !!token && !!username;
+  const webauthnRegister = useCallback(async (): Promise<boolean> => {
+    const t = tokenRef.current || (await refreshToken());
+    if (!t) return false;
+    const start = await authApi.post<any>(
+      "/webauthn/register/start",
+      {},
+      { headers: { Authorization: `Bearer ${t}` } }
+    );
+    const pub: any = start.data;
+    pub.challenge = b64urlToBuffer(pub.challenge);
+    pub.user.id = b64urlToBuffer(pub.user.id);
+    if (Array.isArray(pub.excludeCredentials)) {
+      pub.excludeCredentials = pub.excludeCredentials.map((c: any) => ({
+        ...c,
+        id: b64urlToBuffer(c.id),
+      }));
+    }
+    const cred = (await navigator.credentials.create({
+      publicKey: pub,
+    })) as PublicKeyCredential;
+    const att = cred.response as AuthenticatorAttestationResponse;
+    const finish = {
+      id: cred.id,
+      rawId: bufferToB64url(cred.rawId),
+      type: cred.type,
+      response: {
+        clientDataJSON: bufferToB64url(att.clientDataJSON),
+        attestationObject: bufferToB64url(att.attestationObject),
+      },
+    };
+    await authApi.post("/webauthn/register/finish", finish, {
+      headers: { Authorization: `Bearer ${t}` },
+    });
+    return true;
+  }, [refreshToken]);
 
-  if (loading) return null;
+  const webauthnAuthenticate = useCallback(async (): Promise<boolean> => {
+    const t = tokenRef.current || (await refreshToken());
+    if (!t) return false;
+    const start = await authApi.post<any>(
+      "/webauthn/authenticate/start",
+      {},
+      { headers: { Authorization: `Bearer ${t}` } }
+    );
+    const req: any = start.data;
+    req.challenge = b64urlToBuffer(req.challenge);
+    if (Array.isArray(req.allowCredentials)) {
+      req.allowCredentials = req.allowCredentials.map((c: any) => ({
+        ...c,
+        id: b64urlToBuffer(c.id),
+      }));
+    }
+    const cred = (await navigator.credentials.get({
+      publicKey: req,
+    })) as PublicKeyCredential;
+    const asr = cred.response as AuthenticatorAssertionResponse;
+    const finish = {
+      id: cred.id,
+      rawId: bufferToB64url(cred.rawId),
+      type: cred.type,
+      response: {
+        clientDataJSON: bufferToB64url(asr.clientDataJSON),
+        authenticatorData: bufferToB64url(asr.authenticatorData),
+        signature: bufferToB64url(asr.signature),
+        userHandle: asr.userHandle ? bufferToB64url(asr.userHandle) : null,
+      },
+    };
+    await authApi.post("/webauthn/authenticate/finish", finish, {
+      headers: { Authorization: `Bearer ${t}` },
+    });
+    return true;
+  }, [refreshToken]);
 
-  return (
-    <QueryClientProvider client={queryClient}>
-      <AuthContext.Provider
-        value={{
-          token,
-          username,
-          login,
-          logout,
-          isAuthenticated,
-          loading,
-          fetchWithAuth,
-        }}
-      >
-        {children}
-      </AuthContext.Provider>
-    </QueryClientProvider>
+  const bootstrap = useCallback(async () => {
+    let t = tokenRef.current;
+    if (!t) t = await refreshToken();
+    if (t) {
+      await getMe(t);
+      await connectEvents(t);
+    }
+    setLoading(false);
+  }, [refreshToken, getMe, connectEvents]);
+
+  useEffect(() => {
+    bootstrap();
+    return () => {
+      try {
+        wsRef.current?.close();
+      } catch {}
+    };
+  }, [bootstrap]);
+
+  useEffect(() => {
+    setAuthTokenGetter(() => tokenRef.current);
+    return () => {
+      setAuthTokenGetter(null);
+    };
+  }, []);
+
+  useEffect(() => {
+    setAuthRefreshHandler(refreshToken);
+    return () => {
+      setAuthRefreshHandler(null);
+    };
+  }, [refreshToken]);
+
+  const value = useMemo<AuthContextType>(
+    () => ({
+      token,
+      username,
+      login: loginFn,
+      logout,
+      isAuthenticated,
+      loading,
+      fetchWithAuth,
+      connected,
+      lastEvent,
+      connectEvents,
+      webauthnRegister,
+      webauthnAuthenticate,
+      stepUpRequirement,
+      setStepUpRequirement,
+    }),
+    [
+      token,
+      username,
+      loginFn,
+      logout,
+      isAuthenticated,
+      loading,
+      fetchWithAuth,
+      connected,
+      lastEvent,
+      connectEvents,
+      webauthnRegister,
+      webauthnAuthenticate,
+      stepUpRequirement,
+      setStepUpRequirement,
+    ]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
-  if (!context)
-    throw new Error("useAuth deve ser usado dentro de AuthProvider");
-  return context;
-};
+export function useAuth(): AuthContextType {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth deve ser usado dentro de AuthProvider");
+  return ctx;
+}

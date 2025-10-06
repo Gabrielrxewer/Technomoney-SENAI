@@ -40,10 +40,8 @@ const Header: React.FC = () => {
         </div>
       </div>
 
-      {/* Menu */}
       {isMenuOpen && <Menu onClose={toggleMenu} />}
 
-      {/* User Popup */}
       {isPopupOpen && (
         <UserPopup
           onClose={togglePopup}

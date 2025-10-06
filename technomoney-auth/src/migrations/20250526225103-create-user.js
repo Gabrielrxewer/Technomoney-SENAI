@@ -5,7 +5,7 @@ module.exports = {
     await queryInterface.createTable("users", {
       id: {
         type: Sequelize.UUID,
-        defaultValue: Sequelize.literal("NEWID()"),
+        defaultValue: Sequelize.literal("gen_random_uuid()"),
         allowNull: false,
         primaryKey: true,
       },
@@ -14,24 +14,29 @@ module.exports = {
         allowNull: false,
         unique: true,
       },
-      password: {
+      username: {
+        type: Sequelize.STRING(30),
+        allowNull: true,
+        unique: true,
+      },
+      password_hash: {
         type: Sequelize.STRING(255),
         allowNull: false,
       },
-      username: {
-        type: Sequelize.STRING(50),
-        allowNull: true,
-        unique: true,
+      is_email_verified: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
       },
       created_at: {
         allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.literal("SYSDATETIME()"),
+        defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
       },
       updated_at: {
         allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.literal("SYSDATETIME()"),
+        defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
       },
     });
   },

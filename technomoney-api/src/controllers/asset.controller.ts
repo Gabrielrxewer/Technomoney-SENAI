@@ -1,56 +1,50 @@
 import { Request, Response } from "express";
+import { asyncHandler } from "../middlewares/asyncHandler.middleware";
 import { AssetService } from "../services/asset.service";
-import { asyncHandler } from "../middlewares/asyncHandler";
+import { AssetRepository } from "../repositories/asset.repository";
+import { AssetRecordRepository } from "../repositories/asset-record.repository";
+import { MarketDataService } from "../services/market-data.service";
+import { AppError } from "../utils/app-error";
 
-const assetService = new AssetService();
+const assetService = new AssetService(
+  new AssetRepository(),
+  new AssetRecordRepository(),
+  new MarketDataService()
+);
 
-/** POST /assets */
 export const createAsset = asyncHandler(async (req: Request, res: Response) => {
   const { tag, name } = req.body;
-  if (!tag || !name) {
-    return res.status(400).json({ error: "tag & name obrigatórios" });
-  }
+  if (!tag || !name) throw new AppError(400, "tag & name obrigatórios");
 
   const [asset, created] = await assetService.create(tag.toUpperCase(), name);
-
-  if (!created) {
-    return res.status(409).json({ error: `Asset com tag '${tag}' já existe` });
-  }
+  if (!created) throw new AppError(409, `Asset com tag '${tag}' já existe`);
 
   res.status(201).json({ id: asset.id, tag: asset.tag, name: asset.name });
 });
 
-/** GET /assets */
 export const getAllAssets = asyncHandler(
   async (_req: Request, res: Response) => {
-    const lista = await assetService.getAllToday();
-    res.json(lista);
+    res.json(await assetService.getAllToday());
   }
 );
 
-/** GET /assets/:tag */
 export const getAssetByTag = asyncHandler(
   async (req: Request, res: Response) => {
     const dto = await assetService.getByTagToday(req.params.tag.toUpperCase());
-    if (!dto) return res.status(404).json({ error: "Asset não encontrado" });
+    if (!dto) throw new AppError(404, "Asset não encontrado");
     res.json(dto);
   }
 );
 
-/** GET /assets/sorted/volume */
-export const getAssetsSortedByVolume = asyncHandler(
-  async (_req: Request, res: Response) => {
-    const lista = await assetService.getAllToday();
-    lista.sort((a, b) => b.volume - a.volume);
-    res.json(lista);
-  }
-);
+const listSorted = async (field: "volume" | "preco") => {
+  const list = await assetService.getAllToday();
+  return list.sort((a: any, b: any) => b[field] - a[field]);
+};
 
-/** GET /assets/sorted/price */
-export const getAssetsSortedByPrice = asyncHandler(
-  async (_req: Request, res: Response) => {
-    const lista = await assetService.getAllToday();
-    lista.sort((a, b) => b.preco - a.preco);
-    res.json(lista);
-  }
-);
+export const getAssetsSortedByVolume = asyncHandler(async (_req, res) => {
+  res.json(await listSorted("volume"));
+});
+
+export const getAssetsSortedByPrice = asyncHandler(async (_req, res) => {
+  res.json(await listSorted("preco"));
+});

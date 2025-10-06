@@ -1,9 +1,7 @@
-/* scroll suave em toda a aplicação */
 html {
   scroll-behavior: smooth;
 }
 
-/* resto do seu reset original */
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',

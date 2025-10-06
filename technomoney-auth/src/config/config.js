@@ -1,17 +1,18 @@
-require("dotenv").config();
+const path = require("path");
 
-module.exports = {
-  development: {
-    username: process.env.DB_USERNAME || "",
-    password: process.env.DB_PASSWORD || "",
-    database: process.env.DB_DATABASE || "",
-    server: process.env.DB_HOST || "",
-    dialect: process.env.DB_DRIVER || "",
-    dialectOptions: {
-      options: {
-        encrypt: false,
-      },
+try {
+  require.resolve("ts-node/register");
+  require("ts-node").register({
+    transpileOnly: true,
+    compilerOptions: {
+      module: "CommonJS",
     },
-    logging: false,
-  },
-};
+    project: path.resolve(__dirname, "..", "..", "tsconfig.json"),
+  });
+} catch (error) {
+  // Ignore if ts-node is not installed; assume a compiled version is available.
+}
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const config = require("./config.ts");
+module.exports = config.default || config;

@@ -1,40 +1,40 @@
-'use strict';
+"use strict";
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('refresh_tokens', {
+    await queryInterface.createTable("refresh_tokens", {
       id: {
         type: Sequelize.UUID,
-        defaultValue: Sequelize.literal('NEWID()'),
+        defaultValue: Sequelize.literal("gen_random_uuid()"),
         allowNull: false,
-        primaryKey: true
+        primaryKey: true,
       },
       user_id: {
         type: Sequelize.UUID,
         allowNull: false,
-        references: {
-          model: 'users',
-          key: 'id'
-        },
-        onDelete: 'CASCADE',
+        references: { model: "users", key: "id" },
+        onUpdate: "CASCADE",
+        onDelete: "CASCADE",
       },
       token: {
-        type: Sequelize.TEXT,
+        type: Sequelize.STRING(255),
         allowNull: false,
+        unique: true,
       },
       revoked: {
         type: Sequelize.BOOLEAN,
-        defaultValue: false
+        allowNull: false,
+        defaultValue: false,
       },
       created_at: {
         allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.literal('SYSDATETIME()')
-      }
+        defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
+      },
     });
   },
 
   async down(queryInterface) {
-    await queryInterface.dropTable('refresh_tokens');
-  }
+    await queryInterface.dropTable("refresh_tokens");
+  },
 };
