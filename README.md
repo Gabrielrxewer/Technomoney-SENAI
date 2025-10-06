@@ -87,6 +87,20 @@ produção.
 - Limite o acesso a essas credenciais apenas para serviços autorizados e
   monitore logs de introspecção para detectar tentativas suspeitas.
 
+## `technomoney-ia`
+
+- Serviço dedicado aos agentes de IA com arquitetura MVC em TypeScript, protegido
+  por introspecção OAuth2. O middleware rejeita tokens sem `acr=aal2`, aplicando
+  rate limiting (`express-rate-limit`), Helmet e CORS configurável para reduzir
+  superfícies de ataque.
+- A rota `POST /api/ia/v1/analysis` valida payloads com Zod antes de delegar ao
+  `AiAgentService`, que calcula tendência (Comprar/Manter/Vender) com base em
+  fundamentos (score, ROE, margem, EV/EBIT), análise textual e notícias.
+- O serviço retorna justificativas (`insights`) e o score ajustado, permitindo
+  auditoria da recomendação. Use `AGENT_BUY_THRESHOLD` > `AGENT_HOLD_THRESHOLD`
+  para controlar a sensibilidade do modelo e monitore logs `ia.auth.denied` para
+  detectar tokens inválidos ou tentativas de abuso.
+
 ## `technomoney-app`
 
 - O dashboard e a carteira deixam de usar mocks e consomem `GET /assets` e
@@ -95,8 +109,12 @@ produção.
 - Toda requisição passa pelo `fetchApiWithAuth`, que injeta o Bearer atual e
   executa um único refresh em caso de `401`, mantendo o rigor de segurança do
   backend.
+- O cartão de "Tendência" envia os dados completos do ativo para o serviço
+  `technomoney-ia`, recebendo análise heurística autenticada e exibindo status
+  de carregamento/erro sem expor detalhes sensíveis.
 - Configure `VITE_API_URL`, `VITE_AUTH_API_URL`, `VITE_RECAPTCHA_SITEKEY` e os
-  parâmetros de CSRF (`VITE_CSRF_*`) antes de executar; o front exige HTTPS e
-  `withCredentials=true` para operar com o autenticador.
+  parâmetros de CSRF (`VITE_CSRF_*`) antes de executar, além do novo
+  `VITE_AI_AGENT_URL`. O front exige HTTPS e `withCredentials=true` para operar
+  com o autenticador e o serviço de IA.
 - Em caso de falhas na API de mercado, a interface apresenta mensagens de erro
   com ação de retry sem expor detalhes sensíveis ao usuário final.

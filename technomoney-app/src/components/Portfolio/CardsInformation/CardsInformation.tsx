@@ -1,5 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import "./CardsInformation.css";
+import { analyzeAsset } from "../../../services/ai";
+import type { AssetDetail } from "../../../types/assets";
+import type { TrendLabel } from "../../../types/ai";
 type Facts = {
   setor: string;
   industria: string;
@@ -14,6 +17,7 @@ type Props = {
   bio: string;
   facts: Facts;
   noticias: string[];
+  asset?: AssetDetail | null;
 };
 
 type ActiveModal = "reco" | "sobre" | "news" | null;
@@ -24,17 +28,85 @@ const CardsInformation: React.FC<Props> = ({
   bio,
   facts,
   noticias,
+  asset,
 }) => {
   const [active, setActive] = useState<ActiveModal>(null);
   const lastTriggerRef = useRef<HTMLElement | null>(null);
+  const [iaResult, setIaResult] = useState<{ tendencia: TrendLabel | string; analise: string } | null>(
+    null
+  );
+  const [iaLoading, setIaLoading] = useState(false);
+  const [iaError, setIaError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setIaResult({ tendencia: recomendacao, analise });
+  }, [recomendacao, analise]);
+
+  useEffect(() => {
+    if (!asset) return;
+
+    const controller = new AbortController();
+    let cancelled = false;
+
+    const fetchAnalysis = async () => {
+      try {
+        setIaLoading(true);
+        setIaError(null);
+        const response = await analyzeAsset(
+          {
+            asset,
+            facts,
+            context: {
+              analiseTexto: analise,
+              recomendacaoAnterior: recomendacao,
+            },
+          },
+          controller.signal
+        );
+        if (!cancelled) {
+          setIaResult({ tendencia: response.tendencia, analise: response.analise });
+        }
+      } catch (error) {
+        if (!cancelled && !(error instanceof DOMException && error.name === "AbortError")) {
+          setIaError("Não foi possível atualizar a tendência inteligente no momento.");
+        }
+      } finally {
+        if (!cancelled) {
+          setIaLoading(false);
+        }
+      }
+    };
+
+    fetchAnalysis();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [
+    asset?.id,
+    asset?.analise,
+    asset?.fundamentals?.score,
+    asset?.recomendacao,
+    facts.setor,
+    facts.industria,
+    facts.sede,
+    facts.fundacao,
+    facts.empregados,
+    analise,
+    recomendacao,
+  ]);
+
+  const tendenciaAtual = iaResult?.tendencia ?? recomendacao;
+  const analiseAtual = iaResult?.analise ?? analise;
 
   const recoClass = useMemo(() => {
-    return recomendacao === "Comprar"
+    return tendenciaAtual === "Comprar"
       ? "ci-up"
-      : recomendacao === "Manter"
+      : tendenciaAtual === "Manter"
         ? "ci-neutral"
         : "ci-down";
-  }, [recomendacao]);
+  }, [tendenciaAtual]);
 
   useEffect(() => {
     const onEsc = (e: KeyboardEvent) => e.key === "Escape" && setActive(null);
@@ -79,16 +151,25 @@ const CardsInformation: React.FC<Props> = ({
           onKeyDown={openModal("reco")}
         >
           <h2 id="ci-card-reco-title" className="ci-title">
-            Recomendação
+            Tendência
           </h2>
           <p
             className={`ci-badge ${recoClass}`}
             aria-live="polite"
             role="status"
           >
-            {recomendacao}
+            {tendenciaAtual}
           </p>
-          <p className="ci-desc ci-desc--compact">{analise}</p>
+          <p className="ci-desc ci-desc--compact" aria-live="polite">
+            {iaLoading
+              ? "Gerando tendência com IA..."
+              : analiseAtual}
+          </p>
+          {iaError && (
+            <p className="ci-desc ci-desc--warning" role="status">
+              {iaError}
+            </p>
+          )}
         </article>
 
         {/* Sobre */}
@@ -164,15 +245,16 @@ const CardsInformation: React.FC<Props> = ({
             {active === "reco" && (
               <>
                 <h2 id="ci-modal-title" className="modal__title">
-                  Recomendação
+                  Tendência
                 </h2>
                 <p
                   className={`ci-modal-badge ${recoClass}`}
                   style={{ marginBottom: 10 }}
                 >
-                  {recomendacao}
+                  {tendenciaAtual}
                 </p>
-                <p className="modal__body">{analise}</p>
+                <p className="modal__body">{iaLoading ? "Gerando tendência com IA..." : analiseAtual}</p>
+                {iaError && <p className="modal__body modal__body--warning">{iaError}</p>}
               </>
             )}
 

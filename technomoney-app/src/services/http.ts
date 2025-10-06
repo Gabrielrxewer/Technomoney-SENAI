@@ -159,6 +159,7 @@ export const api = createApi(import.meta.env.VITE_API_URL as string);
 export const paymentsApi = createApi(
   import.meta.env.VITE_PAYMENTS_API_URL as string
 );
+export const aiApi = createApi(import.meta.env.VITE_AI_AGENT_URL as string);
 export const authApi = createApi(import.meta.env.VITE_AUTH_API_URL as string, {
   enableAuthRefresh: false,
 });

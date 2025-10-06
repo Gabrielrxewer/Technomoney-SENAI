@@ -5,6 +5,7 @@ Front-end desenvolvido em React + Vite que consome os serviços da plataforma Te
 ## Fluxo de dados
 - **Dashboard**: consome `GET /assets` do `technomoney-api` para exibir ranking, heatmap e métricas agregadas. Os dados são cacheados com React Query por 30 segundos para reduzir carga.
 - **Carteira**: utiliza `GET /assets` para montar a lista de tickers e `GET /assets/:tag` para detalhes do ativo selecionado. A tela traduz valores numéricos (preço, DY, fundamentos) e reaproveita o mesmo cache do dashboard.
+- **Agente de IA**: o cartão "Tendência" da carteira envia os detalhes completos do ativo para o serviço `technomoney-ia` via `POST /api/ia/v1/analysis`, recebendo uma avaliação heurística segura (tendência + análise reescrita). O request é autenticado com o mesmo token AAL2 do usuário.
 - **Autenticação**: todo request passa pelo `fetchApiWithAuth`, que injeta o token Bearer atual e executa `refresh` em caso de `401`. Tokens inválidos forçam redirecionamento para o login.
 
 ## Configuração
@@ -30,6 +31,7 @@ Front-end desenvolvido em React + Vite que consome os serviços da plataforma Te
 | `VITE_API_URL` | Sim | Base URL da `technomoney-api` (ex.: `https://api.example.com`). Deve aceitar HTTPS e cookies para CSRF. |
 | `VITE_AUTH_API_URL` | Sim | Base URL do autenticador (`technomoney-auth`). Utilizada para `login`, `refresh`, `me` e WebSocket de eventos. |
 | `VITE_PAYMENTS_API_URL` | Não | Base URL opcional da API de pagamentos. |
+| `VITE_AI_AGENT_URL` | Sim | Base URL do serviço de IA (`technomoney-ia`). Deve expor `/v1/analysis` protegido por introspecção. |
 | `VITE_RECAPTCHA_SITEKEY` | Sim | Site key usada nas páginas de login/registro. |
 | `VITE_CSRF_COOKIE_NAME` | Não (default `csrf`) | Nome do cookie de CSRF entregue pelo autenticador. |
 | `VITE_CSRF_HEADER_NAME` | Não (default `x-csrf-token`) | Header enviado em requisições state-changing. |
