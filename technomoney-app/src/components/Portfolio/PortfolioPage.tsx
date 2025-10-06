@@ -263,6 +263,7 @@ const PortfolioPage: React.FC = () => {
             bio={dados?.bio ?? ""}
             facts={facts}
             noticias={dados?.noticias ?? []}
+            asset={dados ?? null}
           />
         )}
       </div>

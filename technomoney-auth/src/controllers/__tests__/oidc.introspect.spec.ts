@@ -211,6 +211,30 @@ test("introspect rejects unauthorized clients with sanitized error payload", asy
   assert.deepEqual(res.jsonCalls[0][0], { error: "invalid_client" });
 });
 
+test("introspect short-circuits with active=false when token is missing", async () => {
+  const basic = Buffer.from("payments:secret").toString("base64");
+  process.env.INTROSPECTION_CLIENTS = "payments:secret";
+  verifyAccessResult = undefined;
+  sessionIsActive = true;
+
+  const controllerModulePath = require.resolve("../oidc.controller");
+  delete require.cache[controllerModulePath];
+  const { introspectHandler } = await import("../oidc.controller");
+
+  const req = {
+    headers: { authorization: `Basic ${basic}` },
+    body: {},
+    socket: {},
+  } as unknown as Request;
+  const res = makeResponse();
+
+  await introspectHandler(req, res, () => {});
+
+  assert.equal(res.statusCalls.length, 0);
+  assert.equal(res.jsonCalls.length, 1);
+  assert.deepEqual(res.jsonCalls[0][0], { active: false });
+});
+
 
 test("introspect returns inactive when exp is already in the past", async () => {
   const basic = Buffer.from("payments:secret").toString("base64");
