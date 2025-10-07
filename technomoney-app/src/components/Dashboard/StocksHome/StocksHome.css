@@ -253,6 +253,7 @@
     transform 0.15s,
     box-shadow 0.15s,
     background 0.15s;
+  cursor: pointer;
 }
 
 .stock-card:hover {
