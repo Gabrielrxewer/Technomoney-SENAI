@@ -100,6 +100,9 @@ produção.
   auditoria da recomendação. Use `AGENT_BUY_THRESHOLD` > `AGENT_HOLD_THRESHOLD`
   para controlar a sensibilidade do modelo e monitore logs `ia.auth.denied` para
   detectar tokens inválidos ou tentativas de abuso.
+- O logger HTTP agora respeita os níveis corretos (`info` para 2xx/3xx, `warn`
+  para 4xx e `error` apenas quando há falha real), reduzindo ruído operacional e
+  melhorando o monitoramento de incidentes de segurança.
 
 ## `technomoney-app`
 

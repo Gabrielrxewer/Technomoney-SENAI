@@ -1,5 +1,7 @@
+import type { IncomingMessage, ServerResponse } from "node:http";
 import pino from "pino";
 import pinoHttp from "pino-http";
+import type { Level } from "pino";
 import { env } from "../config/env";
 
 export const logger = pino({
@@ -13,11 +15,17 @@ export const logger = pino({
       : undefined,
 });
 
+export const resolveHttpLogLevel = (
+  _req: IncomingMessage,
+  res: ServerResponse,
+  err?: Error
+): Level => {
+  if (err || res.statusCode >= 500) return "error";
+  if (res.statusCode >= 400) return "warn";
+  return "info";
+};
+
 export const httpLogger = pinoHttp({
   logger,
-  customLogLevel: (res, err) => {
-    if (err || res.statusCode >= 500) return "error";
-    if (res.statusCode >= 400) return "warn";
-    return "info";
-  },
+  customLogLevel: resolveHttpLogLevel,
 });

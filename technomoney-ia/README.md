@@ -8,6 +8,7 @@ Serviço Node.js responsável por orquestrar os agentes de IA/fundamentalistas d
   - Middlewares aplicam Helmet, CORS restrito por ambiente, compressão e rate limit (`express-rate-limit`).
   - O middleware `authenticate` introspecta tokens no autenticador e recusa sessões sem AAL2, tokens step-up ou inativos.
   - Logs sanitizados via Pino evitam vazamento de tokens (`maskToken`).
+  - O logger HTTP usa níveis adequados (`info`/`warn`/`error`) para evitar falsos positivos em observabilidade e facilitar detecção de incidentes reais.
 - **Modelo heurístico**: combina score fundamental (DY, ROE, margem, EV/EBIT), palavras-chave da análise textual e notícias recentes. Thresholds de compra/manutenção são parametrizáveis por ambiente (`AGENT_BUY_THRESHOLD`, `AGENT_HOLD_THRESHOLD`).
 
 ## Rotas
