@@ -116,5 +116,10 @@ produção.
   parâmetros de CSRF (`VITE_CSRF_*`) antes de executar, além do novo
   `VITE_AI_AGENT_URL`. O front exige HTTPS e `withCredentials=true` para operar
   com o autenticador e o serviço de IA.
+- O cliente HTTP valida se todas as variáveis `VITE_*` de URL estão definidas
+  (`VITE_API_URL`, `VITE_AUTH_API_URL`, `VITE_PAYMENTS_API_URL` e
+  `VITE_AI_AGENT_URL`). Caso alguma falte, a inicialização falha explicitamente,
+  evitando que o navegador tente chamar origens indefinidas e exponha dados
+  sensíveis.
 - Em caso de falhas na API de mercado, a interface apresenta mensagens de erro
   com ação de retry sem expor detalhes sensíveis ao usuário final.

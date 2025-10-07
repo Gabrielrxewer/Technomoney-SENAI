@@ -85,9 +85,18 @@ interface CreateApiOptions {
 }
 
 function createApi(
-  rawBaseURL: string,
+  rawBaseURLInput: string | null | undefined,
   { enableAuthRefresh = true }: CreateApiOptions = {}
 ): AxiosInstance {
+  const rawBaseURL =
+    typeof rawBaseURLInput === "string" ? rawBaseURLInput.trim() : "";
+
+  if (!rawBaseURL) {
+    throw new Error(
+      "[http] Base URL não configurada. Verifique as variáveis VITE_* do frontend."
+    );
+  }
+
   const baseURL = rawBaseURL.replace(/\/+$/, "");
   const instance = axios.create({
     baseURL,
