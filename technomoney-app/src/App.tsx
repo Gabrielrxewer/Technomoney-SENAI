@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GoogleReCaptchaProvider } from "react-google-recaptcha-v3";
 
-// Importação de componentes
 import Header from "./components/Header/Header";
 import Footer from "./components/Footer/Footer";
 import Home from "./components/Home/Home";
@@ -11,17 +10,15 @@ import Login from "./components/Login/Login";
 import Register from "./components/Login/Register";
 import Dashboard from "./components/Dashboard/Dashboard";
 import PortfolioPage from "./components/Portfolio/PortfolioPage";
-import StockDetail from "./components/Dashboard/StocksDetail/StocksDetail"; // Importando a nova página de detalhes
+import StockDetail from "./components/Dashboard/StocksDetail/StocksDetail";
 
-// Importação do contexto e proteção de rotas
 import { AuthProvider } from "./context/AuthContext";
 import PrivateRoute from "./private/PrivateRoute";
+import PortfolioPage from "./components/Portfolio/PortfolioPage";
 
-// Estilos globais
 import "./components/Portfolio/styles/tokens.css";
 import "./components/Portfolio/styles/globals.css";
 
-// Criação do cliente de consulta para React Query
 const queryClient = new QueryClient();
 
 function App() {

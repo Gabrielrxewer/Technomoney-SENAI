@@ -1,14 +1,14 @@
 import React, { useMemo, useState } from "react";
-import { Stock } from "./data";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCartShopping } from "@fortawesome/free-solid-svg-icons"; 
+import { faCartShopping } from "@fortawesome/free-solid-svg-icons";
 import "./StocksHome.css";
+import type { AssetSummary } from "../../../types/assets";
 
-type Props = { items: Stock[]; onAdd: (s: Stock) => void };
+type Props = { items: AssetSummary[]; onAdd: (s: AssetSummary) => void };
 
 const cols = [
-  { key: "ticker", label: "Ticker" },
+  { key: "tag", label: "Ticker" },
   { key: "nome", label: "Nome" },
   { key: "setor", label: "Setor" },
   { key: "preco", label: "Preço" },
@@ -25,12 +25,20 @@ export default function LeaderboardTable({ items, onAdd }: Props) {
 
   const data = useMemo(() => {
     const arr = [...items];
-    arr.sort((a: any, b: any) => {
-      const ka = a[sortKey];
-      const kb = b[sortKey];
-      if (ka < kb) return asc ? -1 : 1;
-      if (ka > kb) return asc ? 1 : -1;
-      return 0;
+    const getValue = (item: AssetSummary, key: string): string | number => {
+      if (key in item) return (item as any)[key];
+      if (key in item.fundamentals) return (item.fundamentals as any)[key];
+      return "";
+    };
+    arr.sort((a, b) => {
+      const va = getValue(a, sortKey);
+      const vb = getValue(b, sortKey);
+      if (typeof va === "number" && typeof vb === "number") {
+        return asc ? va - vb : vb - va;
+      }
+      return asc
+        ? String(va).localeCompare(String(vb))
+        : String(vb).localeCompare(String(va));
     });
     return arr.slice(0, 15);
   }, [items, sortKey, asc]);
@@ -60,8 +68,8 @@ export default function LeaderboardTable({ items, onAdd }: Props) {
           </thead>
           <tbody>
             {data.map((row) => (
-              <tr key={row.ticker}>
-                <td>{row.ticker}</td>
+              <tr key={row.tag}>
+                <td>{row.tag}</td>
                 <td>{row.nome}</td>
                 <td>{row.setor}</td>
                 <td>R$ {row.preco.toFixed(2)}</td>
@@ -69,10 +77,10 @@ export default function LeaderboardTable({ items, onAdd }: Props) {
                   {row.variacao >= 0 ? "+" : ""}
                   {row.variacao.toFixed(2)}%
                 </td>
-                <td>{row.roe.toFixed(1)}%</td>
-                <td>{row.dy.toFixed(1)}%</td>
-                <td>{row.pl.toFixed(1)}</td>
-                <td>{row.score}</td>
+                <td>{row.fundamentals.roe.toFixed(1)}%</td>
+                <td>{row.fundamentals.dy.toFixed(1)}%</td>
+                <td>{row.fundamentals.pl.toFixed(1)}</td>
+                <td>{row.fundamentals.score}</td>
                 <td>
                   <Link
                     to="/portfolio"

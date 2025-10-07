@@ -7,21 +7,16 @@ const EnvSchema = z.object({
   DB_PASSWORD: z.string(),
   DB_DATABASE: z.string(),
   DB_DRIVER: z.string(),
-  JWT_SECRET: z.string(),
   NODE_ENV: z
     .enum(["development", "test", "production"])
     .default("development"),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).optional(),
+  AUTH_JWKS_URL: z.string().url(),
+  AUTH_ISSUER: z.string(),
+  AUTH_AUDIENCE: z.string(),
+  AUTH_CLOCK_TOLERANCE: z.string().optional(),
+  AUTH_ALLOWED_ALGS: z.string().optional(),
+  AUTH_STATIC_JWKS: z.string().optional(),
 });
 
-const parsed = EnvSchema.safeParse(process.env);
-
-if (!parsed.success) {
-  console.error(
-    "\n❌  Invalid environment variables:\n",
-    parsed.error.format()
-  );
-  process.exit(1);
-}
-
-export const env = parsed.data;
+export const env = EnvSchema.parse(process.env);

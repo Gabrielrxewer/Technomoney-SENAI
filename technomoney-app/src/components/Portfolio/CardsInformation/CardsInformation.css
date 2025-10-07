@@ -193,6 +193,17 @@
   line-height: 1;
 }
 
+.ci-desc--warning {
+  color: var(--down);
+  font-weight: 600;
+}
+
+.modal__body--warning {
+  color: var(--down);
+  font-weight: 600;
+  margin-top: 8px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ci-card,
   .ci-facts li {

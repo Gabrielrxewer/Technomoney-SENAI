@@ -1,25 +1,37 @@
+import { Transaction } from "sequelize";
 import { RefreshToken } from "../models";
 
 export class RefreshTokenRepository {
-  save(token: string, userId: string) {
-    return RefreshToken.create({
-      token: token.trim(),
-      user_id: userId,
-      revoked: false,
-    });
+  save(tokenHash: string, userId: string, tx?: Transaction) {
+    return RefreshToken.create(
+      { token: tokenHash.trim(), user_id: userId, revoked: false },
+      { transaction: tx }
+    );
   }
 
-  async revoke(token: string) {
-    const rec = await RefreshToken.findOne({ where: { token: token.trim() } });
-    if (rec) {
-      rec.revoked = true;
-      await rec.save();
-    }
+  revoke(tokenHash: string, tx?: Transaction) {
+    return RefreshToken.update(
+      { revoked: true },
+      { where: { token: tokenHash.trim(), revoked: false }, transaction: tx }
+    );
   }
 
-  isValid(token: string) {
+  isValid(tokenHash: string) {
     return RefreshToken.findOne({
-      where: { token: token.trim(), revoked: false },
+      where: { token: tokenHash.trim(), revoked: false },
     });
+  }
+
+  wasIssued(tokenHash: string) {
+    return RefreshToken.findOne({
+      where: { token: tokenHash.trim() },
+    });
+  }
+
+  revokeAllForUser(userId: string, tx?: Transaction) {
+    return RefreshToken.update(
+      { revoked: true },
+      { where: { user_id: userId, revoked: false }, transaction: tx }
+    );
   }
 }

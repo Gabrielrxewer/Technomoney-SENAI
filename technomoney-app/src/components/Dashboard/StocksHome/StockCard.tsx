@@ -1,14 +1,14 @@
 import React from "react";
-import { Stock } from "./data";
+import type { AssetSummary } from "../../../types/assets";
 
-type Props = { item: Stock; onAdd: (s: Stock) => void };
+type Props = { item: AssetSummary; onAdd: (s: AssetSummary) => void };
 export default function StockCard({ item, onAdd }: Props) {
   return (
     <div className="stock-card">
       <div className="stock-head">
         <div className="stock-left">
           <span className="stock-name">{item.nome}</span>
-          <div className="stock-ticker">{item.ticker}</div>
+          <div className="stock-ticker">{item.tag}</div>
         </div>
         <div className="stock-right">
           <div className="stock-price">R$ {item.preco.toFixed(2)}</div>
@@ -23,15 +23,15 @@ export default function StockCard({ item, onAdd }: Props) {
       <div className="metrics-row">
         <div className="metric-box">
           <div className="m-label">ROE</div>
-          <div className="m-val">{item.roe.toFixed(1)}%</div>
+          <div className="m-val">{item.fundamentals.roe.toFixed(1)}%</div>
         </div>
         <div className="metric-box">
           <div className="m-label">DY</div>
-          <div className="m-val">{item.dy.toFixed(1)}%</div>
+          <div className="m-val">{item.fundamentals.dy.toFixed(1)}%</div>
         </div>
         <div className="metric-box">
           <div className="m-label">P/L</div>
-          <div className="m-val">{item.pl.toFixed(1)}</div>
+          <div className="m-val">{item.fundamentals.pl.toFixed(1)}</div>
         </div>
       </div>
     </div>
