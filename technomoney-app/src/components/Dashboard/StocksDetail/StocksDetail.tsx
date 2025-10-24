@@ -15,10 +15,17 @@ type LocationState = {
 const StockDetail = () => {
   const location = useLocation();
   const params = useParams<{ tag?: string }>();
+
   const summary = (location.state as LocationState | null)?.stock ?? null;
   const normalizedTag = (params.tag ?? summary?.tag ?? "").toUpperCase();
 
-  const { data, isLoading, isError, refetch } = useQuery<AssetDetail>({
+  const {
+    data,
+    isLoading,
+    isError,
+    isFetching, 
+    refetch,
+  } = useQuery<AssetDetail>({
     queryKey: ["assets", "detail", normalizedTag],
     queryFn: () => fetchAssetDetail(normalizedTag),
     enabled: !!normalizedTag,
@@ -26,12 +33,32 @@ const StockDetail = () => {
     gcTime: 5 * 60_000,
   });
 
-  const headerAsset: AssetSummary | null = data ?? summary;
+  const headerAsset: AssetSummary | null = (data as AssetSummary) ?? summary;
+
+  const booting = !normalizedTag || isLoading || isFetching;
+
+  if (booting) {
+    return (
+      <div className="stock-detail-page">
+        <div className="StocksDetailheader">
+          <h1>Carregando ativo…</h1>
+        </div>
+
+        <div className="stock-content">
+          <div className="loading-screen">
+            <Spinner />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!normalizedTag) {
     return (
       <div className="stock-detail-page">
-        <div className="error">Ação não encontrada</div>
+        <div className="loading-screen" role="alert">
+          <div className="error">Ação não encontrada</div>
+        </div>
       </div>
     );
   }
@@ -60,36 +87,31 @@ const StockDetail = () => {
         </div>
       ) : (
         <div className="StocksDetailheader">
-          <h1>Carregando ativo…</h1>
+          <h1>Ativo</h1>
         </div>
       )}
 
       <div className="stock-content">
-        {isLoading ? (
-          <div className="loading-screen">
-            <Spinner />
-          </div>
-        ) : isError ? (
+        {isError ? (
           <div className="loading-screen" role="alert">
             <div>Falha ao carregar detalhes da ação.</div>
-            <button
-              type="button"
-              className="retry-button"
-              onClick={() => refetch()}
-            >
+            <button type="button" className="retry-button" onClick={() => refetch()}>
               Tentar novamente
             </button>
           </div>
         ) : data ? (
           <>
             <StockInfo stock={data} />
+
             <div className="stock-grid">
               <div className="stock-panel">
                 <StockChart stock={data} />
               </div>
+
               <div className="stock-panel stock-briefing">
                 <h2>Resumo fundamentalista</h2>
                 <p>{data.analise}</p>
+
                 <div className="stock-meta">
                   <span>
                     <strong>Bio:</strong> {data.bio}
@@ -110,6 +132,7 @@ const StockDetail = () => {
                 </div>
               </div>
             </div>
+
             <div className="stock-panel stock-news">
               <h2>Notícias recentes</h2>
               {data.noticias.length ? (
@@ -124,8 +147,8 @@ const StockDetail = () => {
             </div>
           </>
         ) : (
-          <div className="loading-screen" role="status">
-            Dados indisponíveis no momento.
+          <div className="loading-screen">
+            <Spinner />
           </div>
         )}
       </div>
