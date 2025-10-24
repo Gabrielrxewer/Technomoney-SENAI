@@ -22,6 +22,23 @@ interface AssetEntity {
   name: string;
 }
 
+function toEntity(model: any): AssetEntity {
+  if (!model) return model;
+  if (typeof model.get === "function") {
+    const plain = model.get({ plain: true }) as AssetEntity;
+    return {
+      id: Number(plain.id),
+      tag: String(plain.tag),
+      name: String(plain.name),
+    };
+  }
+  return {
+    id: Number((model as AssetEntity).id),
+    tag: String((model as AssetEntity).tag),
+    name: String((model as AssetEntity).name),
+  };
+}
+
 interface TodayRecord {
   asset_id: number;
   price: number;
@@ -89,23 +106,56 @@ export class AssetService {
     private readonly marketData: MarketDataService
   ) {}
 
+  private async ensureAssetsFromApi(
+    current: AssetEntity[],
+    apiAssets: ApiAsset[]
+  ): Promise<AssetEntity[]> {
+    if (!apiAssets.length) return current;
+
+    const byTag = new Map<string, AssetEntity>();
+    const byName = new Map<string, AssetEntity>();
+    current.forEach((asset) => {
+      byTag.set(toUpper(asset.tag), asset);
+      byName.set(toUpper(asset.name), asset);
+    });
+
+    const result = [...current];
+
+    for (const api of apiAssets) {
+      const normalizedTag = toUpper(api.ticker);
+      const normalizedName = toUpper(api.nome);
+      if (byTag.has(normalizedTag) || byName.has(normalizedName)) continue;
+
+      const [model] = await this.assetRepo.findOrCreate(
+        normalizedTag,
+        api.nome
+      );
+      const entity = toEntity(model);
+      byTag.set(toUpper(entity.tag), entity);
+      byName.set(toUpper(entity.name), entity);
+      result.push(entity);
+    }
+
+    return result;
+  }
+
   create(tag: string, name: string) {
     return this.assetRepo.findOrCreate(tag, name);
   }
 
   async getAllToday(): Promise<AssetSummaryDto[]> {
-    const assets = (await this.assetRepo.findAll()) as unknown as AssetEntity[];
-    if (!assets.length) return [];
+    const assetModels = (await this.assetRepo.findAll()) as unknown[];
+    let assets = assetModels.map(toEntity);
+    const apiAssets = await this.marketData.fetchAll();
+    assets = await this.ensureAssetsFromApi(assets, apiAssets);
+    if (!assets.length || !apiAssets.length) return [];
 
     const { start, end } = getTodayRange();
-    const [todayRecs, apiAssets] = await Promise.all([
-      this.recordRepo.findToday(
-        assets.map((a: AssetEntity) => a.id),
-        start,
-        end
-      ),
-      this.marketData.fetchAll(),
-    ]);
+    const todayRecs = await this.recordRepo.findToday(
+      assets.map((a: AssetEntity) => a.id),
+      start,
+      end
+    );
 
     const recMap = new Map<number, AssetRecordCache>();
     (todayRecs as unknown as TodayRecord[]).forEach((r: TodayRecord) =>
@@ -172,14 +222,22 @@ export class AssetService {
   }
 
   async getByTagToday(tag: string): Promise<AssetDetailDto | null> {
-    const asset = (await this.assetRepo.findByTag(
-      tag
+    const normalizedTag = toUpper(tag);
+    let asset = (await this.assetRepo.findByTag(
+      normalizedTag
     )) as unknown as AssetEntity | null;
-    if (!asset) return null;
 
-    const api = await this.marketData.fetchByName(asset.tag);
+    const api = await this.marketData.fetchByName(normalizedTag);
     if (!api)
       throw new AppError(502, "No data from market API for requested asset");
+
+    if (!asset) {
+      const [model] = await this.assetRepo.findOrCreate(
+        toUpper(api.ticker),
+        api.nome
+      );
+      asset = toEntity(model);
+    }
 
     const price = sanitizeNumber(api.preco, NaN);
     const volume = sanitizeNumber(api.volume ?? api.liquidez, NaN);

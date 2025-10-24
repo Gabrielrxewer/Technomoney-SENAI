@@ -14,7 +14,6 @@ import StockDetail from "./components/Dashboard/StocksDetail/StocksDetail";
 
 import { AuthProvider } from "./context/AuthContext";
 import PrivateRoute from "./private/PrivateRoute";
-import PortfolioPage from "./components/Portfolio/PortfolioPage";
 
 import "./components/Portfolio/styles/tokens.css";
 import "./components/Portfolio/styles/globals.css";
@@ -57,10 +56,10 @@ function App() {
 
               {/* Nova rota para a página de detalhes de ação */}
               <Route
-                path="/stock-detail"
+                path="/stock-detail/:tag"
                 element={
                   <PrivateRoute>
-                    <StockDetail/>
+                    <StockDetail />
                   </PrivateRoute>
                 }
               />

@@ -4,6 +4,7 @@ Front-end desenvolvido em React + Vite que consome os serviços da plataforma Te
 
 ## Fluxo de dados
 - **Dashboard**: consome `GET /assets` do `technomoney-api` para exibir ranking, heatmap e métricas agregadas. Os dados são cacheados com React Query por 30 segundos para reduzir carga.
+- **Detalhamento de ações**: a rota protegida `/stock-detail/:tag` busca `GET /assets/:tag` e renderiza gráfico histórico, análise textual, notícias e metadados corporativos diretamente da fake API de mercado. Não há mais mocks em componentes de detalhe; todo o conteúdo deriva dos dados reais retornados pelo back-end.
 - **Carteira**: utiliza `GET /assets` para montar a lista de tickers e `GET /assets/:tag` para detalhes do ativo selecionado. A tela traduz valores numéricos (preço, DY, fundamentos) e reaproveita o mesmo cache do dashboard.
 - **Agente de IA**: o cartão "Tendência" da carteira envia os detalhes completos do ativo para o serviço `technomoney-ia` via `POST /api/ia/v1/analysis`, recebendo uma avaliação heurística segura (tendência + análise reescrita). O request é autenticado com o mesmo token AAL2 do usuário.
 - **Autenticação**: todo request passa pelo `fetchApiWithAuth`, que injeta o token Bearer atual e executa `refresh` em caso de `401`. Tokens inválidos forçam redirecionamento para o login.
@@ -53,7 +54,7 @@ Front-end desenvolvido em React + Vite que consome os serviços da plataforma Te
 
 ## Integração com o back-end
 - O front depende da `technomoney-api` já protegida por introspecção OAuth2 (AAL2). Configure CORS na API para incluir o domínio do front.
-- A `technomoney-fake-api` pode ser usada em desenvolvimento apontando `MARKET_API_BASE_URL` do `technomoney-api` para `http://localhost:4001`. Ela fornece os dados esperados pelo dashboard/carteira.
+- A `technomoney-fake-api` pode ser usada em desenvolvimento apontando `MARKET_API_BASE_URL` do `technomoney-api` para `http://localhost:4001`. Ela fornece os dados esperados pelo dashboard, pela carteira **e** pela tela de detalhes (incluindo série histórica, notícias e recomendações).
 - Rotas críticas (login, MFA, refresh) usam `withCredentials=true`, portanto configure `Access-Control-Allow-Credentials` no back-end e não utilize curingas (`*`) para `origin`.
 
 ## Testes

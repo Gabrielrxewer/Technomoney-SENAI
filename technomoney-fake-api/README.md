@@ -1,7 +1,7 @@
 
 # Technomoney Fake Market API
 
-Serviço auxiliar em Node.js/Express que simula uma API de dados de mercado para alimentar o dashboard e a carteira. Os preços e métricas são atualizados a cada 30 segundos, preservando campos fundamentais necessários para a experiência do front-end.
+Serviço auxiliar em Node.js/Express que simula uma API de dados de mercado para alimentar o dashboard, a carteira e a tela de detalhes de ações. Os preços e métricas são atualizados a cada 30 segundos, preservando campos fundamentais necessários para a experiência do front-end.
 
 ## Endpoints
 - `GET /acoes/all`: devolve a lista completa de ativos com métricas diárias, fundamentos e metadados (texto analítico, notícias e série histórica).

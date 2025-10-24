@@ -9,8 +9,9 @@ export async function fetchAssetSummaries(): Promise<AssetSummary[]> {
 }
 
 export async function fetchAssetDetail(tag: string): Promise<AssetDetail> {
+  const normalizedTag = String(tag ?? "").trim().toUpperCase();
   const response = await fetchApiWithAuth<AssetDetail>(
-    `/assets/${encodeURIComponent(tag)}`,
+    `/assets/${encodeURIComponent(normalizedTag)}`,
     {
       method: "GET",
     }
