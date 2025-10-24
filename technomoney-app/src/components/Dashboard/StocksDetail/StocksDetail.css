@@ -9,13 +9,11 @@
   --accent: #22c55e;
   --danger: #ef4444;
 
-  /* Extras (derivados, não mudam a paleta) */
   --ring: rgba(34, 197, 94, 0.35);
   --ring-strong: rgba(34, 197, 94, 0.55);
   --card-grad: linear-gradient(180deg, rgba(255,255,255,0.02), transparent 40%);
 }
 
-/* base */
 *,
 *::before,
 *::after {
@@ -23,7 +21,6 @@
 }
 
 html, body {
-  background: radial-gradient(1200px 600px at 50% -10%, rgba(34,197,94,0.06), transparent 60%) var(--bg);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -34,13 +31,11 @@ html, body {
   color: var(--text);
 }
 
-/* scroll bar discreta (webkit) */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: rgba(255,255,255,0.04); }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 8px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.18); }
 
-/* Página / wrapper principal */
 .stock-detail-page {
   padding: 35px;
   background-color: var(--bg);
@@ -50,18 +45,15 @@ html, body {
   margin: 50px auto;
   box-shadow: var(--shadow);
 
-  /* Corrige centralização de filhos */
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 24px;
 
-  /* leve borda e brilho */
   border: 1px solid var(--border);
   background-image: var(--card-grad);
 }
 
-/* Cabeçalho */
 .StocksDetailheader {
   width: 100%;
   text-align: center;
@@ -105,11 +97,9 @@ html, body {
   margin-top: 8px;
 }
 
-/* Estados semânticos */
 .positive { color: var(--accent); }
 .negative { color: var(--danger); }
 
-/* Conteúdo principal */
 .stock-content {
   width: 100%;
   background-color: var(--card);
@@ -123,26 +113,23 @@ html, body {
   background-image: var(--card-grad);
 }
 
-/* Métricas (grid de cards) — centralizado */
 .stock-info {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 280px));
   gap: 16px;
-  justify-content: center;     /* centraliza conjunto */
-  justify-items: center;       /* centraliza item na célula */
+  justify-content: center;     
+  justify-items: center;       
   background-color: var(--card);
   padding: 16px;
   border-radius: 16px;
   border: 1px solid var(--border);
 }
 
-/* garante largura controlada do card interno */
 .stock-info > .metric-pill {
   width: 100%;
   max-width: 280px;
 }
 
-/* Card da métrica */
 .stock-info .metric-pill {
   position: relative;
   display: flex;
@@ -200,7 +187,6 @@ html, body {
   opacity: 0.85;
 }
 
-/* Gráfico */
 .stock-chart {
   background-color: var(--card);
   padding: 20px;
@@ -218,7 +204,6 @@ html, body {
   margin: 0;
 }
 
-/* Grid principal (gráfico + lateral) */
 .stock-grid {
   display: grid;
   grid-template-columns: 2fr 1fr;
@@ -226,7 +211,6 @@ html, body {
   width: 100%;
 }
 
-/* Painéis */
 .stock-panel {
   background-color: var(--card);
   border-radius: 16px;
@@ -244,7 +228,6 @@ html, body {
   line-height: 1.55;
 }
 
-/* metadados */
 .stock-meta {
   display: grid;
   gap: 8px;
@@ -253,7 +236,6 @@ html, body {
 }
 .stock-meta strong { color: #cde6e1; }
 
-/* news */
 .stock-news ul {
   list-style: none;
   padding: 0;
@@ -281,7 +263,6 @@ html, body {
   margin-right: 8px;
 }
 
-/* selo de recomendação */
 .stock-recommendation {
   display: inline-flex;
   align-items: center;
@@ -305,7 +286,6 @@ html, body {
   border-color: rgba(96, 165, 250, 0.3);
 }
 
-/* Botão */
 .retry-button {
   margin-top: 8px;
   padding: 10px 20px;
@@ -325,7 +305,6 @@ html, body {
   box-shadow: 0 0 0 3px var(--ring);
 }
 
-/* Loading */
 .loading-screen {
   display: flex;
   flex-direction: column;
@@ -338,7 +317,6 @@ html, body {
   border-radius: 12px;
 }
 
-/* Acessibilidade de foco padrão */
 a, button, [role="button"], .metric-pill {
   outline: none;
 }
@@ -347,7 +325,6 @@ a:focus-visible, button:focus-visible, [role="button"]:focus-visible, .metric-pi
   border-color: rgba(255,255,255,0.22);
 }
 
-/* Suporte a blur (quando disponível) para um leve efeito glass */
 @supports (backdrop-filter: blur(6px)) {
   .StocksDetailheader,
   .stock-content,
@@ -358,12 +335,10 @@ a:focus-visible, button:focus-visible, [role="button"]:focus-visible, .metric-pi
   }
 }
 
-/* Redução de movimento */
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
 
-/* Responsivo */
 @media (max-width: 992px) {
   .stock-detail-page { padding: 28px; }
   .StocksDetailheader { padding: 28px; }
