@@ -13,7 +13,7 @@ const MAX_FIELD = 100;
 type Props = { items: AssetSummary[]; onOpenCarteira?: () => void };
 
 const WALLET_ROUTE = "/portfolio";
-const STOCK_DETAIL_ROUTE = "/stock-detail"; 
+const STOCK_DETAIL_ROUTE = "/stock-detail";
 
 export default function StocksHome({ items, onOpenCarteira }: Props) {
   const navigate = useNavigate();
@@ -72,7 +72,9 @@ export default function StocksHome({ items, onOpenCarteira }: Props) {
   };
 
   const handleStockClick = (stock: AssetSummary) => {
-    navigate(STOCK_DETAIL_ROUTE, { state: { stock } });
+    navigate(`${STOCK_DETAIL_ROUTE}/${encodeURIComponent(stock.tag)}`, {
+      state: { stock },
+    });
   };
 
   return (

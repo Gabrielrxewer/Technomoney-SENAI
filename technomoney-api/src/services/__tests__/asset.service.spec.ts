@@ -5,6 +5,8 @@ import { AssetService } from "../asset.service";
 import type { ApiAsset } from "../market-data.service";
 
 class FakeAssetRepository {
+  public created: any[] = [];
+
   constructor(private readonly items: any[]) {}
 
   async findAll() {
@@ -16,7 +18,20 @@ class FakeAssetRepository {
   }
 
   async findOrCreate(tag: string, name: string) {
-    return [{ id: 99, tag, name }, true];
+    const existing =
+      this.items.find((item) => item.tag === tag) ||
+      this.items.find((item) => item.name === name);
+    if (existing) {
+      return [existing, false];
+    }
+    const entity = {
+      id: this.items.length + this.created.length + 1,
+      tag,
+      name,
+    };
+    this.created.push(entity);
+    this.items.push(entity);
+    return [entity, true];
   }
 }
 
@@ -25,7 +40,7 @@ class FakeAssetRecordRepository {
   public today: any[] = [];
   private latest: any = null;
 
-  async findToday() {
+  async findToday(_ids?: number[], _start?: Date, _end?: Date) {
     return this.today;
   }
 
@@ -69,37 +84,50 @@ class FakeMarketDataService {
   }
 }
 
+const baseApiAsset: ApiAsset = {
+  ticker: "PETR4",
+  nome: "Petrobras PN",
+  setor: "Energia",
+  preco: 42.5,
+  variacao: 1.7,
+  volume: 12500000,
+  dy: 15.1,
+  roe: 22.4,
+  pl: 3.5,
+  margem: 35.7,
+  ev_ebit: 2.8,
+  liquidez: 12500000,
+  score: 84,
+  marketCap: 320000000000,
+  dividendYield: 0.151,
+  recomendacao: "Comprar",
+  analise: "Fluxo de caixa forte e política de dividendos agressiva.",
+  bio: "Companhia integrada de energia.",
+  noticias: [
+    "Petrobras expande CAPEX em projetos do pré-sal.",
+    "Conselho aprova distribuição extraordinária de dividendos.",
+  ],
+  grafico: [40, 41, 42, 43],
+  sede: "Rio de Janeiro, RJ",
+  industria: "Energia",
+  fundacao: 1953,
+  empregados: 45000,
+};
+
+const makeApiAsset = (overrides: Partial<ApiAsset> = {}): ApiAsset => ({
+  ...baseApiAsset,
+  ...overrides,
+  noticias: overrides.noticias
+    ? [...overrides.noticias]
+    : [...baseApiAsset.noticias],
+  grafico: overrides.grafico
+    ? [...overrides.grafico]
+    : [...baseApiAsset.grafico],
+});
+
 test("AssetService enriches market data with fundamentals", async () => {
   const asset = { id: 1, tag: "PETR4", name: "Petrobras PN" };
-  const apiAsset: ApiAsset = {
-    ticker: "PETR4",
-    nome: "Petrobras PN",
-    setor: "Energia",
-    preco: 42.5,
-    variacao: 1.7,
-    volume: 12500000,
-    dy: 15.1,
-    roe: 22.4,
-    pl: 3.5,
-    margem: 35.7,
-    ev_ebit: 2.8,
-    liquidez: 12500000,
-    score: 84,
-    marketCap: 320000000000,
-    dividendYield: 0.151,
-    recomendacao: "Comprar",
-    analise: "Fluxo de caixa forte e política de dividendos agressiva.",
-    bio: "Companhia integrada de energia.",
-    noticias: [
-      "Petrobras expande CAPEX em projetos do pré-sal.",
-      "Conselho aprova distribuição extraordinária de dividendos.",
-    ],
-    grafico: [40, 41, 42, 43],
-    sede: "Rio de Janeiro, RJ",
-    industria: "Energia",
-    fundacao: 1953,
-    empregados: 45000,
-  };
+  const apiAsset = makeApiAsset();
 
   const repo = new FakeAssetRepository([asset]);
   const records = new FakeAssetRecordRepository();
@@ -121,4 +149,20 @@ test("AssetService enriches market data with fundamentals", async () => {
   assert.equal(detail?.noticias.length, 2);
   assert.equal(detail?.grafico.at(-1), 43);
   assert.equal(detail?.fundamentals.ev_ebit, 2.8);
+});
+
+test("AssetService cria assets ausentes usando a fake API", async () => {
+  const repo = new FakeAssetRepository([]);
+  const records = new FakeAssetRecordRepository();
+  const market = new FakeMarketDataService(makeApiAsset());
+  const service = new AssetService(repo as any, records as any, market as any);
+
+  const all = await service.getAllToday();
+  assert.equal(all.length, 1);
+  assert.equal(repo.created.length, 1);
+  assert.equal(repo.created[0].tag, "PETR4");
+  assert.equal(records.added.length, 1);
+  const detail = await service.getByTagToday("PETR4");
+  assert.ok(detail);
+  assert.equal(detail?.nome, "Petrobras PN");
 });

@@ -152,3 +152,4 @@ Retorna o detalhamento completo da ação (indicadores fundamentais, texto anal�
 - A variável `MARKET_API_BASE_URL` deve apontar para uma instância compatível com o novo contrato (`ticker`, métricas fundamentais, textos descritivos e série histórica).
 - Os dados são revalidados a cada requisição. Quaisquer campos faltantes disparam `502` e impedem gravações inconsistentes no banco.
 - O serviço persiste `price`, `variation` (em %) e `volume` na tabela `asset_records`; demais campos vêm somente da API de mercado em tempo real.
+- Se a fake API expor um ticker ainda não cadastrado, o serviço registra automaticamente o ativo sem sobrescrever registros existentes, atendendo ao requisito de apenas adicionar novos dados quando necessário.

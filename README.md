@@ -67,6 +67,7 @@ produção.
 - As rotas `/assets` agora expõem dados enriquecidos (`fundamentals`, `marketCap`, textos analíticos) e validam a resposta externa com Zod antes de persistir preços/volumes.
 - Todas as requisições ao domínio de ativos exigem tokens com `acr=aal2`; em caso de ausência o middleware retorna `WWW-Authenticate: error="insufficient_aal"` para forçar MFA.
 - A Fake Market API fornece o novo contrato e deve ser configurada em `MARKET_API_BASE_URL` via HTTPS em produção.
+- O serviço sincroniza automaticamente novos tickers disponibilizados pela fake API, adicionando-os ao banco sem sobrescrever ativos existentes e mantendo o histórico preservado.
 - O middleware de autenticação agora usa somente o fluxo de introspecção via
   `AUTH_INTROSPECTION_URL`, rejeitando sessões inativas imediatamente para
   reduzir superfícies de abuso.
@@ -109,6 +110,7 @@ produção.
 - O dashboard e a carteira deixam de usar mocks e consomem `GET /assets` e
   `GET /assets/:tag` da API principal, reutilizando o cache seguro do React
   Query e respeitando o fluxo de refresh de tokens com AAL2.
+- A página `/stock-detail/:tag` consome a mesma API para preencher gráfico histórico, notícias, análise textual e metadados corporativos, eliminando os mocks anteriores do front-end.
 - Toda requisição passa pelo `fetchApiWithAuth`, que injeta o Bearer atual e
   executa um único refresh em caso de `401`, mantendo o rigor de segurança do
   backend.
