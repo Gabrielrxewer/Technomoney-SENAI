@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
-import { FaSearch, FaTimes } from "react-icons/fa"; 
-import { useNavigate } from "react-router-dom"; 
+import { FaSearch, FaTimes } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 import "./StocksHome.css";
 import StockCard from "./StockCard";
 import LeaderboardTable from "./LeaderboardTable";
@@ -8,7 +8,7 @@ import MetricPill from "./MetricPill";
 import Heatmap from "./Heatmap";
 import type { AssetSummary } from "../../../types/assets";
 
-const MAX_FIELD = 100; 
+const MAX_FIELD = 100;
 
 type Props = { items: AssetSummary[]; onOpenCarteira?: () => void };
 
@@ -29,6 +29,8 @@ export default function StocksHome({ items, onOpenCarteira }: Props) {
         s.setor.toLowerCase().includes(q)
     );
   }, [query, base]);
+
+  const hasResults = filtered.length > 0;
 
   const topByScore = useMemo(
     () =>
@@ -78,7 +80,7 @@ export default function StocksHome({ items, onOpenCarteira }: Props) {
   };
 
   return (
-    <div className="page">
+    <div className="page stocks-home">
       <section className="card-header">
         <div className="hero-content">
           <div className="title">Descubra as melhores ações</div>
@@ -98,50 +100,96 @@ export default function StocksHome({ items, onOpenCarteira }: Props) {
               maxLength={MAX_FIELD}
             />
             {query && (
-              <FaTimes className="clear-icon" onClick={() => setQuery("")} />
+              <FaTimes
+                className="clear-icon"
+                onClick={() => setQuery("")}
+                title="Limpar busca"
+              />
             )}
           </div>
         </div>
+
+        {!hasResults && (
+          <div className="empty-state">
+            <div className="empty-title">
+              Não há nenhuma ação disponível na base de dados
+            </div>
+            <div className="empty-sub">
+              Ajuste os termos da busca ou limpe o filtro para ver todas as ações.
+            </div>
+            <div className="empty-actions">
+              <button
+                className="empty-btn"
+                type="button"
+                onClick={() => setQuery("")}
+                aria-label="Limpar filtro de busca"
+              >
+                Limpar filtro
+              </button>
+              <button
+                className="empty-btn empty-btn--secondary"
+                type="button"
+                onClick={goWallet}
+                aria-label="Ir para minha carteira"
+              >
+                Minha carteira
+              </button>
+            </div>
+          </div>
+        )}
       </section>
 
       <section className="kpis">
-        <MetricPill label="Retorno sobre o Patrimônio Líquido (ROE médio)" value={overview.mediaROE.toFixed(1) + "%"} />
-        <MetricPill label="Rendimento do dividendo (DY médio)" value={overview.mediaDY.toFixed(1) + "%"} />
-        <MetricPill label="Preço/Lucro (P/L médio)" value={overview.mediaPL.toFixed(1)} />
+        <MetricPill
+          label="Retorno sobre o Patrimônio Líquido (ROE médio)"
+          value={overview.mediaROE.toFixed(1) + "%"}
+        />
+        <MetricPill
+          label="Rendimento do dividendo (DY médio)"
+          value={overview.mediaDY.toFixed(1) + "%"}
+        />
+        <MetricPill
+          label="Preço/Lucro (P/L médio)"
+          value={overview.mediaPL.toFixed(1)}
+        />
         <MetricPill label="Quantidade de Setores" value={String(overview.setores)} />
       </section>
 
-      <section className="section">
-        <div className="section-line">
-          <div className="section-title">Top por Score:</div>
-          <div className="section-sub">Ordenado por qualidade</div>
-        </div>
-        <div className="card p-4">
-          <div className="card-grid">
-            {topByScore.map((s) => (
-              <div key={s.tag} onClick={() => handleStockClick(s)}>
-                <StockCard item={s} onAdd={handleAdd} />
+      {hasResults && (
+        <>
+          <section className="section">
+            <div className="section-line">
+              <div className="section-title">Top por Score:</div>
+              <div className="section-sub">Ordenado por qualidade</div>
+            </div>
+            <div className="card p-4">
+              <div className="card-grid">
+                {topByScore.map((s) => (
+                  <div key={s.tag} onClick={() => handleStockClick(s)}>
+                    <StockCard item={s} onAdd={handleAdd} />
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
+            </div>
+          </section>
 
-      <section className="section">
-        <div className="section-line">
-          <div className="section-title">Top Dividendos</div>
-          <div className="section-sub">Maior DY</div>
-        </div>
-        <div className="card p-4">
-          <div className="card-grid">
-            {topDividend.map((s) => (
-              <div key={s.tag} onClick={() => handleStockClick(s)}>
-                <StockCard item={s} onAdd={handleAdd} />
+          <section className="section">
+            <div className="section-line">
+              <div className="section-title">Top Dividendos</div>
+              <div className="section-sub">Maior DY</div>
+            </div>
+            <div className="card p-4">
+              <div className="card-grid">
+                {topDividend.map((s) => (
+                  <div key={s.tag} onClick={() => handleStockClick(s)}>
+                    <StockCard item={s} onAdd={handleAdd} />
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
+            </div>
+          </section>
+        </>
+      )}
 
       <section className="section">
         <div className="section-line">

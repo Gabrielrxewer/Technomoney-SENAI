@@ -1,4 +1,3 @@
-// SvgChart.tsx
 import React, { useMemo, useId, useCallback, memo } from "react";
 import { SvgDefs } from "./SvgDefs";
 
@@ -41,6 +40,29 @@ const getMinMax = (arr: readonly number[]) => {
   if (max === -Infinity) max = 0;
   return { min, max };
 };
+
+/* ===== Utils exclusivos do RSI (curva suave) ===== */
+type XY = readonly [number, number];
+
+// Converte uma polilinha em um caminho Bezier suave (Catmull-Rom -> C Bézier)
+function toSmoothPath(points: XY[]): string {
+  if (points.length < 2) return "";
+  let d = `M ${points[0][0]},${points[0][1]}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i - 1] ?? points[i];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[i + 2] ?? p2;
+
+    const cp1x = p1[0] + (p2[0] - p0[0]) / 6;
+    const cp1y = p1[1] + (p2[1] - p0[1]) / 6;
+    const cp2x = p2[0] - (p3[0] - p1[0]) / 6;
+    const cp2y = p2[1] - (p3[1] - p1[1]) / 6;
+
+    d += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p2[0]},${p2[1]}`;
+  }
+  return d;
+}
 
 export const SvgChart: React.FC<Props> = memo(
   ({
@@ -126,24 +148,20 @@ export const SvgChart: React.FC<Props> = memo(
     const yTickYs = yTicksP.map((p) => priceArea.y + p * priceArea.h);
     const yTickValues = yTicksP.map((p) => minVal + (1 - p) * span);
 
-    /* RSI */
+    /* ================= RSI (apenas visual aprimorado) ================= */
     const rsiSeries = useMemo(() => {
       if (!showRSI || n < rsiPeriod + 1) return [] as number[];
-      const gains: number[] = [],
-        losses: number[] = [];
+      const gains: number[] = [], losses: number[] = [];
       for (let i = 1; i < n; i++) {
         const d = data[i] - data[i - 1];
         gains.push(d > 0 ? d : 0);
         losses.push(d < 0 ? -d : 0);
       }
-      let avgGain = 0,
-        avgLoss = 0;
+      let avgGain = 0, avgLoss = 0;
       for (let i = 0; i < rsiPeriod; i++) {
-        avgGain += gains[i];
-        avgLoss += losses[i];
+        avgGain += gains[i]; avgLoss += losses[i];
       }
-      avgGain /= rsiPeriod;
-      avgLoss /= rsiPeriod;
+      avgGain /= rsiPeriod; avgLoss /= rsiPeriod;
 
       const out: number[] = new Array(n).fill(NaN);
       out[rsiPeriod] = 100 - 100 / (1 + avgGain / Math.max(1e-6, avgLoss));
@@ -153,8 +171,7 @@ export const SvgChart: React.FC<Props> = memo(
         out[i] = 100 - 100 / (1 + avgGain / Math.max(1e-6, avgLoss));
       }
       let firstValid = rsiPeriod;
-      while (firstValid < out.length && Number.isNaN(out[firstValid]))
-        firstValid++;
+      while (firstValid < out.length && Number.isNaN(out[firstValid])) firstValid++;
       return out.slice(firstValid);
     }, [data, n, rsiPeriod, showRSI]);
 
@@ -167,29 +184,29 @@ export const SvgChart: React.FC<Props> = memo(
       [rsiArea.y, rsiArea.h]
     );
 
-    const rsiPath = useMemo(() => {
-      if (!showRSI || rsiSeries.length === 0) return "";
+    const rsiPoints = useMemo<XY[]>(() => {
+      if (!showRSI || rsiSeries.length === 0) return [];
       const start = n - rsiSeries.length;
-      let cmds = "";
-      for (let k = 0; k < rsiSeries.length; k++) {
+      return rsiSeries.map((v, k) => {
         const i = start + k;
-        const x = rsiXAt(i);
-        const y = rsiYAt(rsiSeries[k]);
-        cmds += (k === 0 ? "M " : " L ") + x + "," + y;
-      }
-      return cmds;
+        return [rsiXAt(i), rsiYAt(v)] as const;
+      });
     }, [n, showRSI, rsiSeries, rsiXAt, rsiYAt]);
+
+    const rsiPath = useMemo(() => toSmoothPath(rsiPoints), [rsiPoints]);
+
+    const upper = rsiLevels?.upper ?? 70;
+    const lower = rsiLevels?.lower ?? 30;
 
     const priceGridYs = [0.25, 0.5, 0.75, 1].map(
       (p) => priceArea.y + p * priceArea.h
     );
-    const rsiGridYs = showRSI
-      ? [0.3, 0.7].map((p) => rsiArea.y + p * rsiArea.h)
-      : [];
-    const upper = rsiLevels?.upper ?? 70;
-    const lower = rsiLevels?.lower ?? 30;
+
+    // Linhas do RSI agora fixadas exatamente nos níveis 70/30
+    const rsiGridYs = showRSI ? [rsiYAt(upper), rsiYAt(lower)] : [];
 
     const lastPt = points.length ? points[points.length - 1] : null;
+    const lastRsiPt = rsiPoints.length ? rsiPoints[rsiPoints.length - 1] : null;
 
     return (
       <svg
@@ -281,6 +298,23 @@ export const SvgChart: React.FC<Props> = memo(
 
         {showRSI && (
           <>
+            {/* Bandas - áreas suaves para overbought/oversold */}
+            <rect
+              className="chart-rsi-band overbought"
+              x={rsiArea.x}
+              y={rsiYAt(100)}
+              width={rsiArea.w}
+              height={rsiYAt(upper) - rsiYAt(100)}
+            />
+            <rect
+              className="chart-rsi-band oversold"
+              x={rsiArea.x}
+              y={rsiYAt(lower)}
+              width={rsiArea.w}
+              height={rsiYAt(0) - rsiYAt(lower)}
+            />
+
+            {/* Linhas de referência 70/30 */}
             {rsiGridYs.map((y, k) => (
               <line
                 key={`g-rsi-${k}`}
@@ -292,29 +326,66 @@ export const SvgChart: React.FC<Props> = memo(
                 vectorEffect="non-scaling-stroke"
               />
             ))}
+
+            {/* Números 70/30 à direita */}
             <text
               className="chart-rsi-label"
-              x={rsiArea.x + 2}
-              y={rsiYAt(upper) - 1}
+              x={rsiArea.x + rsiArea.w - 1}
+              y={rsiYAt(upper) - 0.8}
+              textAnchor="end"
               aria-hidden="true"
             >
               {upper}
             </text>
             <text
               className="chart-rsi-label"
-              x={rsiArea.x + 2}
-              y={rsiYAt(lower) - 1}
+              x={rsiArea.x + rsiArea.w - 1}
+              y={rsiYAt(lower) - 0.8}
+              textAnchor="end"
               aria-hidden="true"
             >
               {lower}
             </text>
+
+            {/* Anotações estilo da imagem */}
+            <text
+              className="chart-rsi-anno"
+              x={rsiArea.x + 2}
+              y={rsiYAt(upper) - 2}
+              aria-hidden="true"
+            >
+              OVERBOUGHT →
+            </text>
+            <text
+              className="chart-rsi-anno"
+              x={rsiArea.x + 2}
+              y={rsiYAt(lower) + 3}
+              aria-hidden="true"
+            >
+              ← OVERSOLD
+            </text>
+
+            {/* Curva RSI suavizada + dot final */}
             <g clipPath={`url(#clip-rsi-${uid})`}>
-              <path
-                d={rsiPath}
-                className="chart-rsi"
-                vectorEffect="non-scaling-stroke"
-              />
+              <path d={rsiPath} className="chart-rsi" vectorEffect="non-scaling-stroke" />
+              {lastRsiPt && (
+                <>
+                  <circle
+                    className="chart-rsi-dot-pulse"
+                    cx={lastRsiPt[0]}
+                    cy={lastRsiPt[1]}
+                    r={2.8}
+                  />
+                  <circle
+                    className="chart-rsi-dot"
+                    cx={lastRsiPt[0]}
+                    cy={lastRsiPt[1]}
+                    r={1.2}
+                  />
+                </>
+              )}
             </g>
+
             <text
               className="chart-rsi-title"
               x={rsiArea.x}

@@ -1,4 +1,3 @@
-// SvgDefs.tsx
 import React from "react";
 
 type Area = { x: number; y: number; w: number; h: number };
@@ -14,11 +13,7 @@ export const SvgDefs: React.FC<{
     <defs>
       <linearGradient id={`areaGrad-${uid}`} x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" stopColor="var(--chart-stroke)" stopOpacity="0.18" />
-        <stop
-          offset="100%"
-          stopColor="var(--chart-stroke)"
-          stopOpacity="0.02"
-        />
+        <stop offset="100%" stopColor="var(--chart-stroke)" stopOpacity="0.02" />
       </linearGradient>
 
       <linearGradient id={`lineGrad-${uid}`} x1="0" y1="0" x2="1" y2="0">

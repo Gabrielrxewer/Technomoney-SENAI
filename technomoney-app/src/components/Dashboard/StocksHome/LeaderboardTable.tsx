@@ -43,6 +43,8 @@ export default function LeaderboardTable({ items, onAdd }: Props) {
     return arr.slice(0, 15);
   }, [items, sortKey, asc]);
 
+  const isEmpty = data.length === 0;
+
   return (
     <div className="card table-card">
       <div className="table-wrap">
@@ -67,32 +69,43 @@ export default function LeaderboardTable({ items, onAdd }: Props) {
             </tr>
           </thead>
           <tbody>
-            {data.map((row) => (
-              <tr key={row.tag}>
-                <td>{row.tag}</td>
-                <td>{row.nome}</td>
-                <td>{row.setor}</td>
-                <td>R$ {row.preco.toFixed(2)}</td>
-                <td className={row.variacao >= 0 ? "badge-up" : "badge-down"}>
-                  {row.variacao >= 0 ? "+" : ""}
-                  {row.variacao.toFixed(2)}%
-                </td>
-                <td>{row.fundamentals.roe.toFixed(1)}%</td>
-                <td>{row.fundamentals.dy.toFixed(1)}%</td>
-                <td>{row.fundamentals.pl.toFixed(1)}</td>
-                <td>{row.fundamentals.score}</td>
-                <td>
-                  <Link
-                    to="/portfolio"
-                    className="icon-cart"
-                    aria-label="Ver minha carteira"
-                    title="Minha Carteira"
-                  >
-                    <FontAwesomeIcon icon={faCartShopping} />
-                  </Link>
+            {isEmpty ? (
+              <tr>
+                <td colSpan={cols.length + 1}>
+                  <div className="empty-inset center">
+                    <div className="empty-title">Nenhuma ação para listar</div>
+                    <div className="empty-sub">Tente limpar o filtro de busca.</div>
+                  </div>
                 </td>
               </tr>
-            ))}
+            ) : (
+              data.map((row) => (
+                <tr key={row.tag}>
+                  <td>{row.tag}</td>
+                  <td>{row.nome}</td>
+                  <td>{row.setor}</td>
+                  <td>R$ {row.preco.toFixed(2)}</td>
+                  <td className={row.variacao >= 0 ? "badge-up" : "badge-down"}>
+                    {row.variacao >= 0 ? "+" : ""}
+                    {row.variacao.toFixed(2)}%
+                  </td>
+                  <td>{row.fundamentals.roe.toFixed(1)}%</td>
+                  <td>{row.fundamentals.dy.toFixed(1)}%</td>
+                  <td>{row.fundamentals.pl.toFixed(1)}</td>
+                  <td>{row.fundamentals.score}</td>
+                  <td>
+                    <Link
+                      to="/portfolio"
+                      className="icon-cart"
+                      aria-label="Ver minha carteira"
+                      title="Minha Carteira"
+                    >
+                      <FontAwesomeIcon icon={faCartShopping} />
+                    </Link>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

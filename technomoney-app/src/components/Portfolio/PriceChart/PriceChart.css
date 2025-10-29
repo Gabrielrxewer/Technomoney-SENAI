@@ -182,12 +182,13 @@
   animation: dot-pulse 1800ms ease-out infinite;
 }
 
+/* ===== RSI (apenas visual) ===== */
 .chart-rsi {
   stroke: var(--color-rsi);
-  stroke-width: 1.05;
+  stroke-width: 1.2;
   fill: none;
-  stroke-dasharray: 3 3;
-  opacity: 0.95;
+  opacity: 0.98;
+  filter: drop-shadow(0 0 3px color-mix(in oklab, var(--color-rsi) 40%, transparent));
 }
 .chart-rsi-level {
   stroke: var(--color-text-secondary);
@@ -198,12 +199,50 @@
 .chart-rsi-label {
   font-size: 2px;
   fill: var(--color-text-secondary);
-  opacity: 0.8;
+  opacity: 0.85;
 }
 .chart-rsi-title {
   font-size: 2.2px;
   fill: var(--color-text-secondary);
   opacity: 0.85;
+  font-weight: 600;
+  letter-spacing: .02em;
+}
+
+/* Bandas Overbought/Oversold */
+.chart-rsi-band {
+  fill: transparent;
+}
+.chart-rsi-band.overbought {
+  fill: color-mix(in oklab, #16a34a 9%, transparent);
+}
+.chart-rsi-band.oversold {
+  fill: color-mix(in oklab, #ef4444 10%, transparent);
+}
+
+/* Anotações de texto (OVERBOUGHT / OVERSOLD) */
+.chart-rsi-anno {
+  font-size: 2.1px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  fill: var(--color-text-secondary);
+  opacity: .9;
+}
+
+/* Ponto final do RSI */
+.chart-rsi-dot {
+  fill: var(--color-rsi);
+  stroke: rgba(255,255,255,.8);
+  stroke-width: .35;
+}
+.chart-rsi-dot-pulse {
+  fill: none;
+  stroke: color-mix(in oklab, var(--color-rsi) 65%, transparent);
+  stroke-width: 0.8;
+  opacity: 0.55;
+  transform-origin: center;
+  animation: dot-pulse 1600ms ease-out infinite;
 }
 
 .chart-axis-tick {
@@ -293,12 +332,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .chart-skeleton {
-    animation: none;
-  }
-  .chart-price {
-    animation: none;
-  }
+  .chart-skeleton { animation: none; }
+  .chart-price { animation: none; }
 }
 .chart-series {
   opacity: 0;
@@ -309,14 +344,8 @@
 }
 
 @keyframes draw-line {
-  from {
-    stroke-dasharray: 0 600;
-    stroke-dashoffset: 0;
-  }
-  to {
-    stroke-dasharray: 600 0;
-    stroke-dashoffset: 0;
-  }
+  from { stroke-dasharray: 0 600; stroke-dashoffset: 0; }
+  to   { stroke-dasharray: 600 0; stroke-dashoffset: 0; }
 }
 @keyframes shimmer {
   0% {
@@ -333,16 +362,7 @@
   }
 }
 @keyframes dot-pulse {
-  0% {
-    opacity: 0.55;
-    transform: scale(1);
-  }
-  60% {
-    opacity: 0;
-    transform: scale(1.9);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(1.9);
-  }
+  0% { opacity: 0.55; transform: scale(1); }
+  60% { opacity: 0; transform: scale(1.9); }
+  100% { opacity: 0; transform: scale(1.9); }
 }

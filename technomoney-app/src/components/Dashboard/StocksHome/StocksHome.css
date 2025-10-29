@@ -120,6 +120,55 @@
   outline: none;
 }
 
+.stocks-home .empty-state {
+  margin-top: 16px;
+  padding: 18px 20px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  text-align: center;
+}
+.stocks-home .empty-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #cfe3dc;
+}
+.stocks-home .empty-sub {
+  margin-top: 4px;
+  font-size: 14px;
+  color: var(--muted);
+}
+.stocks-home .empty-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 12px;
+}
+.stocks-home .empty-btn {
+  background: var(--menu-hover-color);  
+  color: #051017;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.stocks-home .empty-btn:hover,
+.stocks-home .empty-btn:focus {
+  filter: brightness(1.05);
+}
+.stocks-home .empty-btn--secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.stocks-home .empty-inset {
+  text-align: center;
+  margin: 0 auto;
+  opacity: 0.9;
+}
+
 .kpis {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -139,10 +188,10 @@
   font-size: 1.1em;
   color: #f0f0f0;
   opacity: 0.85;
-  border: 1px solid #08a295;
+  border: 1px solid var(--menu-hover-color);
   border-radius: 16px;
   padding: 24px;
-  background: linear-gradient(180deg, rgba(12, 179, 168, 0.1), transparent);
+  background: linear-gradient(180deg, rgba(7, 97, 97, 0.15), transparent);
   font-weight: 500;
   text-align: center;
   transition: all 0.3s ease-in-out;
@@ -177,7 +226,7 @@
 }
 
 .kpis .metric-pill:active {
-  background: rgba(12, 179, 168, 0.3);
+  background: rgba(7, 97, 97, 0.25);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
 }
 
@@ -222,7 +271,7 @@
 }
 
 .section-button {
-  background-color: var(--accent);
+  background-color: var(--menu-hover-color);
   color: var(--bg);
   padding: 10px 20px;
   font-size: 16px;
@@ -231,12 +280,12 @@
   border: none;
   cursor: pointer;
   transition:
-    background-color 0.3s ease,
+    filter 0.2s ease,
     transform 0.2s ease;
 }
 
 .section-button:hover {
-  background-color: darken(var(--accent), 10%);
+  filter: brightness(1.05);
   transform: translateY(-2px);
 }
 
@@ -296,8 +345,9 @@
 }
 
 .stock-var-up {
-  color: rgb(30, 197, 94);
+  color: var(--accent);
   font-size: 13px;
+
 }
 
 .stock-var-down {
@@ -328,14 +378,13 @@
 
 .heatmap-container {
   display: flex;
-  justify-content: center; 
-  align-items: center; 
-
+  justify-content: center;
+  align-items: center;
 }
 
 .heatmap {
-  width: 100%; 
-  max-width: 1200px; 
+  width: 100%;
+  max-width: 1200px;
   border: none;
   border-radius: 16px;
   overflow: hidden;
@@ -344,7 +393,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 500px; 
+  height: 500px;
 }
 
 .table-card {
@@ -371,33 +420,32 @@
   text-align: left;
   font-size: 14px;
   font-weight: 700;
-  padding: 10px 15px; 
-  color: var(--muted); 
-  cursor: pointer; 
-  position: relative; 
-  background-color: var(--header-background); 
-  transition: background-color 0.3s ease; 
+  padding: 10px 15px;
+  color: var(--muted);
+  cursor: pointer;
+  position: relative;
+  background-color: var(--header-background);
+  transition: background-color 0.3s ease;
 }
 
 .table th:hover {
-  background-color: var(--header-hover-background); 
+  background-color: var(--header-hover-background);
 }
 
 .table th::after {
-  content: '\2195'; 
+  content: '\2195';
   font-size: 12px;
   position: absolute;
   right: 10px;
   top: 50%;
   transform: translateY(-50%);
-  opacity: 0; 
+  opacity: 0;
   transition: opacity 0.3s ease;
 }
 
 .table th:hover::after {
-  opacity: 1; 
+  opacity: 1;
 }
-
 
 .table td {
   padding: 10px 12px;
@@ -490,8 +538,8 @@
   border-radius: 16px 16px 0 0;
 }
 
-button {
-  background-color: var(--accent);
+.stocks-home button {
+  background-color: var(--menu-hover-color);
   border: none;
   color: var(--text);
   padding: 12px 24px;
@@ -555,6 +603,6 @@ button {
 
 .icon-cart:hover svg {
   transform: scale(1);
-  stroke: var(--accent);
-  filter: drop-shadow(0 2px 8px rgba(34, 197, 94, 0.5));
+  stroke: var(--menu-hover-color);
+  filter: drop-shadow(0 2px 8px rgba(7, 97, 97, 0.5));
 }

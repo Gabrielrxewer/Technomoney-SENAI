@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useMemo } from "react";
 import { ResponsiveContainer, Treemap, Tooltip } from "recharts";
 import type { AssetSummary } from "../../../types/assets";
 
@@ -44,6 +44,22 @@ function HeatmapTooltip({ payload }: any) {
 type ViewProps = { data: any[] };
 
 const HeatmapView = React.memo(function HeatmapView({ data }: ViewProps) {
+  if (!data || data.length === 0) {
+    return (
+      <div
+        className="heatmap-container"
+        style={{ position: "relative", height: 420, width: "100%" }}
+      >
+        <div className="heatmap" style={{ height: "100%", width: "100%" }}>
+          <div className="empty-inset">
+            <div className="empty-title">Sem dados para o Mapa do Mercado</div>
+            <div className="empty-sub">Ajuste a busca para visualizar os blocos.</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="heatmap-container"
@@ -69,22 +85,13 @@ const HeatmapView = React.memo(function HeatmapView({ data }: ViewProps) {
 
 type Props = {
   items: AssetSummary[];
-  minUpdateMs?: number;
-  immediateFirstDraw?: boolean;
 };
 
-export default function Heatmap({
-  items,
-  minUpdateMs = 60_000,
-  immediateFirstDraw = true,
-}: Props) {
-  const latestItemsRef = useRef<AssetSummary[]>(items ?? []);
-  useEffect(() => {
-    latestItemsRef.current = items ?? [];
-  }, [items]);
-
-  const buildData = (src: AssetSummary[]) => {
-    return (src ?? []).map((s) => {
+export default function Heatmap({ items }: Props) {
+  const data = useMemo(() => {
+    const src = items ?? [];
+    if (!src.length) return [];
+    return src.map((s) => {
       const liquidity = Number.isFinite(s?.fundamentals?.liquidez)
         ? s.fundamentals.liquidez
         : 0;
@@ -98,47 +105,7 @@ export default function Heatmap({
         rawLiquidity: liquidity,
       };
     });
-  };
-
-  const layoutSignature = (data: any[]) =>
-    data.map((d) => `${d.name}:${d.size}`).join("|");
-
-  const [data, setData] = useState<any[]>(
-    immediateFirstDraw ? buildData(latestItemsRef.current) : []
-  );
-
-  const lastLayoutSigRef = useRef<string>(layoutSignature(data));
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-
-    if (immediateFirstDraw && data.length === 0) {
-      const first = buildData(latestItemsRef.current);
-      setData(first);
-      lastLayoutSigRef.current = layoutSignature(first);
-    }
-
-    timerRef.current = setInterval(() => {
-      const fresh = buildData(latestItemsRef.current);
-      const newLayoutSig = layoutSignature(fresh);
-
-      if (newLayoutSig !== lastLayoutSigRef.current) {
-        setData(fresh);
-        lastLayoutSigRef.current = newLayoutSig;
-      }
-    }, Math.max(60_000, minUpdateMs));
-
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    };
-  }, [minUpdateMs, immediateFirstDraw]);
+  }, [items]);
 
   return <HeatmapView data={data} />;
 }

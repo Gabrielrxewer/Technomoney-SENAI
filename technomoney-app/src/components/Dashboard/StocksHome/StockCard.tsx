@@ -2,7 +2,7 @@ import React from "react";
 import type { AssetSummary } from "../../../types/assets";
 
 type Props = { item: AssetSummary; onAdd: (s: AssetSummary) => void };
-export default function StockCard({ item, onAdd }: Props) {
+export default function StockCard({ item }: Props) {
   return (
     <div className="stock-card">
       <div className="stock-head">
