@@ -1,5 +1,83 @@
 # Technomoney-SENAI
-Protótipo da Technomoney destinada a avaliação do SENAI
+Protótipo da Technomoney destinada à avaliação do SENAI, composto por múltiplos
+microsserviços Node.js/TypeScript com ênfase em autenticação forte (AAL2),
+proteções antifraude e consumo de dados de mercado.
+
+## Visão geral da documentação
+
+Todos os serviços possuem README próprio com fluxos, variáveis de ambiente e
+orientações de segurança revisadas. Utilize a tabela abaixo para localizar cada
+documento:
+
+| Serviço | Responsabilidade | Documentação |
+| --- | --- | --- |
+| `technomoney-auth` | Autenticação/OAuth2 + MFA TOTP, sessões e WebSocket | [`technomoney-auth/README.md`](technomoney-auth/README.md) |
+| `technomoney-api` | Domínio de ativos, sincronização com mercado e middleware de autorização | [`technomoney-api/README.md`](technomoney-api/README.md) |
+| `technomoney-payment-api` | Integração com Mercado Pago, webhooks assinados e validação de tokens | [`technomoney-payment-api/README.md`](technomoney-payment-api/README.md) |
+| `technomoney-ia` | Serviço heurístico de análise fundamentalista protegido por introspecção | [`technomoney-ia/README.md`](technomoney-ia/README.md) |
+| `technomoney-app` | Front-end React/Vite com MFA, carteira e painel de ativos | [`technomoney-app/README.md`](technomoney-app/README.md) |
+| `technomoney-fake-api` | Mock seguro para dados de mercado utilizados em desenvolvimento | [`technomoney-fake-api/README.md`](technomoney-fake-api/README.md) |
+
+Os READMEs foram validados para cobrir:
+
+- fluxos de segurança (CSRF, MFA, rate limiting e introspecção OAuth2);
+- listas completas de variáveis de ambiente e boas práticas de armazenamento de
+  segredos;
+- instruções de execução local (npm scripts) e, quando aplicável, testes
+  automatizados;
+- contratos de API e restrições de autenticação exigidas pelos consumidores.
+
+## Execução com Docker Compose central
+
+O repositório inclui um `docker-compose.yml` na raiz que sobe Postgres, Redis e
+os microsserviços principais (auth, API de domínio, pagamentos e serviço de IA)
+em uma única orquestração. Para utilizá-lo:
+
+> **Pré-requisito:** certifique-se de que o Docker Engine está ativo antes de
+> rodar qualquer comando (`Docker Desktop` iniciado no Windows/macOS ou `sudo
+> systemctl start docker` no Linux). Use `docker info` para validar a conexão
+> com o daemon; sem isso o compose não consegue construir nem subir os
+> serviços.
+1. Copie cada `prod.env` para `.env` dentro de seu respectivo diretório e
+   preencha segredos exclusivos para o ambiente (ex.: `technomoney-auth/prod.env`
+   → `technomoney-auth/.env`).
+2. Garanta que `technomoney-auth/.env` contenha chaves fortes (`TOTP_ENC_KEY`,
+   `TRUSTED_DEVICE_SECRET`, credenciais do banco e `REDIS_URL` já apontando
+   para `redis://redis:6379/0`).
+3. Opcionalmente execute a fake API de mercado separadamente (não faz parte do
+   compose) e ajuste `MARKET_API_BASE_URL` para apontar para ela.
+
+### Serviços orquestrados
+
+| Serviço | Porta | Descrição |
+| --- | --- | --- |
+| `redis` | `6379` | Cache usado pelo autenticador para trusted devices, rate limiting e anti-replay TOTP. |
+| `postgres` | `5432` | Banco compartilhado para autenticador, API principal e pagamentos (migrations aplicadas automaticamente). |
+| `auth` | `4000` | Autenticador com `INTROSPECTION_CLIENTS` pré-configurados (`core-service`, `payments-service`, `ia-service`). |
+| `api` | `4002` | API de ativos apontando para o autenticador via `/oauth2/introspect`. |
+| `payments` | `3001` | API de pagamentos com introspecção obrigatória. |
+| `ia-agent` | `4010` | Serviço de IA consumindo a introspecção do autenticador. |
+
+> ⚠️ `technomoney-fake-api` e `technomoney-app` não estão inclusos no compose
+> atual; suba-os separadamente quando precisar do front-end ou dos dados de
+> mercado simulados.
+
+### Comandos úteis
+
+```bash
+# Construir imagens e subir tudo em segundo plano
+docker compose up --build -d
+
+# Acompanhar logs
+docker compose logs -f
+
+# Encerrar e remover containers/volumes efêmeros
+docker compose down
+
+# O serviço `auth` aceita um arquivo de entrada customizado via `ENTRY_FILE`
+# (variável opcional no `.env`). Quando não definida ele executa `dist/server.js`
+# automaticamente.
+```
 
 ## Configuração do `TOTP_ENC_KEY`
 
@@ -7,9 +85,8 @@ O serviço de autenticação exige que a variável de ambiente `TOTP_ENC_KEY` se
 definida com um segredo forte para criptografar os segredos de TOTP. Utilize uma
 string com pelo menos 32 caracteres misturando letras maiúsculas, minúsculas,
 números e símbolos. Um exemplo de configuração pode ser encontrado em
-[`technomoney-auth/.env.example`](technomoney-auth/.env.example). Substitua esse
-valor por outro gerado especificamente para o seu ambiente antes de ir para
-produção.
+[`technomoney-auth/prod.env`](technomoney-auth/prod.env). Substitua esse valor
+por outro gerado especificamente para o seu ambiente antes de ir para produção.
 
 ## `technomoney-auth`
 
