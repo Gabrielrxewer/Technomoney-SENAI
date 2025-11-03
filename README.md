@@ -38,6 +38,7 @@ em uma única orquestração. Para utilizá-lo:
 > systemctl start docker` no Linux). Use `docker info` para validar a conexão
 > com o daemon; sem isso o compose não consegue construir nem subir os
 > serviços.
+
 1. Copie cada `prod.env` para `.env` dentro de seu respectivo diretório e
    preencha segredos exclusivos para o ambiente (ex.: `technomoney-auth/prod.env`
    → `technomoney-auth/.env`).
@@ -77,6 +78,7 @@ docker compose down
 # O serviço `auth` aceita um arquivo de entrada customizado via `ENTRY_FILE`
 # (variável opcional no `.env`). Quando não definida ele executa `dist/server.js`
 # automaticamente.
+
 ```
 
 ## Configuração do `TOTP_ENC_KEY`
