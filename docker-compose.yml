@@ -1,5 +1,13 @@
 version: "3.9"
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: technomoney-redis
+    command: redis-server --save "" --appendonly no
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
   postgres:
     image: postgres:16-alpine
     container_name: technomoney-postgres
@@ -19,26 +27,6 @@ services:
       timeout: 5s
       retries: 10
 
-  api:
-    build:
-      context: ./technomoney-api
-    container_name: technomoney-api
-    env_file:
-      - ./technomoney-api/.env
-    environment:
-      NODE_ENV: production
-      PORT: "4002"
-      SWAGGER_FILE: /app/dist/openapi.yaml
-      MARKET_API_BASE_URL: "http://host.docker.internal:4001"
-    ports:
-      - "4002:4002"
-    restart: unless-stopped
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    depends_on:
-      postgres:
-        condition: service_healthy
-
   auth:
     build:
       context: ./technomoney-auth
@@ -57,18 +45,46 @@ services:
       DB_USERNAME: technomoney
       DB_PASSWORD: technopass
       DB_DATABASE: technomoney_auth
+      REDIS_URL: "redis://redis:6379/0"
+      INTROSPECTION_CLIENTS: "core-service:core-secret,payments-service:payments-secret,ia-service:ia-secret"
     ports:
       - "4000:4000"
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_started
     command: >
       sh -lc "
       node -e \"require('child_process').execSync('npx sequelize-cli db:migrate',{stdio:'inherit'})\" &&
-      redis-server --save '' --appendonly no --daemonize yes &&
       node ${ENTRY_FILE}
       "
+
+  api:
+    build:
+      context: ./technomoney-api
+    container_name: technomoney-api
+    env_file:
+      - ./technomoney-api/.env
+    environment:
+      NODE_ENV: production
+      PORT: "4002"
+      SWAGGER_FILE: /app/dist/openapi.yaml
+      MARKET_API_BASE_URL: "http://host.docker.internal:4001"
+      AUTH_INTROSPECTION_URL: "http://auth:4000/oauth2/introspect"
+      AUTH_INTROSPECTION_CLIENT_ID: core-service
+      AUTH_INTROSPECTION_CLIENT_SECRET: core-secret
+    ports:
+      - "4002:4002"
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth:
+        condition: service_started
 
   payments:
     build:
@@ -85,12 +101,17 @@ services:
       DB_USERNAME: technomoney
       DB_PASSWORD: technopass
       DB_DATABASE: technomoney_auth
+      AUTH_INTROSPECTION_URL: "http://auth:4000/oauth2/introspect"
+      AUTH_INTROSPECTION_CLIENT_ID: payments-service
+      AUTH_INTROSPECTION_CLIENT_SECRET: payments-secret
     ports:
       - "3001:3001"
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
+      auth:
+        condition: service_started
 
   ia-agent:
     build:
@@ -101,9 +122,11 @@ services:
     environment:
       NODE_ENV: production
       PORT: "4010"
-      AUTH_INTROSPECTION_URL: "http://auth:4000/api/oauth2/introspect"
+      AUTH_INTROSPECTION_URL: "http://auth:4000/oauth2/introspect"
       RATE_LIMIT_WINDOW_MS: "60000"
       RATE_LIMIT_MAX: "60"
+      AUTH_INTROSPECTION_CLIENT_ID: ia-service
+      AUTH_INTROSPECTION_CLIENT_SECRET: ia-secret
     ports:
       - "4010:4010"
     restart: unless-stopped
