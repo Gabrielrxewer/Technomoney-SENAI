@@ -33,6 +33,12 @@ O repositório inclui um `docker-compose.yml` na raiz que sobe Postgres, Redis e
 os microsserviços principais (auth, API de domínio, pagamentos e serviço de IA)
 em uma única orquestração. Para utilizá-lo:
 
+> **Pré-requisito:** certifique-se de que o Docker Engine está ativo antes de
+> rodar qualquer comando (`Docker Desktop` iniciado no Windows/macOS ou `sudo
+> systemctl start docker` no Linux). Use `docker info` para validar a conexão
+> com o daemon; sem isso o compose não consegue construir nem subir os
+> serviços.
+
 1. Copie cada `prod.env` para `.env` dentro de seu respectivo diretório e
    preencha segredos exclusivos para o ambiente (ex.: `technomoney-auth/prod.env`
    → `technomoney-auth/.env`).
@@ -68,6 +74,11 @@ docker compose logs -f
 
 # Encerrar e remover containers/volumes efêmeros
 docker compose down
+
+# O serviço `auth` aceita um arquivo de entrada customizado via `ENTRY_FILE`
+# (variável opcional no `.env`). Quando não definida ele executa `dist/server.js`
+# automaticamente.
+
 ```
 
 ## Configuração do `TOTP_ENC_KEY`

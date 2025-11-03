@@ -58,6 +58,7 @@ services:
     command: >
       sh -lc "
       node -e \"require('child_process').execSync('npx sequelize-cli db:migrate',{stdio:'inherit'})\" &&
+      node \"$${ENTRY_FILE:-dist/server.js}\"
       node ${ENTRY_FILE}
       "
 

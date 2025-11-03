@@ -117,6 +117,8 @@ restritivo, cookies seguros e forçamento de HTTPS).
 | Variável | Obrigatória | Finalidade |
 | --- | --- | --- |
 | `PORT` | Sim | Porta HTTP do serviço (default 4000).
+| `ENTRY_FILE` | Opcional | Define o arquivo JS compilado executado no container. Sem valor, `dist/server.js` é utilizado.
+| `SWAGGER_FILE` | Opcional | Mantém o caminho do OpenAPI servido pelo Swagger UI. Recomendado manter em `dist/openapi.yaml`.
 | `NODE_ENV` | Sim | Defina `production` em produção para reforçar cookies, HTTPS e validações.
 | `TOTP_ENC_KEY` | Sim | Chave forte (≥32 chars misturando classes) usada para AES-256-GCM dos segredos TOTP.
 | `REDIS_URL` | Sim em produção | Redis utilizado por rate limits, trusted devices e antifraude TOTP.
