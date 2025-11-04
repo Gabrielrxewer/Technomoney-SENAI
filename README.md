@@ -99,6 +99,10 @@ por outro gerado especificamente para o seu ambiente antes de ir para produção
 - Tokens de acesso assinados com DPoP agora carregam `cnf.jkt` no resultado da
   introspecção. Somente objetos simples com `jkt` em formato de string são
   expostos para evitar poluição do contrato.
+- Tipagens de usuário autenticado passaram a viver dentro de
+  `technomoney-auth/src/types/technomoney-authenticated-user.ts`, permitindo que
+  os builds Docker não dependam de diretórios externos para validar `acr`/`amr`
+  e reduzindo risco de regressões de segurança durante orquestrações isoladas.
 - Configure os novos segredos de introspecção:
   - `INTROSPECTION_CLIENTS`: lista separada por vírgula no formato
     `clientId:clientSecret`. Utilize senhas fortes por cliente que precise

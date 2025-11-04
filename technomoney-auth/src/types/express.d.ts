@@ -1,4 +1,4 @@
-import type { TechnomoneyAuthenticatedUser } from "@technomoney/types/express";
+import type { TechnomoneyAuthenticatedUser } from "./technomoney-authenticated-user";
 
 declare global {
   namespace Express {
