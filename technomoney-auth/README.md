@@ -125,6 +125,7 @@ restritivo, cookies seguros e forçamento de HTTPS).
 | `PORT` | Sim | Porta HTTP do serviço (default 4000).
 | `ENTRY_FILE` | Opcional | Define o arquivo JS compilado executado no container. Sem valor, `dist/server.js` é utilizado.
 | `SWAGGER_FILE` | Opcional | Mantém o caminho do OpenAPI servido pelo Swagger UI. Recomendado manter em `dist/openapi.yaml`.
+| `SEQUELIZE_DIR_HINT` | Opcional | Lista (separada por `:`) de diretórios a serem priorizados pelo CLI do Sequelize ao localizar `config.js`, models, migrations e seeders. Útil para forçar `dist` quando as migrações rodam após o build.
 | `NODE_ENV` | Sim | Defina `production` em produção para reforçar cookies, HTTPS e validações.
 | `TOTP_ENC_KEY` | Sim | Chave forte (≥32 chars misturando classes) usada para AES-256-GCM dos segredos TOTP.
 | `TOTP_ISSUER` | Opcional | Nome apresentado nos apps de TOTP; escolha um rótulo sem dados sensíveis e que diferencie ambientes.
@@ -143,6 +144,13 @@ restritivo, cookies seguros e forçamento de HTTPS).
 
 Consulte o arquivo [`technomoney-auth/prod.env`](technomoney-auth/prod.env) para a
 lista completa e recomendações de segurança comentadas.
+
+> **Dica de segurança para migrações:** o `.sequelizerc` agora procura primeiro
+> por artefatos compilados em `dist/` (ou nos caminhos fornecidos via
+> `SEQUELIZE_DIR_HINT`) antes de recorrer ao código-fonte em `src/`. Isso garante
+> que execuções de `npx sequelize-cli db:migrate` dentro do container usem a
+> mesma configuração versionada que entrou no build, reduzindo riscos de
+> divergência entre ambientes.
 
 ### Documentação complementar
 
