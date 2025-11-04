@@ -2,18 +2,43 @@ const fs = require("fs");
 const path = require("path");
 
 const rawHints = process.env.SEQUELIZE_DIR_HINT;
-const searchRoots = (rawHints && rawHints.length > 0
-  ? rawHints.split(path.delimiter)
-  : ["dist", "src"]) // Default: prefer build artefacts, fallback to sources.
-  .map((rootCandidate) => path.resolve(rootCandidate))
-  // Remove duplicates while preserving order to avoid redundant fs checks.
-  .filter((rootCandidate, index, array) => array.indexOf(rootCandidate) === index);
+const searchRoots = [];
 
-if (searchRoots.length === 0) {
-  searchRoots.push(path.resolve("src"));
+function pushCandidate(input) {
+  if (!input || input.length === 0) {
+    return;
+  }
+
+  const variants = path.isAbsolute(input)
+    ? [path.normalize(input)]
+    : [path.resolve(input), path.resolve(__dirname, input)];
+
+  for (const variant of variants) {
+    if (!searchRoots.includes(variant)) {
+      searchRoots.push(variant);
+    }
+  }
 }
 
-const fallbackRoot = path.resolve("src");
+if (rawHints && rawHints.length > 0) {
+  for (const hint of rawHints.split(path.delimiter)) {
+    pushCandidate(hint.trim());
+  }
+}
+
+// Defaults: prefer build artefacts, while still supporting CLI executions that
+// change the working directory (Docker entrypoints, CI, etc.).
+pushCandidate("dist");
+pushCandidate(path.join(__dirname, "dist"));
+pushCandidate("src");
+pushCandidate(path.join(__dirname, "src"));
+
+if (searchRoots.length === 0) {
+  pushCandidate(path.join(__dirname, "src"));
+}
+
+const fallbackRoot = path.resolve(__dirname, "src");
+
 
 function resolveSequelizePath(...segments) {
   for (const rootDir of searchRoots) {

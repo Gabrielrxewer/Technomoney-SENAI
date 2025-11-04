@@ -47,8 +47,10 @@ test(".sequelizerc defaults to source tree when build artifacts are absent", () 
   }
 });
 
-test(".sequelizerc honors SEQUELIZE_DIR_HINT and prefers existing build folders", () => {
+test(".sequelizerc honors SEQUELIZE_DIR_HINT and prefers existing build folders across cwd changes", () => {
   const previousHint = process.env.SEQUELIZE_DIR_HINT;
+  const previousCwd = process.cwd();
+
   const artifactRoot = path.join(projectRoot, "__tmp_dist__");
   const configDir = path.join(artifactRoot, "config");
   const modelsDir = path.join(artifactRoot, "models");
@@ -62,14 +64,17 @@ test(".sequelizerc honors SEQUELIZE_DIR_HINT and prefers existing build folders"
   fs.mkdirSync(seedersDir, { recursive: true });
   fs.writeFileSync(path.join(configDir, "config.js"), "module.exports = {};");
 
-  process.env.SEQUELIZE_DIR_HINT = `${path.relative(projectRoot, artifactRoot)}${path.delimiter}src`;
+  process.env.SEQUELIZE_DIR_HINT = path.relative(projectRoot, artifactRoot);
+  process.chdir(path.parse(projectRoot).root);
+
 
   try {
     const config = loadSequelizerc();
     assert.equal(
       config.config,
       path.join(configDir, "config.js"),
-      "config path should use the build artifact when SEQUELIZE_DIR_HINT is provided",
+      "config path should use the hinted build directory even when cwd differs",
+
     );
     assert.equal(
       config["models-path"],
@@ -87,11 +92,43 @@ test(".sequelizerc honors SEQUELIZE_DIR_HINT and prefers existing build folders"
       "seeders path should use the hinted build directory",
     );
   } finally {
+    process.chdir(previousCwd);
     if (previousHint) {
       process.env.SEQUELIZE_DIR_HINT = previousHint;
     } else {
       delete process.env.SEQUELIZE_DIR_HINT;
     }
     fs.rmSync(artifactRoot, { recursive: true, force: true });
+  }
+});
+
+test(".sequelizerc defaults still locate dist artefacts when run from outside the project root", () => {
+  const previousHint = process.env.SEQUELIZE_DIR_HINT;
+  const previousCwd = process.cwd();
+  const distRoot = path.join(projectRoot, "dist");
+  const configDir = path.join(distRoot, "config");
+
+  fs.rmSync(distRoot, { recursive: true, force: true });
+  fs.mkdirSync(configDir, { recursive: true });
+  fs.writeFileSync(path.join(configDir, "config.js"), "module.exports = {};");
+
+  delete process.env.SEQUELIZE_DIR_HINT;
+  process.chdir(path.parse(projectRoot).root);
+
+  try {
+    const config = loadSequelizerc();
+    assert.equal(
+      config.config,
+      path.join(configDir, "config.js"),
+      "config path should rely on the dist copy even without explicit hints",
+    );
+  } finally {
+    process.chdir(previousCwd);
+    if (previousHint) {
+      process.env.SEQUELIZE_DIR_HINT = previousHint;
+    } else {
+      delete process.env.SEQUELIZE_DIR_HINT;
+    }
+    fs.rmSync(distRoot, { recursive: true, force: true });
   }
 });

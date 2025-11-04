@@ -125,7 +125,8 @@ restritivo, cookies seguros e forçamento de HTTPS).
 | `PORT` | Sim | Porta HTTP do serviço (default 4000).
 | `ENTRY_FILE` | Opcional | Define o arquivo JS compilado executado no container. Sem valor, `dist/server.js` é utilizado.
 | `SWAGGER_FILE` | Opcional | Mantém o caminho do OpenAPI servido pelo Swagger UI. Recomendado manter em `dist/openapi.yaml`.
-| `SEQUELIZE_DIR_HINT` | Opcional | Lista (separada por `:`) de diretórios a serem priorizados pelo CLI do Sequelize ao localizar `config.js`, models, migrations e seeders. Útil para forçar `dist` quando as migrações rodam após o build.
+| `SEQUELIZE_DIR_HINT` | Opcional | Lista (separada por `:`) de diretórios a serem priorizados pelo CLI do Sequelize ao localizar `config.js`, models, migrations e seeders. Em imagens Docker oficiais, defina como `/app/dist` para garantir que o container execute migrações com os artefatos compilados e assinados.
+
 | `NODE_ENV` | Sim | Defina `production` em produção para reforçar cookies, HTTPS e validações.
 | `TOTP_ENC_KEY` | Sim | Chave forte (≥32 chars misturando classes) usada para AES-256-GCM dos segredos TOTP.
 | `TOTP_ISSUER` | Opcional | Nome apresentado nos apps de TOTP; escolha um rótulo sem dados sensíveis e que diferencie ambientes.
@@ -151,6 +152,23 @@ lista completa e recomendações de segurança comentadas.
 > que execuções de `npx sequelize-cli db:migrate` dentro do container usem a
 > mesma configuração versionada que entrou no build, reduzindo riscos de
 > divergência entre ambientes.
+
+### Migrações seguras em ambientes Docker
+
+Quando o serviço sobe via `Dockerfile` oficial, todo o código compilado e
+auditado é copiado para `/app/dist`. Para impedir que pipelines montem código
+não verificado por cima do container durante o deploy, force o CLI do Sequelize
+a buscar primeiro esses artefatos com:
+
+```bash
+export SEQUELIZE_DIR_HINT="/app/dist"
+```
+
+Manter `/app/dist` como primeira entrada evita leituras de diretórios
+transientes (`/tmp`, volumes montados ou `/app/src`) que poderiam ser adulterados
+durante a publicação. Caso seja necessário incluir migrações adicionais via
+volume, acrescente o caminho extra após `/app/dist`, separado por `:`,
+preservando o build assinado como origem de confiança.
 
 ### Documentação complementar
 
