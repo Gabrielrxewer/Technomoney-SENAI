@@ -43,7 +43,10 @@ test("safeErr includes stack and nested cause when verbose errors enabled", (t) 
 
   assert.equal(payload.message, "boom");
   assert.equal(typeof payload.stack, "string");
-  assert.ok(payload.stack.includes("boom"));
+  assert.ok(
+    typeof payload.stack === "string" && payload.stack.includes("boom"),
+    "stack deve conter a mensagem original"
+  );
   assert.ok(payload.cause && typeof payload.cause === "object");
   assert.equal((payload.cause as Record<string, unknown>).message, "root cause");
   assert.ok(

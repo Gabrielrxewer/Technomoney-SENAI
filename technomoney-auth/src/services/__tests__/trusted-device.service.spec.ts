@@ -3,13 +3,20 @@ import test from "node:test";
 import path from "node:path";
 import Module from "module";
 
+type ModuleWithGlobalPaths = typeof Module & {
+  globalPaths?: string[];
+  _initPaths?: () => void;
+};
+
 const ensureStubPath = () => {
   const stubPath = path.resolve(__dirname, "../../../test-shims/node_modules");
-  if (!Module.globalPaths.includes(stubPath)) {
+  const moduleWithPaths = Module as ModuleWithGlobalPaths;
+  const paths = moduleWithPaths.globalPaths ?? [];
+  if (!paths.includes(stubPath)) {
     process.env.NODE_PATH = process.env.NODE_PATH
       ? `${stubPath}${path.delimiter}${process.env.NODE_PATH}`
       : stubPath;
-    Module._initPaths();
+    moduleWithPaths._initPaths?.();
   }
 };
 

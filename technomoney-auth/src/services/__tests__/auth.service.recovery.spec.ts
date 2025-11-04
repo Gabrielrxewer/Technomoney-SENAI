@@ -43,7 +43,52 @@ stubModule("../../models", {
 });
 
 import { AuthService } from "../auth.service";
+import { EmailService, MailPayload } from "../email.service";
 import { hashPassword, comparePassword } from "../../utils/password.util";
+
+type EmailRecord = {
+  template: "reset" | "verify";
+  to: string;
+  link: string;
+  expiresAt: Date;
+};
+
+class RecordingEmailService extends EmailService {
+  constructor(
+    private readonly events: EmailRecord[],
+    private readonly payloads: MailPayload[]
+  ) {
+    super({
+      async send(message) {
+        payloads.push(message);
+      },
+    });
+  }
+
+  async sendPasswordReset(
+    to: string,
+    link: string,
+    expiresAt: Date
+  ): Promise<void> {
+    this.events.push({ template: "reset", to, link, expiresAt });
+    await super.sendPasswordReset(to, link, expiresAt);
+  }
+
+  async sendEmailVerification(
+    to: string,
+    link: string,
+    expiresAt: Date
+  ): Promise<void> {
+    this.events.push({ template: "verify", to, link, expiresAt });
+    await super.sendEmailVerification(to, link, expiresAt);
+  }
+}
+
+const createEmailRecorder = () => {
+  const events: EmailRecord[] = [];
+  const payloads: MailPayload[] = [];
+  return { events, payloads, service: new RecordingEmailService(events, payloads) };
+};
 
 test("requestPasswordReset persiste token único e envia e-mail", async () => {
   const fixedNow = new Date("2025-01-01T00:00:00Z");
@@ -57,7 +102,7 @@ test("requestPasswordReset persiste token único e envia e-mail", async () => {
     email_verified: false,
   };
   const created: any[] = [];
-  const emails: any[] = [];
+  const { events: emails, service: emailService } = createEmailRecorder();
   const service = new AuthService({
     userRepository: {
       async findByEmail(email: string) {
@@ -74,12 +119,7 @@ test("requestPasswordReset persiste token único e envia e-mail", async () => {
         return data;
       },
     } as any,
-    emailService: {
-      async sendPasswordReset(to: string, link: string, expiresAt: Date) {
-        emails.push({ to, link, expiresAt });
-      },
-      async sendEmailVerification() {},
-    },
+    emailService,
     now: () => new Date(fixedNow),
   });
 
@@ -87,6 +127,7 @@ test("requestPasswordReset persiste token único e envia e-mail", async () => {
 
   assert.equal(created.length, 1);
   assert.equal(emails.length, 1);
+  assert.equal(emails[0].template, "reset");
   assert.equal(emails[0].to, user.email);
   const url = new URL(emails[0].link);
   const token = url.searchParams.get("token");
@@ -199,7 +240,7 @@ test("requestEmailVerification envia link seguro", async () => {
     email_verified: false,
   };
   const created: any[] = [];
-  const emails: any[] = [];
+  const { events: emails, service: emailService } = createEmailRecorder();
   const service = new AuthService({
     userRepository: {
       async findByEmail(email: string) {
@@ -216,18 +257,14 @@ test("requestEmailVerification envia link seguro", async () => {
         return data;
       },
     } as any,
-    emailService: {
-      async sendPasswordReset() {},
-      async sendEmailVerification(to: string, link: string, expiresAt: Date) {
-        emails.push({ to, link, expiresAt });
-      },
-    },
+    emailService,
   });
 
   await service.requestEmailVerification(user.email);
 
   assert.equal(created.length, 1);
   assert.equal(emails.length, 1);
+  assert.equal(emails[0].template, "verify");
   const token = new URL(emails[0].link).searchParams.get("token");
   assert.ok(token);
   const [tokenId, secret] = token!.split(".");
