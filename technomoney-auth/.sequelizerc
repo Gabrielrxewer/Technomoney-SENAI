@@ -1,7 +1,57 @@
+const fs = require("fs");
 const path = require("path");
+
+const rawHints = process.env.SEQUELIZE_DIR_HINT;
+const searchRoots = [];
+
+function pushCandidate(input) {
+  if (!input || input.length === 0) {
+    return;
+  }
+
+  const variants = path.isAbsolute(input)
+    ? [path.normalize(input)]
+    : [path.resolve(input), path.resolve(__dirname, input)];
+
+  for (const variant of variants) {
+    if (!searchRoots.includes(variant)) {
+      searchRoots.push(variant);
+    }
+  }
+}
+
+if (rawHints && rawHints.length > 0) {
+  for (const hint of rawHints.split(path.delimiter)) {
+    pushCandidate(hint.trim());
+  }
+}
+
+// Defaults: prefer build artefacts, while still supporting CLI executions that
+// change the working directory (Docker entrypoints, CI, etc.).
+pushCandidate("dist");
+pushCandidate(path.join(__dirname, "dist"));
+pushCandidate("src");
+pushCandidate(path.join(__dirname, "src"));
+
+if (searchRoots.length === 0) {
+  pushCandidate(path.join(__dirname, "src"));
+}
+
+const fallbackRoot = path.resolve(__dirname, "src");
+
+function resolveSequelizePath(...segments) {
+  for (const rootDir of searchRoots) {
+    const candidate = path.join(rootDir, ...segments);
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  return path.join(fallbackRoot, ...segments);
+}
+
 module.exports = {
-  config: path.resolve("src", "config", "config.js"),
-  "models-path": path.resolve("src", "models"),
-  "seeders-path": path.resolve("src", "seeders"),
-  "migrations-path": path.resolve("src", "migrations"),
+  config: resolveSequelizePath("config", "config.js"),
+  "models-path": resolveSequelizePath("models"),
+  "seeders-path": resolveSequelizePath("seeders"),
+  "migrations-path": resolveSequelizePath("migrations"),
 };
