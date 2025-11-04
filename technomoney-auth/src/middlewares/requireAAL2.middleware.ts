@@ -1,11 +1,20 @@
 import type { Request, Response, NextFunction } from "express";
-import type { TechnomoneyAuthenticatedUser } from "@technomoney/types/express";
+import type { TechnomoneyAuthenticatedUser } from "../types/technomoney-authenticated-user";
 
 import { TotpService } from "../services/totp.service";
 
+type TotpStatusProvider = Pick<TotpService, "status">;
+
 type RequestWithUser = Request & { user?: TechnomoneyAuthenticatedUser };
 
-const totp = new TotpService();
+let totp: TotpStatusProvider = new TotpService();
+
+export const setTotpService = (override: TotpStatusProvider) => {
+  if (!override || typeof override.status !== "function") {
+    throw new Error("setTotpService requires an object implementing status(userId)");
+  }
+  totp = override;
+};
 
 export const requireAAL2 = async (
   req: RequestWithUser,
@@ -27,4 +36,8 @@ export const requireAAL2 = async (
     return;
   }
   res.status(401).json({ stepUp: "enroll", options: ["totp"] });
+};
+
+export const resetTotpService = () => {
+  totp = new TotpService();
 };

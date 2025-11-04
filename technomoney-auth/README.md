@@ -33,6 +33,12 @@ restritivo, cookies seguros e forçamento de HTTPS).
   `acr=aal2`, `amr` deduplicados e claims `trusted_device*`, preservando
   evidência do segundo fator sem reemitir códigos TOTP a cada autenticação mesmo
   durante indisponibilidade temporária do Redis.
+- **Tipagens endurecidas no build**: as definições de usuário autenticado foram
+  incorporadas a `src/types/technomoney-authenticated-user.ts`, garantindo que
+  os builds Docker do serviço mantenham validação consistente de claims sem
+  depender de caminhos externos ao contexto. Isso impede que middlewares como
+  `requireAAL2` percam verificações críticas de `acr`/`amr` quando o container é
+  reconstruído em ambientes isolados.
 
 - **OIDC completo**: suporte a PAR + PKCE (code flow), ID Token assinado com as
   mesmas chaves do acesso, opção de exigir DPoP (`REQUIRE_DPOP=true`) e
@@ -121,6 +127,7 @@ restritivo, cookies seguros e forçamento de HTTPS).
 | `SWAGGER_FILE` | Opcional | Mantém o caminho do OpenAPI servido pelo Swagger UI. Recomendado manter em `dist/openapi.yaml`.
 | `NODE_ENV` | Sim | Defina `production` em produção para reforçar cookies, HTTPS e validações.
 | `TOTP_ENC_KEY` | Sim | Chave forte (≥32 chars misturando classes) usada para AES-256-GCM dos segredos TOTP.
+| `TOTP_ISSUER` | Opcional | Nome apresentado nos apps de TOTP; escolha um rótulo sem dados sensíveis e que diferencie ambientes.
 | `REDIS_URL` | Sim em produção | Redis utilizado por rate limits, trusted devices e antifraude TOTP.
 | `TRUSTED_DEVICE_SECRET` | Recomendado | Segredo com ≥32 caracteres usado para assinar o cookie `tdmeta`. Quando ausente, o serviço deriva um HMAC da chave privada ativa do JWT.
 | `JWT_KEYS_DIR`/`JWT_PRIVATE_KEY`/`JWT_PUBLIC_KEY` | Sim | Fonte das chaves que assinam/verificam tokens. Sempre proteja o PEM privado.
