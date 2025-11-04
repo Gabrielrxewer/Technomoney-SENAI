@@ -142,6 +142,20 @@ lista completa e recomendações de segurança comentadas.
 - Documento detalhado em PDF: [`docs/authentication-backend.pdf`](docs/authentication-backend.pdf)
 - Fluxograma do fluxo completo (Mermaid): [`docs/authentication-flowchart.mmd`](docs/authentication-flowchart.mmd)
 
+## Testes automatizados focados em segurança
+
+- Execute `npm test` para rodar a suíte de unidade com `node:test`. As fixtures em
+  `src/services/__tests__/email.service.spec.ts` garantem que os templates de
+  e-mail sejam sanitizados contra tentativas de header injection (remoção de
+  caracteres `\r` e limitação de quebras consecutivas).
+- Os testes de recuperação (`auth.service.recovery.spec.ts`) conferem que links
+  assinados usam tokens únicos com hash Argon2 e TTL limitado, reforçando MFA e
+  step-up ao revogar sessões ativas após resets.
+- Os cenários de trusted devices e TOTP sob `src/services/__tests__` validam que
+  o serviço mantém `acr=aal2` somente quando os cookies assinados e o Redis
+  retornam metadados íntegros, assegurando downgrade seguro em falhas de
+  infraestrutura.
+
 ## Integração com serviços consumidores
 
 - **`technomoney-payment-api`**: valida tokens via `/oauth2/introspect`. Tokens
