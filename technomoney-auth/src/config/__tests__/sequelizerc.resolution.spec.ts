@@ -50,6 +50,7 @@ test(".sequelizerc defaults to source tree when build artifacts are absent", () 
 test(".sequelizerc honors SEQUELIZE_DIR_HINT and prefers existing build folders across cwd changes", () => {
   const previousHint = process.env.SEQUELIZE_DIR_HINT;
   const previousCwd = process.cwd();
+
   const artifactRoot = path.join(projectRoot, "__tmp_dist__");
   const configDir = path.join(artifactRoot, "config");
   const modelsDir = path.join(artifactRoot, "models");
@@ -66,12 +67,14 @@ test(".sequelizerc honors SEQUELIZE_DIR_HINT and prefers existing build folders 
   process.env.SEQUELIZE_DIR_HINT = path.relative(projectRoot, artifactRoot);
   process.chdir(path.parse(projectRoot).root);
 
+
   try {
     const config = loadSequelizerc();
     assert.equal(
       config.config,
       path.join(configDir, "config.js"),
       "config path should use the hinted build directory even when cwd differs",
+
     );
     assert.equal(
       config["models-path"],

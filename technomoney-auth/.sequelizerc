@@ -39,6 +39,7 @@ if (searchRoots.length === 0) {
 
 const fallbackRoot = path.resolve(__dirname, "src");
 
+
 function resolveSequelizePath(...segments) {
   for (const rootDir of searchRoots) {
     const candidate = path.join(rootDir, ...segments);
