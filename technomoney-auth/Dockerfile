@@ -11,7 +11,6 @@ COPY tsconfig.json ./
 COPY src ./src
 RUN npm run build
 RUN if [ -d "src/models" ]; then mkdir -p dist/models && cp -r src/models/* dist/models/; fi
-RUN if [ -d "src/config" ]; then mkdir -p dist/config && cp -r src/config/* dist/config/; fi
 RUN if [ -d "src/migrations" ]; then mkdir -p dist/migrations && cp -r src/migrations/* dist/migrations/; fi
 RUN if [ -d "src/seeders" ]; then mkdir -p dist/seeders && cp -r src/seeders/* dist/seeders/; fi
 RUN if [ -f "src/openapi.yaml" ]; then cp src/openapi.yaml dist/openapi.yaml; fi

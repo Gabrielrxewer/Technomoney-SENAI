@@ -168,7 +168,11 @@ Manter `/app/dist` como primeira entrada evita leituras de diretórios
 transientes (`/tmp`, volumes montados ou `/app/src`) que poderiam ser adulterados
 durante a publicação. Caso seja necessário incluir migrações adicionais via
 volume, acrescente o caminho extra após `/app/dist`, separado por `:`,
-preservando o build assinado como origem de confiança.
+preservando o build assinado como origem de confiança. Sempre execute `npm run`
+`build` antes de disparar `npx sequelize-cli ...` em ambientes sem `ts-node`
+instalado; o loader `src/config/config.js` passa a recorrer automaticamente ao
+artefato compilado (`dist/config/config.js`) quando a dependência de desenvolvimento
+não está disponível.
 
 ### Documentação complementar
 
