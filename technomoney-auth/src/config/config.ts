@@ -36,4 +36,4 @@ const config: Record<DbEnv, DbOptions> = {
   test: { ...base },
 };
 
-export default config;
+export = config;
