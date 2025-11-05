@@ -33,6 +33,12 @@ restritivo, cookies seguros e forçamento de HTTPS).
   `acr=aal2`, `amr` deduplicados e claims `trusted_device*`, preservando
   evidência do segundo fator sem reemitir códigos TOTP a cada autenticação mesmo
   durante indisponibilidade temporária do Redis.
+- **Tipagens endurecidas no build**: as definições de usuário autenticado foram
+  incorporadas a `src/types/technomoney-authenticated-user.ts`, garantindo que
+  os builds Docker do serviço mantenham validação consistente de claims sem
+  depender de caminhos externos ao contexto. Isso impede que middlewares como
+  `requireAAL2` percam verificações críticas de `acr`/`amr` quando o container é
+  reconstruído em ambientes isolados.
 
 - **OIDC completo**: suporte a PAR + PKCE (code flow), ID Token assinado com as
   mesmas chaves do acesso, opção de exigir DPoP (`REQUIRE_DPOP=true`) e
@@ -117,8 +123,13 @@ restritivo, cookies seguros e forçamento de HTTPS).
 | Variável | Obrigatória | Finalidade |
 | --- | --- | --- |
 | `PORT` | Sim | Porta HTTP do serviço (default 4000).
+| `ENTRY_FILE` | Opcional | Define o arquivo JS compilado executado no container. Sem valor, `dist/server.js` é utilizado.
+| `SWAGGER_FILE` | Opcional | Mantém o caminho do OpenAPI servido pelo Swagger UI. Recomendado manter em `dist/openapi.yaml`.
+| `SEQUELIZE_DIR_HINT` | Opcional | Lista (separada por `:`) de diretórios a serem priorizados pelo CLI do Sequelize ao localizar `config.js`, models, migrations e seeders. Em imagens Docker oficiais, defina como `/app/dist` para garantir que o container execute migrações com os artefatos compilados e assinados.
+
 | `NODE_ENV` | Sim | Defina `production` em produção para reforçar cookies, HTTPS e validações.
 | `TOTP_ENC_KEY` | Sim | Chave forte (≥32 chars misturando classes) usada para AES-256-GCM dos segredos TOTP.
+| `TOTP_ISSUER` | Opcional | Nome apresentado nos apps de TOTP; escolha um rótulo sem dados sensíveis e que diferencie ambientes.
 | `REDIS_URL` | Sim em produção | Redis utilizado por rate limits, trusted devices e antifraude TOTP.
 | `TRUSTED_DEVICE_SECRET` | Recomendado | Segredo com ≥32 caracteres usado para assinar o cookie `tdmeta`. Quando ausente, o serviço deriva um HMAC da chave privada ativa do JWT.
 | `JWT_KEYS_DIR`/`JWT_PRIVATE_KEY`/`JWT_PUBLIC_KEY` | Sim | Fonte das chaves que assinam/verificam tokens. Sempre proteja o PEM privado.
@@ -135,10 +146,52 @@ restritivo, cookies seguros e forçamento de HTTPS).
 Consulte o arquivo [`technomoney-auth/prod.env`](technomoney-auth/prod.env) para a
 lista completa e recomendações de segurança comentadas.
 
+> **Dica de segurança para migrações:** o `.sequelizerc` agora procura primeiro
+> por artefatos compilados em `dist/` (ou nos caminhos fornecidos via
+> `SEQUELIZE_DIR_HINT`) antes de recorrer ao código-fonte em `src/`. Isso garante
+> que execuções de `npx sequelize-cli db:migrate` dentro do container usem a
+> mesma configuração versionada que entrou no build, reduzindo riscos de
+> divergência entre ambientes.
+
+### Migrações seguras em ambientes Docker
+
+Quando o serviço sobe via `Dockerfile` oficial, todo o código compilado e
+auditado é copiado para `/app/dist`. Para impedir que pipelines montem código
+não verificado por cima do container durante o deploy, force o CLI do Sequelize
+a buscar primeiro esses artefatos com:
+
+```bash
+export SEQUELIZE_DIR_HINT="/app/dist"
+```
+
+Manter `/app/dist` como primeira entrada evita leituras de diretórios
+transientes (`/tmp`, volumes montados ou `/app/src`) que poderiam ser adulterados
+durante a publicação. Caso seja necessário incluir migrações adicionais via
+volume, acrescente o caminho extra após `/app/dist`, separado por `:`,
+preservando o build assinado como origem de confiança. Sempre execute `npm run`
+`build` antes de disparar `npx sequelize-cli ...` em ambientes sem `ts-node`
+instalado; o loader `src/config/config.js` passa a recorrer automaticamente ao
+artefato compilado (`dist/config/config.js`) quando a dependência de desenvolvimento
+não está disponível.
+
 ### Documentação complementar
 
 - Documento detalhado em PDF: [`docs/authentication-backend.pdf`](docs/authentication-backend.pdf)
 - Fluxograma do fluxo completo (Mermaid): [`docs/authentication-flowchart.mmd`](docs/authentication-flowchart.mmd)
+
+## Testes automatizados focados em segurança
+
+- Execute `npm test` para rodar a suíte de unidade com `node:test`. As fixtures em
+  `src/services/__tests__/email.service.spec.ts` garantem que os templates de
+  e-mail sejam sanitizados contra tentativas de header injection (remoção de
+  caracteres `\r` e limitação de quebras consecutivas).
+- Os testes de recuperação (`auth.service.recovery.spec.ts`) conferem que links
+  assinados usam tokens únicos com hash Argon2 e TTL limitado, reforçando MFA e
+  step-up ao revogar sessões ativas após resets.
+- Os cenários de trusted devices e TOTP sob `src/services/__tests__` validam que
+  o serviço mantém `acr=aal2` somente quando os cookies assinados e o Redis
+  retornam metadados íntegros, assegurando downgrade seguro em falhas de
+  infraestrutura.
 
 ## Integração com serviços consumidores
 
