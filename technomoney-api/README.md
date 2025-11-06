@@ -41,6 +41,11 @@ A Technomoney API expõe endpoints responsáveis por orquestrar dados de mercado
    npm start
    ```
 
+7. **Execução em containers**
+   - O Dockerfile oficial executa `npx sequelize-cli db:migrate` automaticamente no start do container para garantir que o schema esteja sincronizado antes de receber tráfego.
+   - Para cenários onde o container deve iniciar em modo somente leitura (ex.: réplicas de análise), defina `SKIP_DB_MIGRATIONS=1` nas variáveis do serviço.
+   - O entrypoint também ajusta automaticamente o `SWAGGER_FILE` para `/app/dist/openapi.yaml` quando a variável não estiver definida, mantendo a documentação disponível sem expor caminhos inseguros.
+
 ## Variáveis de ambiente
 | Variável | Obrigatória | Descrição |
 | --- | --- | --- |
@@ -64,6 +69,7 @@ A Technomoney API expõe endpoints responsáveis por orquestrar dados de mercado
 | `AUTH_CLOCK_TOLERANCE` | Não | Folga (em segundos) para validação de exp/nbf. |
 | `AUTH_ALLOWED_ALGS` | Não | Lista separada por vírgulas dos algoritmos aceitos (ex.: `RS256,ES256`). |
 | `AUTH_STATIC_JWKS` | Não | JWKS estático (JSON) para contingência. Proteja e rotacione com rigor. |
+| `SKIP_DB_MIGRATIONS` | Não (default `0`) | Quando `1`, impede que o entrypoint aplique migrations automaticamente. Útil para réplicas read-only sob monitoramento. |
 
 > **Importante:** Não armazene segredos diretamente no repositório. Utilize `.env` apenas em desenvolvimento local e carregue valores em produção via variáveis de ambiente ou serviços de segredo.
 

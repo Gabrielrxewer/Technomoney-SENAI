@@ -75,6 +75,13 @@ services:
       NODE_ENV: production
       PORT: "4002"
       SWAGGER_FILE: /app/dist/openapi.yaml
+      DB_DRIVER: postgres
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USERNAME: technomoney
+      DB_PASSWORD: technopass
+      DB_DATABASE: technomoney_auth
+      SKIP_DB_MIGRATIONS: "${SKIP_DB_MIGRATIONS:-0}"
       MARKET_API_BASE_URL: "http://host.docker.internal:4001"
       AUTH_INTROSPECTION_URL: "http://auth:4000/oauth2/introspect"
       AUTH_INTROSPECTION_CLIENT_ID: core-service
