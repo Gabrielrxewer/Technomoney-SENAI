@@ -44,9 +44,12 @@ em uma única orquestração. Para utilizá-lo:
    → `technomoney-auth/.env`).
 2. Gere os PEMs de assinatura antes do build com `npm run keys:generate` dentro
    de `technomoney-auth/` e mantenha os arquivos resultantes em
-   `technomoney-auth/keys/`. O `docker-compose.yml` monta esse diretório como
-   `/app/keys:ro`, garantindo que o autenticador encontre as chaves sem
-   persistí-las na imagem.
+   `technomoney-auth/keys/`. Em ambientes de desenvolvimento o compose exporta
+   `JWT_AUTO_GENERATE_KEYS=1`, permitindo que o container crie pares efêmeros na
+   primeira subida (os arquivos aparecem em `technomoney-auth/keys/`). **Em
+   produção desabilite esse flag e injete chaves gerenciadas externamente**
+   (secret manager ou volume dedicado) para preservar tokens ativos e manter a
+   rotação auditável.
 3. Garanta que `technomoney-auth/.env` contenha chaves fortes (`TOTP_ENC_KEY`,
    `TRUSTED_DEVICE_SECRET`, credenciais do banco e `REDIS_URL` já apontando
    para `redis://redis:6379/0`).

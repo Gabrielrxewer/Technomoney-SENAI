@@ -140,7 +140,11 @@ export const ensureJwtKeys = async () => {
   }
 
   if (!shouldAutoGenerate()) {
-    log.error({ evt: "jwt.keys.missing", dir: targetDir });
+    log.error({
+      evt: "jwt.keys.missing",
+      dir: targetDir,
+      hint: "Generate PEMs into JWT_KEYS_DIR or set JWT_AUTO_GENERATE_KEYS=1 for ephemeral pairs",
+    });
     throw new Error("no_keys_found");
   }
 
