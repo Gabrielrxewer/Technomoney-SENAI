@@ -91,6 +91,28 @@ test("ensureJwtKeys fails in production without auto generation", async () => {
   });
 });
 
+test("ensureJwtKeys uses existing key pairs without regeneration", async () => {
+  await withTempDir(async (dir) => {
+    const priv = path.join(dir, "jwt-ES256-2025-09_private.pem");
+    const pub = path.join(dir, "jwt-ES256-2025-09_public.pem");
+    fs.writeFileSync(priv, "PRIVATE", { mode: 0o600 });
+    fs.writeFileSync(pub, "PUBLIC", { mode: 0o644 });
+    const snapshot = setEnv({
+      NODE_ENV: "production",
+      JWT_KEYS_DIR: dir,
+      JWT_AUTO_GENERATE_KEYS: "0",
+      JWT_KID: "jwt-ES256-2025-09",
+      JOSE_STUB: "0",
+    });
+    try {
+      await ensureJwtKeys();
+      assert.equal(process.env.JWT_KID, "jwt-ES256-2025-09");
+    } finally {
+      restoreEnv(snapshot);
+    }
+  }, "jwt-keys-existing-");
+});
+
 test("ensureJwtKeys normalizes Windows paths inside Linux containers", async () => {
   await withTempDir(async (baseDir) => {
     const fallback = path.join(baseDir, "keys");

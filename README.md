@@ -42,10 +42,15 @@ em uma única orquestração. Para utilizá-lo:
 1. Copie cada `prod.env` para `.env` dentro de seu respectivo diretório e
    preencha segredos exclusivos para o ambiente (ex.: `technomoney-auth/prod.env`
    → `technomoney-auth/.env`).
-2. Garanta que `technomoney-auth/.env` contenha chaves fortes (`TOTP_ENC_KEY`,
+2. Gere os PEMs de assinatura antes do build com `npm run keys:generate` dentro
+   de `technomoney-auth/` e mantenha os arquivos resultantes em
+   `technomoney-auth/keys/`. O `docker-compose.yml` monta esse diretório como
+   `/app/keys:ro`, garantindo que o autenticador encontre as chaves sem
+   persistí-las na imagem.
+3. Garanta que `technomoney-auth/.env` contenha chaves fortes (`TOTP_ENC_KEY`,
    `TRUSTED_DEVICE_SECRET`, credenciais do banco e `REDIS_URL` já apontando
    para `redis://redis:6379/0`).
-3. Opcionalmente execute a fake API de mercado separadamente (não faz parte do
+4. Opcionalmente execute a fake API de mercado separadamente (não faz parte do
    compose) e ajuste `MARKET_API_BASE_URL` para apontar para ela.
 
 ### Serviços orquestrados
@@ -126,6 +131,9 @@ por outro gerado especificamente para o seu ambiente antes de ir para produção
   em containers Linux e cria pares efêmeros apenas quando `JWT_AUTO_GENERATE_KEYS`
   está ativo (desabilite em produção). Gere e monte PEMs persistentes em
   `/app/keys` para preservar tokens ativos durante rotações controladas.
+- Utilize `npm run keys:generate` para criar novos pares (`technomoney-auth/keys/`)
+  antes de cada rotação planejada e atualize `JWT_KID`/`JWT_KEYS_ROTATION_TAGS`
+  conforme necessário.
 - O fluxo `POST /api/auth/refresh` agora reaproveita com segurança os metadados
   do trusted device (quando pertencem ao mesmo usuário) para assinar o novo
   access token com `acr=aal2` e `amr` deduplicados. Tentativas de reutilizar
