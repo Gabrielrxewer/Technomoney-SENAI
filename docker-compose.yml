@@ -39,6 +39,7 @@ services:
       SWAGGER_FILE: /app/dist/openapi.yaml
       ENTRY_FILE: dist/server.js
       JWT_KEYS_DIR: /app/keys
+      JWT_AUTO_GENERATE_KEYS: "${JWT_AUTO_GENERATE_KEYS:-1}"
       TOTP_ENC_KEY: "${TOTP_ENC_KEY:-p9ZAq7xM4sN1vT8yR3bC6wH2kJ5fL0GdQzXeUiPoSrYtVh8L_c2BnEmWjRs9F!}"
       DB_DRIVER: postgres
       DB_HOST: postgres
@@ -52,7 +53,7 @@ services:
       - "4000:4000"
     restart: unless-stopped
     volumes:
-      - ./technomoney-auth/keys:/app/keys:ro
+      - ./technomoney-auth/keys:/app/keys
     depends_on:
       postgres:
         condition: service_healthy
@@ -62,7 +63,6 @@ services:
       sh -lc "
       node -e \"require('child_process').execSync('npx sequelize-cli db:migrate',{stdio:'inherit'})\" &&
       node \"$${ENTRY_FILE:-dist/server.js}\"
-      node ${ENTRY_FILE}
       "
 
   api:

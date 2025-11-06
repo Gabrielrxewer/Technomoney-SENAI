@@ -91,6 +91,30 @@ test("ensureJwtKeys fails in production without auto generation", async () => {
   });
 });
 
+test("ensureJwtKeys can generate development keys even when NODE_ENV=production", async () => {
+  await withTempDir(async (dir) => {
+    const snapshot = setEnv({
+      NODE_ENV: "production",
+      JWT_KEYS_DIR: dir,
+      JWT_AUTO_GENERATE_KEYS: "1",
+      JWT_KEYS_ROTATION_TAGS: "2025-09",
+      JWT_ALG: "ES256",
+      JWT_KID: undefined,
+      JOSE_STUB: "0",
+    });
+    try {
+      await ensureJwtKeys();
+      const files = listKeyFiles(dir);
+      assert.ok(files.length >= 2, "should have generated a key pair");
+      const kids = new Set(files.map((file) => file.replace(/_(private|public)\.pem$/, "")));
+      assert.ok(kids.size >= 1);
+      assert.ok(process.env.JWT_KID && kids.has(process.env.JWT_KID));
+    } finally {
+      restoreEnv(snapshot);
+    }
+  }, "jwt-keys-prod-autogen-");
+});
+
 test("ensureJwtKeys uses existing key pairs without regeneration", async () => {
   await withTempDir(async (dir) => {
     const priv = path.join(dir, "jwt-ES256-2025-09_private.pem");

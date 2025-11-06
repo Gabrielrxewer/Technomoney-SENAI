@@ -167,8 +167,12 @@ lista completa e recomendações de segurança comentadas.
   automaticamente em `technomoney-auth/keys/`) e monte os arquivos em `/app/keys` no
   container. Essa prática evita que rebuilds esvaziem a JWKS
   em produção e mantém o fluxo de rotação auditável.
-- **Docker Compose** já monta `./technomoney-auth/keys:/app/keys:ro`. Garanta que os PEMs
-  estejam nesse diretório antes de subir o stack ou injete-os via secret manager.
+- **Docker Compose (desenvolvimento)** exporta `JWT_AUTO_GENERATE_KEYS=1` e monta
+  `./technomoney-auth/keys:/app/keys` em modo leitura-escrita. Isso permite que a primeira
+  subida gere pares efêmeros automaticamente (eles ficam persistidos no host para uso
+  posterior). **Em produção desabilite o flag e injete PEMs gerenciados por secrets/volumes
+  dedicados**, mantendo o diretório como somente leitura para o processo e garantindo que a
+  rotação siga governança rígida.
 
 > **Dica de segurança para migrações:** o `.sequelizerc` agora procura primeiro
 > por artefatos compilados em `dist/` (ou nos caminhos fornecidos via
