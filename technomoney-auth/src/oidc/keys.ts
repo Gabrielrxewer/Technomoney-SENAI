@@ -6,7 +6,10 @@ import { joseImport } from "../utils/joseDynamic";
 const ISS = process.env.JWT_ISSUER || "auth";
 const AUD_ACCESS = process.env.JWT_AUDIENCE || "web";
 const ACCESS_TTL = process.env.JWT_EXPIRES_IN || "5m";
-const KEYS_DIR = process.env.JWT_KEYS_DIR || process.cwd();
+const keysDir = () => {
+  const dir = (process.env.JWT_KEYS_DIR || "").trim();
+  return dir.length ? dir : process.cwd();
+};
 
 type Entry = {
   kid: string;
@@ -43,7 +46,8 @@ function parseKidAlgFromBase(
 }
 
 function listDiskEntries(): Entry[] {
-  const files = fs.existsSync(KEYS_DIR) ? fs.readdirSync(KEYS_DIR) : [];
+  const dir = keysDir();
+  const files = fs.existsSync(dir) ? fs.readdirSync(dir) : [];
   const bases = Array.from(
     new Set(
       files
@@ -58,8 +62,8 @@ function listDiskEntries(): Entry[] {
   for (const b of bases) {
     const meta = parseKidAlgFromBase(b);
     if (!meta) continue;
-    const privPath = path.join(KEYS_DIR, `${b}_private.pem`);
-    const pubPath = path.join(KEYS_DIR, `${b}_public.pem`);
+    const privPath = path.join(dir, `${b}_private.pem`);
+    const pubPath = path.join(dir, `${b}_public.pem`);
     if (!fs.existsSync(privPath) || !fs.existsSync(pubPath)) continue;
     const privPem = fs.readFileSync(privPath, "utf8");
     const pubPem = fs.readFileSync(pubPath, "utf8");

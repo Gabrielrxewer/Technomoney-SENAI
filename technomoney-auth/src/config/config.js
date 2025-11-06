@@ -2,16 +2,24 @@ const fs = require("fs");
 const path = require("path");
 require("dotenv").config();
 
+let exported;
+
 try {
   require("ts-node").register({
     transpileOnly: true,
     compilerOptions: { module: "CommonJS" },
     project: path.resolve(__dirname, "..", "..", "tsconfig.json"),
   });
-} catch (e) {}
-
-const cfg = require("./config.ts");
-const exported = cfg.default || cfg;
+  const cfg = require("./config.ts");
+  exported = cfg.default || cfg;
+} catch (err) {
+  const distPath = path.resolve(__dirname, "..", "..", "dist", "config", "config.js");
+  if (!fs.existsSync(distPath)) {
+    throw err;
+  }
+  const compiled = require(distPath);
+  exported = compiled.default || compiled;
+}
 
 console.log(
   "[db config] env=%s host=%s user=%s pwdType=%s pwdLen=%d",

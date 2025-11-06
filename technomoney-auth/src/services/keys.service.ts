@@ -40,7 +40,8 @@ class KeysService {
   private ensureLoaded() {
     if (this.keys.length) return;
 
-    const dir = process.env.JWT_KEYS_DIR || process.cwd();
+    const envDir = (process.env.JWT_KEYS_DIR || "").trim();
+    const dir = envDir.length ? envDir : process.cwd();
     this.log.debug({ evt: "keys.load.start", dir });
 
     let files: string[] = [];
