@@ -52,6 +52,7 @@ function run(command, args, options = {}) {
       "src/services/__tests__/trusted-device.service.spec.ts",
       "src/services/__tests__/session.service.spec.ts",
       "src/services/__tests__/totp.service.spec.ts",
+      "src/startup/__tests__/ensureJwtKeys.spec.ts",
       "src/utils/log/__tests__/log.helpers.spec.ts",
       "src/ws/__tests__/ws.spec.ts",
     ],

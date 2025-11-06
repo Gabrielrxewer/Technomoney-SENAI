@@ -133,6 +133,8 @@ restritivo, cookies seguros e forçamento de HTTPS).
 | `REDIS_URL` | Sim em produção | Redis utilizado por rate limits, trusted devices e antifraude TOTP.
 | `TRUSTED_DEVICE_SECRET` | Recomendado | Segredo com ≥32 caracteres usado para assinar o cookie `tdmeta`. Quando ausente, o serviço deriva um HMAC da chave privada ativa do JWT.
 | `JWT_KEYS_DIR`/`JWT_PRIVATE_KEY`/`JWT_PUBLIC_KEY` | Sim | Fonte das chaves que assinam/verificam tokens. Sempre proteja o PEM privado.
+| `JWT_AUTO_GENERATE_KEYS` | Não | Utilize apenas em desenvolvimento para gerar pares efêmeros quando nenhum PEM estiver disponível. Em produção mantenha `0` e injete chaves gerenciadas externamente.
+| `JWT_KEYS_ROTATION_TAGS` | Não | Lista separada por vírgula (`YYYY-MM` ou `jwt-ALG-YYYY-MM`) que define quantos pares extras serão criados no bootstrap.
 | `JWT_ISSUER`, `JWT_AUDIENCE`, `JWT_EXPIRES_IN`, `JWT_REFRESH_EXPIRES_IN` | Sim | Metadados e TTL dos tokens emitidos.
 | `INTROSPECTION_CLIENTS` | Sim | Lista `clientId:clientSecret` autorizada a consultar `/oauth2/introspect`.
 | `INTROSPECTION_MTLS_ALLOWED_CNS` | Opcional | CNs aceitos quando introspecção usa mTLS.
@@ -145,6 +147,25 @@ restritivo, cookies seguros e forçamento de HTTPS).
 
 Consulte o arquivo [`technomoney-auth/prod.env`](technomoney-auth/prod.env) para a
 lista completa e recomendações de segurança comentadas.
+
+### Gestão segura das chaves JWT
+
+- O bootstrap executa `ensureJwtKeys`, que normaliza `JWT_KEYS_DIR`, cria o diretório
+  quando necessário e rejeita caminhos Windows (`C:\...`) em ambientes Linux,
+  recaindo em `./keys` no diretório de trabalho.
+- Quando `JWT_AUTO_GENERATE_KEYS` estiver habilitado (default apenas fora de produção)
+  e nenhuma chave estiver disponível, pares efêmeros serão gerados automaticamente
+  com permissões restritivas (`600` para o PEM privado). Use esse modo apenas para
+  desenvolvimento local.
+- Em produção, mantenha `JWT_AUTO_GENERATE_KEYS=0` e injete os PEMs assinados via
+  secret manager ou volume dedicado, garantindo rotação controlada e preservando a
+  validade dos tokens já emitidos.
+- Ajuste `JWT_KEYS_ROTATION_TAGS` para pré-criar pares adicionais (`2025-09,2026-03`,
+  por exemplo). O primeiro par vira automaticamente o `JWT_KID` ativo quando a
+  variável ainda não estiver definida.
+- Antes de construir imagens Docker, gere as chaves com `node gen-keys.mjs` e monte os
+  arquivos em `/app/keys` no container. Essa prática evita que rebuilds esvaziem a JWKS
+  em produção e mantém o fluxo de rotação auditável.
 
 > **Dica de segurança para migrações:** o `.sequelizerc` agora procura primeiro
 > por artefatos compilados em `dist/` (ou nos caminhos fornecidos via

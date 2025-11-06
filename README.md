@@ -122,6 +122,10 @@ por outro gerado especificamente para o seu ambiente antes de ir para produção
   `amr` deduplicados e os claims `trusted_device*` sem reemitir o TOTP. O segredo
   utilizado para assinar o cookie deriva de `TRUSTED_DEVICE_SECRET` (mínimo 32
   caracteres) ou, na ausência dele, da chave privada ativa do JWT.
+- O bootstrap `ensureJwtKeys` normaliza `JWT_KEYS_DIR`, recusa caminhos Windows
+  em containers Linux e cria pares efêmeros apenas quando `JWT_AUTO_GENERATE_KEYS`
+  está ativo (desabilite em produção). Gere e monte PEMs persistentes em
+  `/app/keys` para preservar tokens ativos durante rotações controladas.
 - O fluxo `POST /api/auth/refresh` agora reaproveita com segurança os metadados
   do trusted device (quando pertencem ao mesmo usuário) para assinar o novo
   access token com `acr=aal2` e `amr` deduplicados. Tentativas de reutilizar
