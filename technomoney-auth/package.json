@@ -8,7 +8,8 @@
     "start": "node scripts/with-totp-key.cjs node dist/server.js",
     "migrate": "node C:/Technomoney-SENAI/technomoney-auth/src/migrationRunner.js",
     "dev": "node scripts/with-totp-key.cjs nodemon",
-    "test": "node scripts/with-totp-key.cjs node scripts/run-tests.cjs"
+    "test": "node scripts/with-totp-key.cjs node scripts/run-tests.cjs",
+    "keys:generate": "node gen-keys.mjs"
   },
   "keywords": [],
   "author": "",

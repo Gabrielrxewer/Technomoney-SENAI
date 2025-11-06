@@ -163,9 +163,12 @@ lista completa e recomendações de segurança comentadas.
 - Ajuste `JWT_KEYS_ROTATION_TAGS` para pré-criar pares adicionais (`2025-09,2026-03`,
   por exemplo). O primeiro par vira automaticamente o `JWT_KID` ativo quando a
   variável ainda não estiver definida.
-- Antes de construir imagens Docker, gere as chaves com `node gen-keys.mjs` e monte os
-  arquivos em `/app/keys` no container. Essa prática evita que rebuilds esvaziem a JWKS
+- Antes de construir imagens Docker, gere as chaves com `npm run keys:generate` (salvas
+  automaticamente em `technomoney-auth/keys/`) e monte os arquivos em `/app/keys` no
+  container. Essa prática evita que rebuilds esvaziem a JWKS
   em produção e mantém o fluxo de rotação auditável.
+- **Docker Compose** já monta `./technomoney-auth/keys:/app/keys:ro`. Garanta que os PEMs
+  estejam nesse diretório antes de subir o stack ou injete-os via secret manager.
 
 > **Dica de segurança para migrações:** o `.sequelizerc` agora procura primeiro
 > por artefatos compilados em `dist/` (ou nos caminhos fornecidos via
