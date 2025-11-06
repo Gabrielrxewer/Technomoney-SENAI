@@ -63,7 +63,7 @@ em uma única orquestração. Para utilizá-lo:
 | `redis` | `6379` | Cache usado pelo autenticador para trusted devices, rate limiting e anti-replay TOTP. |
 | `postgres` | `5432` | Banco compartilhado para autenticador, API principal e pagamentos (migrations aplicadas automaticamente). |
 | `auth` | `4000` | Autenticador com `INTROSPECTION_CLIENTS` pré-configurados (`core-service`, `payments-service`, `ia-service`). |
-| `api` | `4002` | API de ativos apontando para o autenticador via `/oauth2/introspect`. |
+| `api` | `4002` | API de ativos apontando para o autenticador via `/oauth2/introspect` e aplicando migrations automaticamente na inicialização. |
 | `payments` | `3001` | API de pagamentos com introspecção obrigatória. |
 | `ia-agent` | `4010` | Serviço de IA consumindo a introspecção do autenticador. |
 
@@ -82,6 +82,11 @@ docker compose logs -f
 
 # Encerrar e remover containers/volumes efêmeros
 docker compose down
+
+# Os serviços aplicam migrations automaticamente quando sobem.
+# Para iniciar a API de domínio em modo read-only defina
+# SKIP_DB_MIGRATIONS=1 no arquivo de ambiente correspondente
+# ou exporte a variável antes do `docker compose up`.
 
 # O serviço `auth` aceita um arquivo de entrada customizado via `ENTRY_FILE`
 # (variável opcional no `.env`). Quando não definida ele executa `dist/server.js`
