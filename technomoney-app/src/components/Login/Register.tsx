@@ -80,7 +80,11 @@ const Register: React.FC = () => {
     if (step !== "enroll_totp" && step !== "totp") return;
     const usernameHint = data?.username ?? null;
     if (data?.token) {
-      await login(data.token, usernameHint);
+      await login(data.token, usernameHint, {
+        stepUp: true,
+        acr: data?.acr ?? null,
+        source: "register",
+      });
     }
     setStepUp({ mode: step, usernameHint });
     setError("");
