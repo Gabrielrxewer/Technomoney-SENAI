@@ -165,6 +165,9 @@ function createApi(
 }
 
 export const api = createApi(import.meta.env.VITE_API_URL as string);
+export const profileApi = createApi(
+  import.meta.env.VITE_PROFILE_API_URL as string
+);
 export const paymentsApi = createApi(
   import.meta.env.VITE_PAYMENTS_API_URL as string
 );
