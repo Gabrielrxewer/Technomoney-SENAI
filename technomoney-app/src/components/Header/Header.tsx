@@ -1,5 +1,6 @@
 import { FaBars, FaBell, FaUserCircle } from "react-icons/fa";
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import UserPopup from "../Popups/UserPopup/UserPopup";
 import HelpPopup from "../Popups/HelpPopup/HelpPopup";
 import MyAccountPopup from "../Popups/MyAccountPopup/MyAccountPopup";
@@ -14,6 +15,8 @@ const Header: React.FC = () => {
   const [showAccount, setShowAccount] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+
+  const navigate = useNavigate();
 
   const togglePopup = () => {
     setIsPopupOpen(!isPopupOpen);
@@ -67,6 +70,10 @@ const Header: React.FC = () => {
           backToProfile={() => {
             setShowAccount(false);
             setIsPopupOpen(true);
+          }}
+          onEditProfile={() => {
+            setShowAccount(false);
+            navigate("/profile");
           }}
         />
       )}

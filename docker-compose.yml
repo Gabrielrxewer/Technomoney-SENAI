@@ -48,7 +48,7 @@ services:
       DB_PASSWORD: technopass
       DB_DATABASE: technomoney_auth
       REDIS_URL: "redis://redis:6379/0"
-      INTROSPECTION_CLIENTS: "core-service:core-secret,payments-service:payments-secret,ia-service:ia-secret"
+      INTROSPECTION_CLIENTS: "core-service:core-secret,payments-service:payments-secret,ia-service:ia-secret,profile-service:profile-secret"
     ports:
       - "4000:4000"
     restart: unless-stopped
@@ -91,6 +91,33 @@ services:
     restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth:
+        condition: service_started
+
+  profile:
+    build:
+      context: ./technomoney-profile-api
+    container_name: technomoney-profile
+    environment:
+      NODE_ENV: production
+      PORT: "4003"
+      SWAGGER_FILE: /app/dist/openapi.yaml
+      DB_DRIVER: postgres
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USERNAME: technomoney
+      DB_PASSWORD: technopass
+      DB_DATABASE: technomoney_auth
+      AUTH_INTROSPECTION_URL: "http://auth:4000/oauth2/introspect"
+      AUTH_INTROSPECTION_CLIENT_ID: profile-service
+      AUTH_INTROSPECTION_CLIENT_SECRET: profile-secret
+      CORS_ALLOWED_ORIGINS: "http://localhost:5173,http://localhost:3000"
+    ports:
+      - "4003:4003"
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
