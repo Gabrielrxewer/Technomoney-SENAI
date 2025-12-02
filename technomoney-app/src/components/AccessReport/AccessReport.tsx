@@ -42,6 +42,11 @@ export default function AccessReport() {
     [data?.totals]
   );
 
+  const monthLabel = useMemo(() => {
+    if (data?.month) return formatMonthLabel(data.month);
+    return formatMonthLabel(selectedMonth);
+  }, [data?.month, selectedMonth]);
+
   return (
     <div className="access-report">
       <div className="access-report__header">
@@ -81,7 +86,7 @@ export default function AccessReport() {
           <div className="access-report__summary">
             <div className="access-report__card">
               <p className="access-report__card-label">Mês</p>
-              <strong className="access-report__card-value">{formatMonthLabel(selectedMonth)}</strong>
+              <strong className="access-report__card-value">{monthLabel}</strong>
             </div>
             <div className="access-report__card">
               <p className="access-report__card-label">Sessões criadas</p>
