@@ -1,12 +1,22 @@
-.access-report {
+.access-report-page {
   width: 100%;
-  max-width: 1180px;
+  min-height: calc(100vh - 40px);
+  display: flex;
+  justify-content: center;
+  padding: 80px 20px 48px;
+  background: radial-gradient(circle at 20% 20%, rgba(12, 179, 168, 0.08), transparent 35%),
+    radial-gradient(circle at 80% 0%, rgba(15, 136, 197, 0.08), transparent 30%),
+    var(--color-bg, #0d1821);
+  box-sizing: border-box;
+}
+
+.access-report {
+  width: min(1180px, 100%);
   margin: 0 auto;
-  padding: 24px 16px 28px;
+  padding: 12px 8px 12px;
   color: var(--text-1, #f2f4f5);
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 18px;
 }
 
@@ -17,6 +27,7 @@
   gap: 12px;
   align-items: center;
   width: 100%;
+  padding: 0 6px;
 }
 
 .access-report__eyebrow {
@@ -36,7 +47,7 @@
 .access-report__subtitle {
   margin: 4px 0 0;
   color: var(--text-2, #cfe3df);
-  max-width: 720px;
+  max-width: 780px;
   line-height: 1.4;
 }
 
@@ -63,6 +74,7 @@
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
   width: 100%;
+  padding: 0 6px;
 }
 
 .access-report__card {
@@ -122,6 +134,7 @@
   overflow: hidden;
   box-shadow: var(--shadow-soft, 0 6px 18px rgba(0, 0, 0, 0.22));
   width: 100%;
+  margin-top: 4px;
 }
 
 .access-report__table-header {
