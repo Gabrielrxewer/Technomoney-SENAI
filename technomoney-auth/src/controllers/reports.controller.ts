@@ -24,7 +24,7 @@ export const monthlyAccessReport: RequestHandler = async (req, res) => {
       res.status(400).json({ error: "INVALID_MONTH", message: "Use o formato YYYY-MM." });
       return;
     }
-    logger.error({ ...getLogContext(req), err }, "reports.monthly_access.error");
+    logger.error({ ...getLogContext(), err }, "reports.monthly_access.error");
     res.status(500).json({ error: "REPORT_GENERATION_FAILED" });
   }
 };
