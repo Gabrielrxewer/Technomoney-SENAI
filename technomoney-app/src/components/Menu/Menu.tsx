@@ -8,6 +8,7 @@ import {
   faPhone,
   faNewspaper,
   faQuestionCircle,
+  faChartColumn,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import "./Menu.css";
@@ -74,6 +75,12 @@ const Menu: React.FC<MenuProps> = ({ onClose }) => {
               <a href="/#blog" onClick={onClose}>
                 <FontAwesomeIcon icon={faNewspaper} style={{ marginRight: 8 }} />
                 Blog / Notícias
+              </a>
+            </li>
+            <li>
+              <a href="/access-report" onClick={onClose}>
+                <FontAwesomeIcon icon={faChartColumn} style={{ marginRight: 8 }} />
+                Relatório de acessos
               </a>
             </li>
             <li>

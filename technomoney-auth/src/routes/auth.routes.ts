@@ -20,6 +20,7 @@ import { authenticate, requireFullSession } from "../middlewares/auth.middleware
 import { enforcePasswordPolicy } from "../middlewares/passwordPolicy.middleware";
 import { csrfProtection } from "../middlewares/csrf.middleware";
 import { wsTicket } from "../controllers/ws.controller";
+import { monthlyAccessReport } from "../controllers/reports.controller";
 
 const router = Router();
 
@@ -61,6 +62,12 @@ router.post(
   recoveryLimiter,
   csrfProtection,
   confirmEmailVerification
+);
+router.get(
+  "/reports/monthly-access",
+  authenticate,
+  requireFullSession,
+  monthlyAccessReport
 );
 
 const csrfGet: RequestHandler = (req: any, res) => {

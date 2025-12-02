@@ -1,0 +1,187 @@
+.access-report {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 20px 48px;
+  color: #1b1b1b;
+}
+
+.access-report__header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-end;
+}
+
+.access-report__eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0 0 4px;
+}
+
+.access-report h1 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.access-report__subtitle {
+  margin: 6px 0 0;
+  color: #4b5563;
+  max-width: 720px;
+}
+
+.access-report__month-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.access-report__month-picker input {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  min-width: 180px;
+  font-size: 14px;
+}
+
+.access-report__summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.access-report__card {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+  position: relative;
+}
+
+.access-report__card--info {
+  background: linear-gradient(135deg, #f7faff, #eef2ff);
+}
+
+.access-report__card-label {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.access-report__card-value {
+  display: block;
+  font-size: 26px;
+  margin-top: 4px;
+  color: #111827;
+}
+
+.access-report__card-value--muted {
+  font-size: 16px;
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.access-report__card-help {
+  margin: 6px 0 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.access-report__chip {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #1d4ed8;
+  color: white;
+  font-size: 12px;
+  margin-top: 10px;
+}
+
+.access-report__table {
+  margin-top: 28px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.access-report__table-header {
+  padding: 16px 20px 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.access-report__table-header h2 {
+  margin: 0 0 4px;
+}
+
+.access-report__table-header p {
+  margin: 0;
+  color: #6b7280;
+}
+
+.access-report__table-wrapper {
+  overflow-x: auto;
+}
+
+.access-report table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.access-report th,
+.access-report td {
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.access-report th {
+  background: #f9fafb;
+  color: #4b5563;
+  font-weight: 600;
+}
+
+.access-report__revoked {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.access-report__loading,
+.access-report__error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 24px;
+}
+
+.access-report__error p {
+  margin: 0;
+}
+
+.access-report__empty {
+  padding: 16px 20px;
+  color: #6b7280;
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .access-report__header {
+    align-items: flex-start;
+  }
+
+  .access-report__month-picker {
+    width: 100%;
+  }
+
+  .access-report__month-picker input {
+    width: 100%;
+  }
+}
