@@ -11,6 +11,7 @@ import Register from "./components/Login/Register";
 import Dashboard from "./components/Dashboard/Dashboard";
 import PortfolioPage from "./components/Portfolio/PortfolioPage";
 import StockDetail from "./components/Dashboard/StocksDetail/StocksDetail";
+import AccessReport from "./components/AccessReport/AccessReport";
 import ProfilePage from "./components/Profile/ProfilePage";
 
 import { AuthProvider } from "./context/AuthContext";
@@ -69,6 +70,14 @@ function App() {
                 element={
                   <PrivateRoute>
                     <StockDetail />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/access-report"
+                element={
+                  <PrivateRoute>
+                    <AccessReport />
                   </PrivateRoute>
                 }
               />

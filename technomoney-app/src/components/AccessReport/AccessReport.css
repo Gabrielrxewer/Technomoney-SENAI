@@ -1,0 +1,223 @@
+.access-report-page {
+  width: 100%;
+  min-height: calc(100vh - 40px);
+  display: flex;
+  justify-content: center;
+  padding: 80px 20px 48px;
+  background: radial-gradient(circle at 20% 20%, rgba(12, 179, 168, 0.08), transparent 35%),
+    radial-gradient(circle at 80% 0%, rgba(15, 136, 197, 0.08), transparent 30%),
+    var(--color-bg, #0d1821);
+  box-sizing: border-box;
+}
+
+.access-report {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  padding: 12px 8px 12px;
+  color: var(--text-1, #f2f4f5);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.access-report__header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  padding: 0 6px;
+}
+
+.access-report__eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 12px;
+  color: var(--text-2, #cfe3df);
+  margin: 0 0 4px;
+}
+
+.access-report h1 {
+  margin: 0;
+  font-size: 24px;
+  color: var(--brand-primary, #0cb3a8);
+}
+
+.access-report__subtitle {
+  margin: 4px 0 0;
+  color: var(--text-2, #cfe3df);
+  max-width: 780px;
+  line-height: 1.4;
+}
+
+.access-report__month-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 600;
+  color: var(--text-1, #f2f4f5);
+}
+
+.access-report__month-picker input {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-soft, rgba(255, 255, 255, 0.12));
+  min-width: 180px;
+  font-size: 14px;
+  background: var(--surface-1, #10222b);
+  color: var(--text-1, #f2f4f5);
+}
+
+.access-report__summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  width: 100%;
+  padding: 0 6px;
+}
+
+.access-report__card {
+  background: var(--surface-1, #10222b);
+  border: 1px solid var(--border-soft, rgba(255, 255, 255, 0.06));
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: var(--shadow-soft, 0 6px 18px rgba(0, 0, 0, 0.22));
+  position: relative;
+}
+
+.access-report__card--info {
+  background: var(--surface-2, #122a35);
+}
+
+.access-report__card-label {
+  margin: 0;
+  color: var(--text-2, #cfe3df);
+  font-size: 12px;
+  letter-spacing: 0.2px;
+}
+
+.access-report__card-value {
+  display: block;
+  font-size: 22px;
+  margin-top: 2px;
+  color: var(--text-1, #f2f4f5);
+}
+
+.access-report__card-value--muted {
+  font-size: 15px;
+  color: var(--text-2, #cfe3df);
+  font-weight: 600;
+}
+
+.access-report__card-help {
+  margin: 4px 0 0;
+  color: var(--text-2, #cfe3df);
+  font-size: 12px;
+}
+
+.access-report__chip {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--brand-primary, #0cb3a8);
+  color: #0d1821;
+  font-size: 11px;
+  margin-top: 6px;
+  font-weight: 700;
+}
+
+.access-report__table {
+  background: var(--surface-1, #10222b);
+  border: 1px solid var(--border-soft, rgba(255, 255, 255, 0.06));
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow-soft, 0 6px 18px rgba(0, 0, 0, 0.22));
+  width: 100%;
+  margin-top: 4px;
+}
+
+.access-report__table-header {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border-soft, rgba(255, 255, 255, 0.06));
+}
+
+.access-report__table-header h2 {
+  margin: 0 0 2px;
+  font-size: 18px;
+  color: var(--text-1, #f2f4f5);
+}
+
+.access-report__table-header p {
+  margin: 0;
+  color: var(--text-2, #cfe3df);
+  font-size: 13px;
+}
+
+.access-report__table-wrapper {
+  overflow-x: auto;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.access-report table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--text-1, #f2f4f5);
+}
+
+.access-report th,
+.access-report td {
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-soft, rgba(255, 255, 255, 0.06));
+  font-size: 14px;
+}
+
+.access-report th {
+  background: var(--surface-2, #122a35);
+  color: var(--text-1, #f2f4f5);
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.access-report__revoked {
+  color: #f87171;
+  font-weight: 600;
+}
+
+.access-report__loading,
+.access-report__error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 16px;
+  color: var(--text-1, #f2f4f5);
+}
+
+.access-report__error p {
+  margin: 0;
+}
+
+.access-report__empty {
+  padding: 14px 16px;
+  color: var(--text-2, #cfe3df);
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .access-report__header {
+    align-items: flex-start;
+  }
+
+  .access-report__month-picker {
+    width: 100%;
+  }
+
+  .access-report__month-picker input {
+    width: 100%;
+  }
+}
