@@ -25,7 +25,7 @@ RUN npm prune --omit=dev
 COPY --from=build /app/dist ./dist
 COPY .sequelizerc ./.sequelizerc
 COPY docker/entrypoint.sh ./entrypoint.sh
-RUN chmod 550 entrypoint.sh
+RUN sed -i 's/\r$//' entrypoint.sh && chmod 550 entrypoint.sh
 ENV HOST=0.0.0.0
 ENV PORT=4002
 ENV SWAGGER_FILE=/app/dist/openapi.yaml
