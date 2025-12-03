@@ -35,6 +35,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (p) => p.replace(/^\/core/, "/api"),
       },
+      "/profile": {
+        target: "http://localhost:4003",
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/profile/, "/api"),
+      },
     },
   },
 });
