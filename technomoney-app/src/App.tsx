@@ -12,6 +12,7 @@ import Dashboard from "./components/Dashboard/Dashboard";
 import PortfolioPage from "./components/Portfolio/PortfolioPage";
 import StockDetail from "./components/Dashboard/StocksDetail/StocksDetail";
 import AccessReport from "./components/AccessReport/AccessReport";
+import ProfilePage from "./components/Profile/ProfilePage";
 
 import { AuthProvider } from "./context/AuthContext";
 import PrivateRoute from "./private/PrivateRoute";
@@ -51,6 +52,14 @@ function App() {
                 element={
                   <PrivateRoute>
                     <PortfolioPage />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <PrivateRoute>
+                    <ProfilePage />
                   </PrivateRoute>
                 }
               />

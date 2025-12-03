@@ -5,11 +5,13 @@ import { Button } from "../../ui/Button";
 interface MyAccountPopupProps {
   onClose: () => void;
   backToProfile: () => void;
+  onEditProfile: () => void;
 }
 
 const MyAccountPopup: React.FC<MyAccountPopupProps> = ({
   onClose,
   backToProfile,
+  onEditProfile,
 }) => {
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) =>
     e.target === e.currentTarget && onClose();
@@ -60,10 +62,10 @@ const MyAccountPopup: React.FC<MyAccountPopupProps> = ({
 
             <Button
               variant="primary"
-              onClick={() => alert("Editar dados – implemente")}
+              onClick={onEditProfile}
               className="custom-button"
             >
-              Editar Informações
+              Editar dados
             </Button>
           </div>
 
