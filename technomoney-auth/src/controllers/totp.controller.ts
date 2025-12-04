@@ -150,6 +150,7 @@ export const challengeVerify: RequestHandler = async (req: any, res) => {
   const session = await auth.createSession(u.id, username, {
     acr: "aal2",
     amr: ["pwd", "otp"],
+    cnf: (u as any)?.payload?.cnf,
   });
   const sid = deriveSidImpl(session.refresh);
   const exp = decodeExp(session.access);

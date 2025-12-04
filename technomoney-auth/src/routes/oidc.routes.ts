@@ -1,6 +1,7 @@
 import { Router, RequestHandler } from "express";
 import bodyParser from "body-parser";
 import { authenticate } from "../middlewares/auth.middleware";
+import { requireDPoP } from "../middlewares/dpop.middleware";
 import {
   parHandler,
   authorizeHandler,
@@ -16,6 +17,7 @@ router.post("/oauth2/par", parHandler);
 router.get(
   "/oauth2/authorize",
   authenticate as RequestHandler,
+  requireDPoP as RequestHandler,
   authorizeHandler
 );
 router.post("/oauth2/token", tokenHandler);

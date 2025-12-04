@@ -7,7 +7,7 @@ import {
   exportJWK,
   generateKeyPair,
 } from "jose";
-import { requireDPoPIfBound } from "../dpop.middleware";
+import { requireDPoP } from "../dpop.middleware";
 
 type Req = {
   protocol: string;
@@ -25,15 +25,15 @@ type Res = {
   json: (body: any) => Res;
 };
 
-test("requireDPoPIfBound allows requests with matching ath", async () => {
+test("requireDPoP allows requests with matching ath", async () => {
   const token = "token-value";
   const { req, res, next, flags } = await setup(token, true);
-  await requireDPoPIfBound(req, res, next);
+  await requireDPoP(req, res, next);
   assert.equal(res.statusCode, undefined);
   assert.equal(flags.calledNext, true);
 });
 
-test("requireDPoPIfBound rejects bound tokens without proof header", async () => {
+test("requireDPoP rejects bound tokens without proof header", async () => {
   const token = "token-value";
   const method = "GET";
   const host = "api.example.com";
@@ -67,20 +67,63 @@ test("requireDPoPIfBound rejects bound tokens without proof header", async () =>
     flags.calledNext = true;
   };
 
-  await requireDPoPIfBound(req, res, next);
+  await requireDPoP(req, res, next);
 
   assert.equal(flags.calledNext, false);
   assert.equal(res.statusCode, 401);
   assert.deepEqual(res.body, { message: "DPoP required" });
 });
 
-test("requireDPoPIfBound rejects requests with mismatching ath", async () => {
+test("requireDPoP rejects requests with mismatching ath", async () => {
   const token = "token-value";
   const { req, res, next, flags } = await setup(token, false);
-  await requireDPoPIfBound(req, res, next);
+  await requireDPoP(req, res, next);
   assert.equal(flags.calledNext, false);
   assert.equal(res.statusCode, 401);
   assert.deepEqual(res.body, { message: "invalid dpop ath" });
+});
+
+test("requireDPoP rejects tokens without cnf binding", async () => {
+  const token = "token-value";
+  const method = "GET";
+  const host = "api.example.com";
+  const path = "/resource";
+  const req: Req = {
+    protocol: "https",
+    method,
+    originalUrl: `${path}?foo=bar`,
+    headers: {},
+    get: (name: string) => {
+      if (name.toLowerCase() === "host") return host;
+      throw new Error(`unexpected header ${name}`);
+    },
+    user: {
+      token,
+      payload: {},
+    },
+  };
+
+  const res: Res = {
+    status(code: number) {
+      this.statusCode = code;
+      return this;
+    },
+    json(body: any) {
+      this.body = body;
+      return this;
+    },
+  };
+
+  const flags = { calledNext: false };
+  const next = () => {
+    flags.calledNext = true;
+  };
+
+  await requireDPoP(req, res, next);
+
+  assert.equal(flags.calledNext, false);
+  assert.equal(res.statusCode, 401);
+  assert.deepEqual(res.body, { message: "DPoP-bound token required" });
 });
 
 async function setup(token: string, correctAth: boolean) {

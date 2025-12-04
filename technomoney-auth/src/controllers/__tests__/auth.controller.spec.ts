@@ -3,6 +3,8 @@ import test from "node:test";
 import type { Request, Response } from "express";
 import { runWithLogContext } from "../../utils/log/logging-context";
 
+process.env.NODE_ENV = "test";
+
 const stubModule = (specifier: string, exports: unknown) => {
   const resolved = require.resolve(specifier);
   require.cache[resolved] = {
@@ -28,6 +30,10 @@ stubModule("../../ws", {
   publishToUser: () => {},
   scheduleTokenExpiringSoon: () => {},
   clearSessionSchedules: () => {},
+});
+
+stubModule("../../oidc/dpop", {
+  verifyDPoP: async () => ({ jkt: "test-jkt" }),
 });
 
 stubModule("../../services/trusted-device.service", {

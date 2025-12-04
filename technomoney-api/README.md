@@ -4,9 +4,9 @@
 A Technomoney API expõe endpoints responsáveis por orquestrar dados de mercado e operações da plataforma, servindo como um backend de domínio para os canais web e mobile. O serviço foi construído em Node.js/Express, persiste dados via Sequelize e mantém logs estruturados com Pino, sempre com foco em validações rígidas de autenticação e autorização.
 
 ## Fluxo de autenticação e introspecção
-1. **Recepção do token** – As requisições devem enviar um `Authorization` header com portador Bearer clássico ou tokens DPoP (`DPoP <token>`). O middleware trata ambos os formatos.
+1. **Recepção do token** – Todas as requisições autenticadas devem enviar um `Authorization` header usando o esquema DPoP (`DPoP <token>`). Tokens sem prova DPoP ou sem binding (`cnf.jkt`) são rejeitados.
 2. **Introspecção obrigatória** – Todo token é encaminhado ao serviço de introspecção configurado (`AUTH_INTROSPECTION_URL`). A chamada é realizada via `POST`, com `Basic Auth` composto por `AUTH_INTROSPECTION_CLIENT_ID` e `AUTH_INTROSPECTION_CLIENT_SECRET`. O retorno precisa conter `active: true`; respostas diferentes resultam em `401 Unauthorized` com cabeçalho `WWW-Authenticate`.
-3. **Tratamento de DPoP** – Mesmo para tokens DPoP, a API exige introspecção bem sucedida. O provedor de identidade deve validar a prova criptográfica DPoP e sinalizar o token como ativo antes que a Technomoney API aceite a requisição.
+3. **Tratamento de DPoP** – A API exige introspecção bem sucedida e valida a prova criptográfica localmente (htm/htu/iat/jti/ath e `cnf.jkt`). O provedor de identidade deve sinalizar o token como ativo com o binding DPoP correspondente.
 4. **Níveis de garantia (AAL)** – Tokens emitidos para step-up/MFA (por exemplo, com `acr: "step-up"` ou escopo `auth:stepup`) são recusados com erro `insufficient_aal`. A API espera que flows de alto nível de autenticação sejam tratados em canais próprios, evitando que credenciais de maior privilégio sejam reutilizadas inadvertidamente.
 5. **Dados anexados à requisição** – Após introspecção válida, informações como `sub`, `username`, `jti`, escopos e validade (`exp`) são anexadas a `req.user` para uso das rotas protegidas.
 
@@ -14,7 +14,7 @@ A Technomoney API expõe endpoints responsáveis por orquestrar dados de mercado
 - **Sempre usar HTTPS/TLS** tanto para consumidores quanto para o endpoint de introspecção e fontes externas (ex.: JWKS, APIs de mercado).
 - **Rotação periódica das credenciais** (`AUTH_INTROSPECTION_CLIENT_SECRET`, chaves JWKS) e armazená-las em cofre seguro.
 - **Aplicar políticas de escopo** em cada rota e monitorar tentativas de acesso negado via logs estruturados.
-- **Habilitar DPoP apenas quando o provedor suportar prova criptográfica completa**, garantindo binding ao cliente.
+- **DPoP obrigatório**: todas as chamadas protegidas devem incluir o cabeçalho `DPoP` alinhado ao token vinculado.
 - **Configurar limites e auditoria no banco de dados** (apenas tráfego via TLS, contas de serviço com least privilege).
 
 ## Configuração e execução local

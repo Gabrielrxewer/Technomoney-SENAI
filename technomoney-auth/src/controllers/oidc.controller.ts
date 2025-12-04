@@ -244,19 +244,16 @@ export const tokenHandler: RequestHandler = async (
     res.status(400).json({ error: "invalid_grant" });
     return;
   }
+  if (!dpop) {
+    res.status(401).json({ error: "dpop_required" });
+    return;
+  }
   let jkt: string | undefined;
-  if (dpop) {
-    try {
-      jkt = (await verifyDPoP(dpop, htm, htu)).jkt;
-    } catch {
-      res.status(401).json({ error: "invalid_dpop" });
-      return;
-    }
-  } else {
-    if (process.env.REQUIRE_DPOP === "true") {
-      res.status(401).json({ error: "dpop_required" });
-      return;
-    }
+  try {
+    jkt = (await verifyDPoP(dpop, htm, htu)).jkt;
+  } catch {
+    res.status(401).json({ error: "invalid_dpop" });
+    return;
   }
   const cnf = jkt ? { cnf: { jkt } } : {};
   const acr = c.acr || "aal1";
@@ -266,7 +263,7 @@ export const tokenHandler: RequestHandler = async (
   const body: any = {
     access_token: access,
     id_token,
-    token_type: jkt ? "DPoP" : "Bearer",
+    token_type: "DPoP",
     expires_in: 300,
     scope: c.scope.join(" "),
   };

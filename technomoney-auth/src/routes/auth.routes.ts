@@ -17,6 +17,7 @@ import {
   confirmEmailVerification,
 } from "../controllers/auth.controller";
 import { authenticate, requireFullSession } from "../middlewares/auth.middleware";
+import { requireDPoP } from "../middlewares/dpop.middleware";
 import { enforcePasswordPolicy } from "../middlewares/passwordPolicy.middleware";
 import { csrfProtection } from "../middlewares/csrf.middleware";
 import { wsTicket } from "../controllers/ws.controller";
@@ -42,7 +43,7 @@ router.post(
 );
 router.post("/refresh", csrfProtection, refresh);
 router.post("/logout", csrfProtection, logout);
-router.post("/ws-ticket", authenticate, requireFullSession, wsTicket);
+router.post("/ws-ticket", authenticate, requireDPoP, requireFullSession, wsTicket);
 router.post("/recover", recoveryLimiter, csrfProtection, requestPasswordReset);
 router.post(
   "/recover/confirm",
@@ -66,6 +67,7 @@ router.post(
 router.get(
   "/reports/monthly-access",
   authenticate,
+  requireDPoP,
   requireFullSession,
   monthlyAccessReport
 );
@@ -82,6 +84,6 @@ const csrfGet: RequestHandler = (req: any, res) => {
 };
 router.get("/csrf", csrfProtection, csrfGet);
 
-router.get("/me", authenticate, requireFullSession, me);
+router.get("/me", authenticate, requireDPoP, requireFullSession, me);
 
 export default router;

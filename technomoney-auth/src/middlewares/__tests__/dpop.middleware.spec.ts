@@ -7,7 +7,7 @@ import {
   exportJWK,
   generateKeyPair,
 } from "jose";
-import { requireDPoPIfBound } from "../dpop.middleware";
+import { requireDPoP } from "../dpop.middleware";
 
 type Req = {
   protocol: string;
@@ -30,7 +30,7 @@ const testFn = process.env.JOSE_STUB === "1" ? test.skip : test;
 testFn("authorization server middleware accepts proof with matching ath", async () => {
   const token = "auth-token";
   const { req, res, next, flags } = await setup(token, true);
-  await requireDPoPIfBound(req, res, next);
+  await requireDPoP(req, res, next);
   assert.equal(res.statusCode, undefined);
   assert.equal(flags.calledNext, true);
 });
@@ -38,10 +38,46 @@ testFn("authorization server middleware accepts proof with matching ath", async 
 testFn("authorization server middleware rejects proof with mismatching ath", async () => {
   const token = "auth-token";
   const { req, res, next, flags } = await setup(token, false);
-  await requireDPoPIfBound(req, res, next);
+  await requireDPoP(req, res, next);
   assert.equal(flags.calledNext, false);
   assert.equal(res.statusCode, 401);
   assert.deepEqual(res.body, { message: "invalid dpop ath" });
+});
+
+testFn("authorization server middleware rejects tokens without cnf", async () => {
+  const req: Req = {
+    protocol: "https",
+    method: "POST",
+    originalUrl: "/token",
+    headers: {},
+    get: (name: string) => {
+      if (name.toLowerCase() === "host") return "auth.example.com";
+      throw new Error(`unexpected header ${name}`);
+    },
+    user: { token: "auth-token", payload: {} },
+  };
+
+  const res: Res = {
+    status(code: number) {
+      this.statusCode = code;
+      return this;
+    },
+    json(body: any) {
+      this.body = body;
+      return this;
+    },
+  };
+
+  const flags = { calledNext: false };
+  const next = () => {
+    flags.calledNext = true;
+  };
+
+  await requireDPoP(req, res, next);
+
+  assert.equal(flags.calledNext, false);
+  assert.equal(res.statusCode, 401);
+  assert.deepEqual(res.body, { message: "DPoP-bound token required" });
 });
 
 async function setup(token: string, correctAth: boolean) {

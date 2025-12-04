@@ -19,13 +19,17 @@ const normalizeScope = (scope: unknown): string[] => {
 export const authenticate = (req: any, res: any, next: any) => {
   try {
     const auth = String(req.headers.authorization || "");
-    const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+    const token = auth.startsWith("Bearer ")
+      ? auth.slice(7)
+      : auth.startsWith("DPoP ")
+      ? auth.slice(5)
+      : "";
     if (!token) {
       res.status(401).json({ message: "Unauthorized" });
       return;
     }
-    const { id, jti, scope, acr, amr, username, email, exp } =
-      jwtSvc.verifyAccess(token);
+    const verification = jwtSvc.verifyAccess(token);
+    const { id, jti, scope, acr, amr, username, email, exp, cnf } = verification;
     const scopeList = normalizeScope(scope);
     req.user = {
       id,
@@ -37,6 +41,7 @@ export const authenticate = (req: any, res: any, next: any) => {
       username: typeof username === "string" ? username : undefined,
       email: typeof email === "string" ? email : undefined,
       exp,
+      payload: { cnf },
     };
     req.authContext = {
       scope: scopeList,

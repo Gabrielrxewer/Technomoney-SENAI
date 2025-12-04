@@ -10,6 +10,7 @@ type IntrospectionSuccess = {
   username?: string;
   email?: string;
   sid?: string;
+  cnf?: { jkt?: string };
 };
 
 type FetchLike = typeof fetch;
@@ -54,11 +55,11 @@ export async function requireAuth(
   let tokenForLog = "";
   try {
     const header = String(req.header("authorization") || "");
-    if (!header.startsWith("Bearer ")) {
+    const token = header.replace(/^(Bearer|DPoP)\s+/i, "").trim();
+    if (!token || (!header.startsWith("Bearer ") && !header.startsWith("DPoP ")) ) {
       res.status(401).json({ error: "missing bearer token" });
       return;
     }
-    const token = header.replace(/^Bearer\s+/i, "").trim();
     if (!token) {
       res.status(401).json({ error: "invalid bearer token" });
       return;
@@ -69,7 +70,8 @@ export async function requireAuth(
       res.status(401).json({ error: "token is not active" });
       return;
     }
-    (req as any).auth = result;
+    (req as any).auth = { ...result, token };
+    (req as any).authToken = token;
     next();
   } catch (err) {
     console.error(

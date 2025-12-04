@@ -41,9 +41,9 @@ restritivo, cookies seguros e forçamento de HTTPS).
   reconstruído em ambientes isolados.
 
 - **OIDC completo**: suporte a PAR + PKCE (code flow), ID Token assinado com as
-  mesmas chaves do acesso, opção de exigir DPoP (`REQUIRE_DPOP=true`) e
-  introspecção protegida por Basic ou mTLS (`INTROSPECTION_CLIENTS`,
-  `INTROSPECTION_MTLS_ALLOWED_CNS`).
+  mesmas chaves do acesso, **DPoP obrigatório** na emissão (`cnf.jkt` sempre
+  presente) e introspecção protegida por Basic ou mTLS
+  (`INTROSPECTION_CLIENTS`, `INTROSPECTION_MTLS_ALLOWED_CNS`).
 - **Canal em tempo real**: `/api/auth/ws-ticket` gera tickets efêmeros que
   validam a conexão WebSocket. Eventos importantes incluem `token.expiring_soon`,
   `jwks.rotated` e `stepup.required`.
@@ -143,7 +143,7 @@ restritivo, cookies seguros e forçamento de HTTPS).
 | `RECAPTCHA_SECRET`, `RECAPTCHA_MIN_SCORE`, `RECAPTCHA_HOSTNAME` | Sim em produção | Configuração do reCAPTCHA v3.
 | `ALLOWED_ORIGINS`/`FE_URL` | Sim | Lista de origens confiáveis para CORS e CSRF.
 | `DB_*` | Sim | Credenciais do banco (princípio do menor privilégio, TLS obrigatório).
-| `OIDC_CLIENTS`, `REQUIRE_PAR`, `REQUIRE_DPOP` | Conforme necessidade | Controlam clientes OIDC, exigência de PAR e DPoP.
+| `OIDC_CLIENTS`, `REQUIRE_PAR` | Conforme necessidade | Controlam clientes OIDC e exigência de PAR. DPoP está sempre habilitado (tokens com `cnf.jkt`).
 
 Consulte o arquivo [`technomoney-auth/prod.env`](technomoney-auth/prod.env) para a
 lista completa e recomendações de segurança comentadas.

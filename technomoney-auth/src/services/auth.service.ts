@@ -152,7 +152,8 @@ export class AuthService {
   async register(
     email: string,
     password: string,
-    username?: string
+    username?: string,
+    dpopJkt?: string
   ): Promise<AuthTokensDto> {
     const log = this.log();
     log.debug({
@@ -180,7 +181,11 @@ export class AuthService {
       userId: mask(user.id),
       username: user.username,
     });
-    return this.createSession(user.id, user.username ?? null);
+    const cnf =
+      typeof dpopJkt === "string" && dpopJkt.trim().length > 0
+        ? { cnf: { jkt: dpopJkt } }
+        : undefined;
+    return this.createSession(user.id, user.username ?? null, cnf);
   }
 
   async login(email: string, password: string): Promise<LoginResult> {
@@ -392,6 +397,15 @@ export class AuthService {
       Number.isFinite(extra.trusted_device_issued_at)
     ) {
       sanitized.trusted_device_issued_at = extra.trusted_device_issued_at;
+    }
+    const cnf = (extra as any).cnf;
+    if (
+      cnf &&
+      typeof cnf === "object" &&
+      typeof (cnf as any).jkt === "string" &&
+      (cnf as any).jkt.trim().length > 0
+    ) {
+      sanitized.cnf = { jkt: (cnf as any).jkt.trim() };
     }
     return sanitized;
   }

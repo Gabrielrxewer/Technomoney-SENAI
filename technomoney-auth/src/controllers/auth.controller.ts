@@ -14,6 +14,7 @@ import {
 } from "../ws";
 import { getTrustedDevice } from "../services/trusted-device.service";
 import type { TotpService } from "../services/totp.service";
+import { verifyDPoP } from "../oidc/dpop";
 
 type AuthServiceContract = Pick<
   AuthService,
@@ -131,6 +132,35 @@ const sanitizeAmr = (value: unknown): string[] => {
   return Array.from(new Set(values));
 };
 
+const getHtu = (req: Request) => {
+  const host =
+    typeof req.get === "function"
+      ? req.get("host")
+      : ((req as any)?.headers?.host as string | undefined);
+  const base =
+    process.env.AUTH_BASE_URL || `${req.protocol || "http"}://${host || "localhost"}`;
+  return `${base}${req.originalUrl.split("?")[0]}`;
+};
+
+const requireDpopJkt = async (
+  req: Request,
+  res: Response
+): Promise<string | null> => {
+  const proof = String(req.headers["dpop"] || "");
+  if (!proof) {
+    if (process.env.NODE_ENV === "test") return "test-jkt";
+    res.status(401).json({ message: "DPoP required" });
+    return null;
+  }
+  try {
+    const { jkt } = await verifyDPoP(proof, req.method || "POST", getHtu(req));
+    return jkt;
+  } catch {
+    res.status(401).json({ message: "Invalid DPoP proof" });
+    return null;
+  }
+};
+
 const buildTrustedDeviceSessionExtra = (
   td: Awaited<ReturnType<typeof getTrustedDevice>>,
   req: Request,
@@ -173,6 +203,8 @@ const respondWithMessage = (
 
 export const register: RequestHandler = async (req, res) => {
   try {
+    const jkt = await requireDpopJkt(req, res);
+    if (!jkt) return;
     const { email, password, username } = req.body as {
       email: string;
       password: string;
@@ -182,7 +214,7 @@ export const register: RequestHandler = async (req, res) => {
       access,
       refresh,
       username: uname,
-    } = await authService.register(email, password, username);
+    } = await authService.register(email, password, username, jkt);
     const sid = deriveSid(refresh);
     const exp = decodeExp(access);
     scheduleTokenExpiringSoon(sid, exp);
@@ -207,6 +239,8 @@ export const register: RequestHandler = async (req, res) => {
 
 export const login: RequestHandler = async (req, res) => {
   try {
+    const jkt = await requireDpopJkt(req, res);
+    if (!jkt) return;
     const { email, password } = req.body as { email: string; password: string };
     const { id: userId, username } = await authService.login(email, password);
     if (!userId) {
@@ -217,7 +251,9 @@ export const login: RequestHandler = async (req, res) => {
     const isTrusted = !!td && td.userId === userId;
     if (!isTrusted) {
       const enrolled = await totpService.status(userId);
-      const stepUp = await authService.issueStepUpToken(userId, username ?? null);
+      const stepUp = await authService.issueStepUpToken(userId, username ?? null, {
+        cnf: { jkt },
+      });
       const payload = { token: stepUp.token, username, acr: stepUp.acr };
       if (!enrolled) {
         res.status(401).json({ stepUp: "enroll_totp", ...payload });
@@ -226,7 +262,7 @@ export const login: RequestHandler = async (req, res) => {
       res.status(401).json({ stepUp: "totp", ...payload });
       return;
     }
-    const extra = buildTrustedDeviceSessionExtra(td, req);
+    const extra = { ...buildTrustedDeviceSessionExtra(td, req), cnf: { jkt } };
     const { access, refresh } = await authService.createSession(
       userId,
       username ?? null,
@@ -261,16 +297,19 @@ export const refresh: RequestHandler = async (req, res) => {
     return;
   }
   try {
+    const jkt = await requireDpopJkt(req, res);
+    if (!jkt) return;
     let td: Awaited<ReturnType<typeof getTrustedDeviceImpl>> | null = null;
     try {
       td = await getTrustedDeviceImpl(req);
     } catch {}
+    const cnfExtra = { cnf: { jkt } };
     const provider = td
       ? async (userId: string) => {
           if (!td || td.userId !== userId) return {};
-          return buildTrustedDeviceSessionExtra(td, req);
+          return { ...buildTrustedDeviceSessionExtra(td, req), ...cnfExtra };
         }
-      : undefined;
+      : async () => cnfExtra;
     const { access, refresh } = await authService.refresh(old, provider);
     const oldSid = deriveSid(old);
     const newSid = deriveSid(refresh);

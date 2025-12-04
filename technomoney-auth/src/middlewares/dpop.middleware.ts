@@ -11,9 +11,9 @@ function base(req: any) {
   return `${req.protocol}://${req.get("host")}${req.originalUrl.split("?")[0]}`;
 }
 
-export async function requireDPoPIfBound(req: any, res: any, next: any) {
+export async function requireDPoP(req: any, res: any, next: any) {
   const cnf = req.user?.payload?.cnf;
-  if (!cnf?.jkt) return next();
+  if (!cnf?.jkt) return res.status(401).json({ message: "DPoP-bound token required" });
   const proof = String(req.headers["dpop"] || "");
   if (!proof) return res.status(401).json({ message: "DPoP required" });
   const token = typeof req.user?.token === "string" ? req.user.token : undefined;
