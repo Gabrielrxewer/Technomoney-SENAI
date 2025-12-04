@@ -142,14 +142,28 @@ const getHtu = (req: Request) => {
   return `${base}${req.originalUrl.split("?")[0]}`;
 };
 
+const getHeaderJkt = (req: Request): string | null => {
+  const hdr =
+    (req.headers as any)["dpop-jkt"] ||
+    (req.headers as any)["x-dpop-jkt"] ||
+    (req.headers as any)["dpop_jkt"] ||
+    (req.headers as any)["x-dpop_jkt"];
+  if (typeof hdr !== "string") return null;
+  const trimmed = hdr.trim();
+  return trimmed.length > 0 ? trimmed : null;
+};
+
 const requireDpopJkt = async (
   req: Request,
   res: Response
 ): Promise<string | null> => {
+  const headerJkt = getHeaderJkt(req);
+  if (headerJkt) return headerJkt;
+
   const proof = String(req.headers["dpop"] || "");
   if (!proof) {
     if (process.env.NODE_ENV === "test") return "test-jkt";
-    res.status(401).json({ message: "DPoP required" });
+    res.status(400).json({ message: "Envie o DPoP-JKT para vincular o token" });
     return null;
   }
   try {

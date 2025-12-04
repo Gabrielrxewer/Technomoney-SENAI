@@ -4,7 +4,7 @@ import axios, {
   AxiosRequestConfig,
   AxiosResponse,
 } from "axios";
-import { createDpopProof } from "./dpop";
+import { createDpopProof, getDpopJkt } from "./dpop";
 
 const CSRF_COOKIE = (import.meta.env.VITE_CSRF_COOKIE_NAME as string) || "csrf";
 const CSRF_HEADER =
@@ -148,8 +148,10 @@ function createApi(
           : t;
       const absoluteUrl = buildAbsoluteUrl(baseURL, config.url as string | undefined);
       const proof = await createDpopProof(config.method || "GET", absoluteUrl, tokenValue);
+      const jkt = await getDpopJkt();
       config.headers = config.headers || {};
       (config.headers as any).DPoP = proof.proof;
+      (config.headers as any)["DPoP-JKT"] = jkt;
     } catch {}
     if (baseURL.endsWith("/api/payments") && typeof config.url === "string") {
       config.url = config.url.replace(/^\/payments(\/|$)/, "/");
