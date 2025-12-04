@@ -153,24 +153,16 @@ const getHeaderJkt = (req: Request): string | null => {
   return trimmed.length > 0 ? trimmed : null;
 };
 
-const requireDpopJkt = async (
-  req: Request,
-  res: Response
-): Promise<string | null> => {
+const extractOptionalDpopJkt = async (req: Request): Promise<string | null> => {
   const headerJkt = getHeaderJkt(req);
   if (headerJkt) return headerJkt;
 
   const proof = String(req.headers["dpop"] || "");
-  if (!proof) {
-    if (process.env.NODE_ENV === "test") return "test-jkt";
-    res.status(400).json({ message: "Envie o DPoP-JKT para vincular o token" });
-    return null;
-  }
+  if (!proof) return process.env.NODE_ENV === "test" ? "test-jkt" : null;
   try {
     const { jkt } = await verifyDPoP(proof, req.method || "POST", getHtu(req));
     return jkt;
   } catch {
-    res.status(401).json({ message: "Invalid DPoP proof" });
     return null;
   }
 };
@@ -217,8 +209,7 @@ const respondWithMessage = (
 
 export const register: RequestHandler = async (req, res) => {
   try {
-    const jkt = await requireDpopJkt(req, res);
-    if (!jkt) return;
+    const jkt = await extractOptionalDpopJkt(req);
     const { email, password, username } = req.body as {
       email: string;
       password: string;
@@ -253,21 +244,24 @@ export const register: RequestHandler = async (req, res) => {
 
 export const login: RequestHandler = async (req, res) => {
   try {
-    const jkt = await requireDpopJkt(req, res);
-    if (!jkt) return;
+    const jkt = await extractOptionalDpopJkt(req);
     const { email, password } = req.body as { email: string; password: string };
     const { id: userId, username } = await authService.login(email, password);
     if (!userId) {
       res.status(401).json({ message: "Credenciais inválidas" });
       return;
     }
+    const cnfExtra =
+      typeof jkt === "string" && jkt.trim().length > 0 ? { cnf: { jkt } } : undefined;
     const td = await getTrustedDeviceImpl(req);
     const isTrusted = !!td && td.userId === userId;
     if (!isTrusted) {
       const enrolled = await totpService.status(userId);
-      const stepUp = await authService.issueStepUpToken(userId, username ?? null, {
-        cnf: { jkt },
-      });
+      const stepUp = await authService.issueStepUpToken(
+        userId,
+        username ?? null,
+        cnfExtra,
+      );
       const payload = { token: stepUp.token, username, acr: stepUp.acr };
       if (!enrolled) {
         res.status(401).json({ stepUp: "enroll_totp", ...payload });
@@ -276,7 +270,10 @@ export const login: RequestHandler = async (req, res) => {
       res.status(401).json({ stepUp: "totp", ...payload });
       return;
     }
-    const extra = { ...buildTrustedDeviceSessionExtra(td, req), cnf: { jkt } };
+    const extra = {
+      ...buildTrustedDeviceSessionExtra(td, req),
+      ...(cnfExtra || {}),
+    };
     const { access, refresh } = await authService.createSession(
       userId,
       username ?? null,
@@ -311,13 +308,13 @@ export const refresh: RequestHandler = async (req, res) => {
     return;
   }
   try {
-    const jkt = await requireDpopJkt(req, res);
-    if (!jkt) return;
+    const jkt = await extractOptionalDpopJkt(req);
     let td: Awaited<ReturnType<typeof getTrustedDeviceImpl>> | null = null;
     try {
       td = await getTrustedDeviceImpl(req);
     } catch {}
-    const cnfExtra = { cnf: { jkt } };
+    const cnfExtra =
+      typeof jkt === "string" && jkt.trim().length > 0 ? { cnf: { jkt } } : {};
     const provider = td
       ? async (userId: string) => {
           if (!td || td.userId !== userId) return {};

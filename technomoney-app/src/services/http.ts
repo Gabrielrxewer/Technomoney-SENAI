@@ -95,11 +95,12 @@ async function refreshAuthToken(): Promise<string | null> {
 
 interface CreateApiOptions {
   enableAuthRefresh?: boolean;
+  enableDpop?: boolean;
 }
 
 function createApi(
   rawBaseURLInput: string | null | undefined,
-  { enableAuthRefresh = true }: CreateApiOptions = {}
+  { enableAuthRefresh = true, enableDpop = true }: CreateApiOptions = {}
 ): AxiosInstance {
   const rawBaseURL =
     typeof rawBaseURLInput === "string" ? rawBaseURLInput.trim() : "";
@@ -137,22 +138,28 @@ function createApi(
       if (!(config.headers as any).Authorization)
         (config.headers as any).Authorization = `Bearer ${t}`;
     }
-    try {
-      const authHeader =
-        (config.headers as any)?.Authorization ||
-        (config.headers as any)?.authorization ||
-        undefined;
-      const tokenValue =
-        typeof authHeader === "string"
-          ? authHeader.replace(/^(Bearer|DPoP)\s+/i, "").trim()
-          : t;
-      const absoluteUrl = buildAbsoluteUrl(baseURL, config.url as string | undefined);
-      const proof = await createDpopProof(config.method || "GET", absoluteUrl, tokenValue);
-      const jkt = await getDpopJkt();
-      config.headers = config.headers || {};
-      (config.headers as any).DPoP = proof.proof;
-      (config.headers as any)["DPoP-JKT"] = jkt;
-    } catch {}
+    if (enableDpop) {
+      try {
+        const authHeader =
+          (config.headers as any)?.Authorization ||
+          (config.headers as any)?.authorization ||
+          undefined;
+        const tokenValue =
+          typeof authHeader === "string"
+            ? authHeader.replace(/^(Bearer|DPoP)\s+/i, "").trim()
+            : t;
+        const absoluteUrl = buildAbsoluteUrl(baseURL, config.url as string | undefined);
+        const proof = await createDpopProof(
+          config.method || "GET",
+          absoluteUrl,
+          tokenValue
+        );
+        const jkt = await getDpopJkt();
+        config.headers = config.headers || {};
+        (config.headers as any).DPoP = proof.proof;
+        (config.headers as any)["DPoP-JKT"] = jkt;
+      } catch {}
+    }
     if (baseURL.endsWith("/api/payments") && typeof config.url === "string") {
       config.url = config.url.replace(/^\/payments(\/|$)/, "/");
     }
@@ -203,6 +210,7 @@ export const paymentsApi = createApi(
 export const aiApi = createApi(import.meta.env.VITE_AI_AGENT_URL as string);
 export const authApi = createApi(import.meta.env.VITE_AUTH_API_URL as string, {
   enableAuthRefresh: false,
+  enableDpop: false,
 });
 export async function fetchApiWithAuth<T = unknown>(
   url: string,
