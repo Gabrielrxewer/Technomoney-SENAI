@@ -4,7 +4,6 @@ import axios, {
   AxiosRequestConfig,
   AxiosResponse,
 } from "axios";
-import { createDpopProof, getDpopJkt } from "./dpop";
 
 const CSRF_COOKIE = (import.meta.env.VITE_CSRF_COOKIE_NAME as string) || "csrf";
 const CSRF_HEADER =
@@ -48,18 +47,6 @@ type AuthRefreshHandler = () => Promise<string | null>;
 let authRefreshHandler: AuthRefreshHandler | null = null;
 let refreshPromise: Promise<string | null> | null = null;
 
-function buildAbsoluteUrl(baseURL: string, url?: string): string {
-  const base = baseURL.endsWith("/") ? baseURL : `${baseURL}/`;
-  const target = typeof url === "string" ? url : "";
-  const absolute = new URL(target, base);
-  absolute.hash = "";
-  absolute.search = "";
-  if (absolute.pathname !== "/" && absolute.pathname.endsWith("/")) {
-    absolute.pathname = absolute.pathname.replace(/\/+$/, "");
-  }
-  return absolute.toString();
-}
-
 export function setAuthTokenGetter(getter: AuthTokenGetter | null): void {
   authTokenGetter = getter;
 }
@@ -95,12 +82,11 @@ async function refreshAuthToken(): Promise<string | null> {
 
 interface CreateApiOptions {
   enableAuthRefresh?: boolean;
-  enableDpop?: boolean;
 }
 
 function createApi(
   rawBaseURLInput: string | null | undefined,
-  { enableAuthRefresh = true, enableDpop = true }: CreateApiOptions = {}
+  { enableAuthRefresh = true }: CreateApiOptions = {}
 ): AxiosInstance {
   const rawBaseURL =
     typeof rawBaseURLInput === "string" ? rawBaseURLInput.trim() : "";
@@ -137,28 +123,6 @@ function createApi(
       config.headers = config.headers || {};
       if (!(config.headers as any).Authorization)
         (config.headers as any).Authorization = `Bearer ${t}`;
-    }
-    if (enableDpop) {
-      try {
-        const authHeader =
-          (config.headers as any)?.Authorization ||
-          (config.headers as any)?.authorization ||
-          undefined;
-        const tokenValue =
-          typeof authHeader === "string"
-            ? authHeader.replace(/^(Bearer|DPoP)\s+/i, "").trim()
-            : t;
-        const absoluteUrl = buildAbsoluteUrl(baseURL, config.url as string | undefined);
-        const proof = await createDpopProof(
-          config.method || "GET",
-          absoluteUrl,
-          tokenValue
-        );
-        const jkt = await getDpopJkt();
-        config.headers = config.headers || {};
-        (config.headers as any).DPoP = proof.proof;
-        (config.headers as any)["DPoP-JKT"] = jkt;
-      } catch {}
     }
     if (baseURL.endsWith("/api/payments") && typeof config.url === "string") {
       config.url = config.url.replace(/^\/payments(\/|$)/, "/");
@@ -210,7 +174,6 @@ export const paymentsApi = createApi(
 export const aiApi = createApi(import.meta.env.VITE_AI_AGENT_URL as string);
 export const authApi = createApi(import.meta.env.VITE_AUTH_API_URL as string, {
   enableAuthRefresh: false,
-  enableDpop: false,
 });
 export async function fetchApiWithAuth<T = unknown>(
   url: string,
