@@ -4,6 +4,7 @@ import axios, {
   AxiosRequestConfig,
   AxiosResponse,
 } from "axios";
+import { createDpopProof } from "./dpop";
 
 const CSRF_COOKIE = (import.meta.env.VITE_CSRF_COOKIE_NAME as string) || "csrf";
 const CSRF_HEADER =
@@ -46,6 +47,18 @@ let authTokenGetter: AuthTokenGetter | null = null;
 type AuthRefreshHandler = () => Promise<string | null>;
 let authRefreshHandler: AuthRefreshHandler | null = null;
 let refreshPromise: Promise<string | null> | null = null;
+
+function buildAbsoluteUrl(baseURL: string, url?: string): string {
+  const base = baseURL.endsWith("/") ? baseURL : `${baseURL}/`;
+  const target = typeof url === "string" ? url : "";
+  const absolute = new URL(target, base);
+  absolute.hash = "";
+  absolute.search = "";
+  if (absolute.pathname !== "/" && absolute.pathname.endsWith("/")) {
+    absolute.pathname = absolute.pathname.replace(/\/+$/, "");
+  }
+  return absolute.toString();
+}
 
 export function setAuthTokenGetter(getter: AuthTokenGetter | null): void {
   authTokenGetter = getter;
@@ -124,6 +137,20 @@ function createApi(
       if (!(config.headers as any).Authorization)
         (config.headers as any).Authorization = `Bearer ${t}`;
     }
+    try {
+      const authHeader =
+        (config.headers as any)?.Authorization ||
+        (config.headers as any)?.authorization ||
+        undefined;
+      const tokenValue =
+        typeof authHeader === "string"
+          ? authHeader.replace(/^(Bearer|DPoP)\s+/i, "").trim()
+          : t;
+      const absoluteUrl = buildAbsoluteUrl(baseURL, config.url as string | undefined);
+      const proof = await createDpopProof(config.method || "GET", absoluteUrl, tokenValue);
+      config.headers = config.headers || {};
+      (config.headers as any).DPoP = proof.proof;
+    } catch {}
     if (baseURL.endsWith("/api/payments") && typeof config.url === "string") {
       config.url = config.url.replace(/^\/payments(\/|$)/, "/");
     }
