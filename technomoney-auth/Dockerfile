@@ -31,7 +31,5 @@ ENV PORT=4000
 ENV SWAGGER_FILE=/app/dist/openapi.yaml
 ENV ENTRY_FILE=dist/server.js
 ENV JWT_KEYS_DIR=/app/keys
-ENV TOTP_ENC_KEY=p9ZAq7xM4sN1vT8yR3bC6wH2kJ5fL0GdQzXeUiPoSrYtVh8L_c2BnEmWjRs9F!
-ENV REDIS_URL=redis://127.0.0.1:6379
 EXPOSE 4000 6379
 CMD ["sh","-lc","redis-server --save '' --appendonly no --daemonize yes && node ${ENTRY_FILE}"]
