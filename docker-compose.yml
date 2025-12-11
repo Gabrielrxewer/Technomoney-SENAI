@@ -32,23 +32,7 @@ services:
       context: ./technomoney-auth
     container_name: technomoney-auth
     env_file:
-      - ./technomoney-auth/.env
-    environment:
-      NODE_ENV: production
-      PORT: "4000"
-      SWAGGER_FILE: /app/dist/openapi.yaml
-      ENTRY_FILE: dist/server.js
-      JWT_KEYS_DIR: /app/keys
-      JWT_AUTO_GENERATE_KEYS: "${JWT_AUTO_GENERATE_KEYS:-1}"
-      TOTP_ENC_KEY: "${TOTP_ENC_KEY:-p9ZAq7xM4sN1vT8yR3bC6wH2kJ5fL0GdQzXeUiPoSrYtVh8L_c2BnEmWjRs9F!}"
-      DB_DRIVER: postgres
-      DB_HOST: postgres
-      DB_PORT: "5432"
-      DB_USERNAME: technomoney
-      DB_PASSWORD: technopass
-      DB_DATABASE: technomoney_auth
-      REDIS_URL: "redis://redis:6379/0"
-      INTROSPECTION_CLIENTS: "core-service:core-secret,payments-service:payments-secret,ia-service:ia-secret,profile-service:profile-secret"
+      - ./technomoney-auth/prod.env
     ports:
       - "4000:4000"
     restart: unless-stopped
@@ -70,22 +54,7 @@ services:
       context: ./technomoney-api
     container_name: technomoney-api
     env_file:
-      - ./technomoney-api/.env
-    environment:
-      NODE_ENV: production
-      PORT: "4002"
-      SWAGGER_FILE: /app/dist/openapi.yaml
-      DB_DRIVER: postgres
-      DB_HOST: postgres
-      DB_PORT: "5432"
-      DB_USERNAME: technomoney
-      DB_PASSWORD: technopass
-      DB_DATABASE: technomoney_auth
-      SKIP_DB_MIGRATIONS: "${SKIP_DB_MIGRATIONS:-0}"
-      MARKET_API_BASE_URL: "http://host.docker.internal:4001"
-      AUTH_INTROSPECTION_URL: "http://auth:4000/oauth2/introspect"
-      AUTH_INTROSPECTION_CLIENT_ID: core-service
-      AUTH_INTROSPECTION_CLIENT_SECRET: core-secret
+      - ./technomoney-api/prod.env
     ports:
       - "4002:4002"
     restart: unless-stopped
@@ -101,20 +70,8 @@ services:
     build:
       context: ./technomoney-profile-api
     container_name: technomoney-profile
-    environment:
-      NODE_ENV: production
-      PORT: "4003"
-      SWAGGER_FILE: /app/dist/openapi.yaml
-      DB_DRIVER: postgres
-      DB_HOST: postgres
-      DB_PORT: "5432"
-      DB_USERNAME: technomoney
-      DB_PASSWORD: technopass
-      DB_DATABASE: technomoney_auth
-      AUTH_INTROSPECTION_URL: "http://auth:4000/oauth2/introspect"
-      AUTH_INTROSPECTION_CLIENT_ID: profile-service
-      AUTH_INTROSPECTION_CLIENT_SECRET: profile-secret
-      CORS_ALLOWED_ORIGINS: "http://localhost:5173,http://localhost:3000"
+    env_file:
+      - ./technomoney-profile-api/prod.env
     ports:
       - "4003:4003"
     restart: unless-stopped
@@ -129,19 +86,7 @@ services:
       context: ./technomoney-payment-api
     container_name: technomoney-payments
     env_file:
-      - ./technomoney-payment-api/.env
-    environment:
-      NODE_ENV: production
-      PORT: "3001"
-      DB_DRIVER: postgres
-      DB_HOST: postgres
-      DB_PORT: "5432"
-      DB_USERNAME: technomoney
-      DB_PASSWORD: technopass
-      DB_DATABASE: technomoney_auth
-      AUTH_INTROSPECTION_URL: "http://auth:4000/oauth2/introspect"
-      AUTH_INTROSPECTION_CLIENT_ID: payments-service
-      AUTH_INTROSPECTION_CLIENT_SECRET: payments-secret
+      - ./technomoney-payment-api/prod.env
     ports:
       - "3001:3001"
     restart: unless-stopped
@@ -156,15 +101,7 @@ services:
       context: ./technomoney-ia
     container_name: technomoney-ia
     env_file:
-      - ./technomoney-ia/.env
-    environment:
-      NODE_ENV: production
-      PORT: "4010"
-      AUTH_INTROSPECTION_URL: "http://auth:4000/oauth2/introspect"
-      RATE_LIMIT_WINDOW_MS: "60000"
-      RATE_LIMIT_MAX: "60"
-      AUTH_INTROSPECTION_CLIENT_ID: ia-service
-      AUTH_INTROSPECTION_CLIENT_SECRET: ia-secret
+      - ./technomoney-ia/prod.env
     ports:
       - "4010:4010"
     restart: unless-stopped
@@ -173,6 +110,21 @@ services:
     depends_on:
       auth:
         condition: service_started
+
+  front:
+    build:
+      context: ./technomoney-app
+    container_name: technomoney-front
+    env_file:
+      - ./technomoney-app/prod.env
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    depends_on:
+      - auth
+      - api
+      - profile
+      - payments
 
 volumes:
   pgdata:
